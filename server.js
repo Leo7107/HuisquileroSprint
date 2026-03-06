@@ -1,9 +1,15 @@
 const express = require("express");
 require("dotenv").config();
+const path = require("path");
 
 const app = express();
 
 app.use(express.json());
+
+app.use(express.static(path.join(__dirname, "frontend/templates")));
+app.get("/", (req, res) => {
+    res.sendFile(path.join(__dirname, "frontend/templates", "login.html"));
+});
 
 const consultasRoutes = require("./routes/consultas.routes");
 const facturasRoutes = require("./routes/facturas.routes");
@@ -26,6 +32,7 @@ app.use("/api/citas", citasRoutes);
 app.use("/api/diagnosticos", diagnosticosRoutes);
 app.use("/api/historial", historialRoutes);
 app.use("/api/detalles-factura", detallesFacturaRoutes);
+
 
 const PORT = process.env.PORT || 3000;
 

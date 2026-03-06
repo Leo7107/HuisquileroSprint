@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Medisync</title>
+    <link rel="stylesheet" href="css/login.css">
+</head>
+<body>
+    <div class="envoltura">
+        <!-- 
+             ENCABEZADO: Explicativo y accesible
+            aria-labelledby vincula el header con el h1
+        -->
+        <header class="encabezado" aria-labelledby="titulo-principal">
+            <h1 id="titulo-principal"> Bienvenidos a Medisync </h1>
+        </header>
+
+        <!--  ESCENA 3D: Contenedor con perspectiva -->
+        <div class="escena" aria-label="Tarjeta con formularios de autenticación">
+            <!-- 🃏 TARJETA: Se voltea con JS -->
+            <div class="tarjeta" id="tarjeta">
+                
+                <!-- ========================================= -->
+                <!-- CARA FRONTAL: INICIAR SESIÓN            -->
+                <!-- ========================================= -->
+                <section class="tarjeta__cara tarjeta__cara--frente" aria-labelledby="leyenda-inicio">
+                    <!--  PESTAÑAS DE NAVEGACIÓN -->
+                    <div class="pestanas" role="tablist" aria-label="Selector de formulario">
+                        <button id="pestana-inicio" class="pestana" role="tab" aria-selected="true" aria-controls="panel-inicio">Login</button>
+                        <button id="pestana-registro" class="pestana" role="tab" aria-selected="false" aria-controls="panel-registro">Register</button>
+                    </div>
+
+                    <!--  FORMULARIO DE LOGIN -->
+                    <form id="formulario-inicio" role="tabpanel" aria-labelledby="leyenda-inicio" autocomplete="on">
+                        <h2 id="leyenda-inicio" class="leyenda">Inicia sesión</h2>
+                        
+                        <div class="fila">
+                            <label for="correo-inicio">Correo electrónico</label>
+                            <input id="correo-inicio" name="correo" type="email" placeholder="correo@ejemplo.com" required />
+                        </div>
+
+                        <div class="fila">
+                            <label for="clave-inicio">Contraseña</label>
+                            <input id="clave-inicio" name="clave" type="password" placeholder="••••••••" required />
+                        </div>
+
+                        <div class="pie">
+                            <a href="#" class="enlace">¿Olvidaste tu contraseña?</a>
+                        </div>
+
+                        <button class="boton" type="submit">Login</button>
+
+                        <div class="divisor"></div>
+
+                        <div class="pie">
+                            <span>¿Aún no tienes cuenta?</span>
+                            <a href="#" class="enlace" id="ir-a-registro">Regístrate ahora</a>
+                        </div>
+                    </form>
+                </section>
+
+                <!-- ========================================= -->
+                <!-- CARA POSTERIOR: REGISTRO                -->
+                <!-- ========================================= -->
+                <section class="tarjeta__cara tarjeta__cara--atras" aria-labelledby="leyenda-registro">
+                    <!-- Pestañas duplicadas para coherencia visual -->
+                    <div class="pestanas" role="tablist" aria-label="Selector de formulario">
+                        <button id="pestana-inicio-atras" class="pestana" role="tab" aria-selected="false">Login</button>
+                        <button id="pestana-registro-atras" class="pestana" role="tab" aria-selected="true">Register</button>
+                    </div>
+
+                    <!--  FORMULARIO DE REGISTRO -->
+                    <form id="formulario-registro" role="tabpanel" aria-labelledby="leyenda-registro" autocomplete="on">
+                        <h2 id="leyenda-registro" class="leyenda">Crea tu cuenta</h2>
+
+                        <div class="fila">
+                            <label for="nombre-registro">Nombres</label>
+                            <input id="nombre-registro" name="nombres" type="text" placeholder="Ana" required />
+                        </div>
+
+                        <div class="fila">
+                            <label for="apellido-registro">Apellidos</label>
+                            <input id="apellido-registro" name="apellidos" type="text" placeholder="Pérez" required />
+                        </div>
+
+                        <div class="fila">
+                            <label for="sexo-registro">Sexo</label>
+                            <select id="sexo-registro" name="sexo" required>
+                                <option value="">Seleccione</option>
+                                <option value="M">Masculino</option>
+                                <option value="F">Femenino</option>
+                            </select>
+                        </div>
+
+                        <div class="fila">
+                            <label for="fecha-registro">Fecha de nacimiento</label>
+                            <input id="fecha-registro" name="fecha_nacimiento" type="date" required />
+                        </div>
+
+                        <div class="fila">
+                            <label for="telefono-registro">Teléfono</label>
+                            <input id="telefono-registro" name="telefono" type="tel" placeholder="0000-0000" required />
+                        </div>
+
+                        <div class="fila">
+                            <label for="direccion-registro">Dirección</label>
+                            <input id="direccion-registro" name="direccion" type="text" placeholder="Colonia, calle, etc." required />
+                        </div>
+
+                        <div class="fila">
+                            <label for="correo-registro">Correo electrónico</label>
+                            <input id="correo-registro" name="correo" type="email" placeholder="correo@ejemplo.com" required />
+                        </div>
+
+                        <div class="fila">
+                            <label for="clave-registro">Contraseña</label>
+                            <input id="clave-registro" name="clave" type="password" placeholder="Mínimo 6 caracteres" minlength="6" required />
+                        </div>
+
+                        <div class="fila">
+                            <label for="confirmar-registro">Confirmar contraseña</label>
+                            <input id="confirmar-registro" name="confirmar" type="password" placeholder="Repite tu contraseña" minlength="6" required />
+                        </div>
+
+                        <button class="boton" type="submit">Crear cuenta</button>
+
+                        <div class="divisor"></div>
+
+                        <div class="pie">
+                            <span>¿Ya tienes cuenta?</span>
+                            <a href="#" class="enlace" id="ir-a-inicio">Ingresar</a>
+                        </div>
+                    </form>
+                </section>
+            </div>
+        </div>
+    </div>
+    
+    <script src="js/login.js"></script>
+</body>
+</html>
