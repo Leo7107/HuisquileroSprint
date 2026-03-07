@@ -1,274 +1,380 @@
 /* ============================================================
-    VARIABLES DE TEMA (colores y medidas reutilizables)
-    ============================================================ */
-:root{
-    /* Azul marino (principal) */
-    --azul-900: #0a1d44;
-    --azul-800: #0c2b69;
-    --azul-700: #103889;
+   VARIABLES DE TEMA
+   ============================================================ */
+:root {
+  --cream: #f5f0e8;
+  --deep: #1a2e2a;
+  --teal: #2a6b5e;
+  --teal-light: #3d8c7c;
+  --gold: #c9a84c;
+  --gold-light: #e8c96a;
+  --text: #2c3e35;
+  --text-soft: #5a7069;
+  --white: #ffffff;
+  --border: rgba(42, 107, 94, 0.18);
+  --shadow: 0 20px 60px rgba(26, 46, 42, 0.15);
 
-    /* Amarillo dorado (secundario) */
-    --dorado-500: #f5c518;
-    --dorado-600: #e6b40b;
-
-    /* Neutros y utilitarios */
-    --blanco: #ffffff;
-    --texto-900: #0f172a;
-    --texto-700: #334155;
-    --borde: #e5e7eb;
-
-    /* Dimensiones y efectos */
-    --radio: 16px;
-    --sombra: 0 18px 50px rgba(0,0,0,.25);
-    --espacio: 18px;
-    --t-rapida: 180ms ease;
-    --t-media: 320ms cubic-bezier(.2,.7,.2,1);
+  --radio: 20px;
+  --espacio: 18px;
+  --t-rapida: 180ms ease;
+  --t-media: 380ms cubic-bezier(.2,.7,.2,1);
 }
 
 /* ============================================================
    ESTILO GENERAL DE LA PÁGINA
    ============================================================ */
-body{
-    margin:0;
-    font-family: system-ui, Segoe UI, Roboto, Inter, Arial, sans-serif;
-
-    background-color: #8192e5c3;
-
-    min-height: 100svh;
-    display: grid;
-    place-content: center;
-    color: var(--texto-900);
-    padding: 5px;
+body {
+  margin: 0;
+  font-family: 'DM Sans', system-ui, sans-serif;
+  background-color: var(--cream);
+  min-height: 100svh;
+  display: grid;
+  place-content: center;
+  color: var(--text);
+  padding: 40px 16px;
+  position: relative;
+  overflow-x: hidden;
 }
 
-.envoltura{
-    width: min(9300px, 96vw);
-    margin-inline: auto;
-    display: grid;
-    gap: 18px;
+/* Fondo con gradientes suaves */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    radial-gradient(circle at 15% 20%, rgba(42,107,94,0.08) 0%, transparent 40%),
+    radial-gradient(circle at 85% 80%, rgba(201,168,76,0.07) 0%, transparent 40%);
+  pointer-events: none;
+  z-index: 0;
 }
 
-.encabezado{
-    text-align:center;
-    background-color: #253893;
-    padding: 30px;
-    width: 1000;
-    border-radius: 10px;
-    box-shadow: var(--sombra);
+/* Patrón de cruces decorativo */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M27 0h6v27h27v6H33v27h-6V33H0v-6h27z' fill='%232a6b5e' fill-opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 0;
+}
 
-    color: var(--blanco);
+.envoltura {
+  position: relative;
+  z-index: 1;
+  width: min(930px, 96vw);
+  margin-inline: auto;
+  display: grid;
+  gap: 24px;
 }
-.encabezado h1{
-    margin:0 0 6px 0;
-    font-size: clamp(1.4rem, 2vw + .8rem, 2rem);
-    letter-spacing:.2px;
-}
-.encabezado p{ margin:0; opacity:.9 }
 
 /* ============================================================
-    ESCENA 3D Y TARJETA CON VOLTEO
+   ENCABEZADO
    ============================================================ */
-.escena{
-    perspective: 1200px;
-    width: min(860px, 96vw);
-    margin-inline: auto;
+.encabezado {
+  text-align: center;
+  padding: 28px 32px;
+  border-radius: var(--radio);
+  box-shadow: var(--shadow);
+  background: var(--deep);
+  position: relative;
+  overflow: hidden;
+  animation: fadeDown 0.7s ease both;
 }
 
-.tarjeta{
-    position: relative;
-    width: 100%;
-
-    /* aumentamos la altura mínima porque el registro tiene más campos */
-    min-height: 1100px;
-
-    border-radius: var(--radio);
-    box-shadow: var(--sombra);
-
-    transform-style: preserve-3d;
-    transition: transform var(--t-media);
+/* Barra superior dorada */
+.encabezado::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--teal), var(--gold));
 }
 
-.tarjeta--volteada{
-    transform: rotateY(180deg);
+/* Badge de sistema */
+.encabezado::after {
+  content: '✦ Sistema de Citas';
+  display: block;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--gold-light);
+  margin-bottom: 10px;
 }
 
-.tarjeta__cara{
-    position: absolute;
-    inset: 0;
-    border-radius: var(--radio);
-    background: var(--blanco);
-    border: 1px solid var(--borde);
-
-    display: grid;
-    grid-template-rows: auto 1fr;
-    gap: var(--espacio);
-    padding: clamp(16px, 2.5vw, 26px);
-
-    backface-visibility: hidden;
+.encabezado h1 {
+  margin: 0;
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: clamp(1.6rem, 2vw + 0.8rem, 2.4rem);
+  color: var(--white);
+  letter-spacing: 0.5px;
+  line-height: 1.2;
 }
 
-.tarjeta__cara--atras{
-    transform: rotateY(180deg);
+.encabezado h1 span {
+  color: var(--gold-light);
+}
+
+.encabezado p {
+  margin: 6px 0 0;
+  opacity: 0.7;
+  font-size: 14px;
+  color: var(--white);
+}
+
+/* ============================================================
+   ESCENA 3D Y TARJETA CON VOLTEO
+   ============================================================ */
+.escena {
+  perspective: 1200px;
+  width: min(860px, 96vw);
+  margin-inline: auto;
+  animation: fadeUp 0.7s ease 0.15s both;
+}
+
+.tarjeta {
+  position: relative;
+  width: 100%;
+  min-height: 1100px;
+  border-radius: var(--radio);
+  box-shadow: var(--shadow);
+  transform-style: preserve-3d;
+  transition: transform var(--t-media);
+}
+
+.tarjeta--volteada {
+  transform: rotateY(180deg);
+}
+
+.tarjeta__cara {
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radio);
+  background: var(--white);
+  border: 1px solid var(--border);
+  display: grid;
+  grid-template-rows: auto 1fr;
+  gap: var(--espacio);
+  padding: clamp(20px, 2.5vw, 32px);
+  backface-visibility: hidden;
+  overflow: hidden;
+}
+
+/* Barra de color superior en cada cara */
+.tarjeta__cara::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 5px;
+  background: linear-gradient(90deg, var(--teal), var(--gold));
+}
+
+.tarjeta__cara--atras {
+  transform: rotateY(180deg);
 }
 
 /* ============================================================
    PESTAÑAS
    ============================================================ */
-.pestanas{
-    display:flex;
-    gap:10px;
-    background: #f8fafc;
-    border:1px solid var(--borde);
-    border-radius: 999px;
-    padding: 6px;
-    width: max-content;
-    margin-inline: auto;
+.pestanas {
+  display: flex;
+  gap: 8px;
+  background: var(--cream);
+  border: 1.5px solid var(--border);
+  border-radius: 999px;
+  padding: 5px;
+  width: max-content;
+  margin-inline: auto;
 }
 
-.pestana{
-    border: none;
-    background: transparent;
-    color: var(--texto-700);
-    font-weight: 700;
-    padding: 10px 18px;
-    border-radius: 999px;
-    cursor: pointer;
-    transition: background var(--t-rapida), color var(--t-rapida);
+.pestana {
+  border: none;
+  background: transparent;
+  color: var(--text-soft);
+  font-family: 'DM Sans', system-ui, sans-serif;
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  padding: 10px 22px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background var(--t-rapida), color var(--t-rapida), box-shadow var(--t-rapida);
 }
 
-.pestana[aria-selected="true"]{
-    background: linear-gradient(90deg, var(--azul-700), #E67E22);
-    color: #fff;
-    box-shadow: 0 6px 18px rgba(16,56,137,.25);
+.pestana[aria-selected="true"] {
+  background: linear-gradient(135deg, var(--teal), var(--teal-light));
+  color: var(--white);
+  box-shadow: 0 6px 18px rgba(42, 107, 94, 0.28);
 }
 
-.pestana:focus-visible{
-    outline: 3px solid var(--dorado-500);
-    outline-offset: 3px;
-}
-
-/* ============================================================
-    FORMULARIOS E INPUTS
-   ============================================================ */
-form{
-    max-width: 520px;
-    width: 100%;
-    margin: 0 auto;
-    display: grid;
-    gap: 14px;
-    align-content: start;
-}
-
-.leyenda{
-    text-align:center;
-    font-size: 1.2rem;
-    font-weight: 800;
-    color: #000000;
-    margin-bottom: 6px;
-}
-
-.fila{
-    display:grid;
-    gap:6px;
-}
-
-label{
-    font-weight: 700;
-}
-
-/* INPUTS Y SELECTS con mismo estilo */
-input, select{
-    width: 100%;
-    padding: 12px 14px;
-    border-radius: 12px;
-    border: 1px solid var(--borde);
-    background: #fff;
-    color: var(--texto-900);
-    font-size: .95rem;
-
-    transition: border var(--t-rapida), box-shadow var(--t-rapida);
-}
-
-input::placeholder{
-    color:#9aa3b2;
-}
-
-/* efecto focus para input y select */
-input:focus-visible,
-select:focus-visible{
-    border-color: var(--azul-700);
-    box-shadow: 0 0 0 3px rgba(16,56,137,.20);
-    outline: none;
+.pestana:focus-visible {
+  outline: 3px solid var(--gold);
+  outline-offset: 3px;
 }
 
 /* ============================================================
-    ENLACES Y BOTONES
+   FORMULARIOS E INPUTS
    ============================================================ */
-.enlace{
-    color: var(--azul-700);
-    font-weight: 700;
-    text-decoration: none;
+form {
+  max-width: 520px;
+  width: 100%;
+  margin: 0 auto;
+  display: grid;
+  gap: 14px;
+  align-content: start;
 }
 
-.enlace:hover{
-    text-decoration: underline;
+.leyenda {
+  text-align: center;
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--deep);
+  margin-bottom: 4px;
 }
 
-.boton{
-    border: none;
-    cursor: pointer;
-    border-radius: 12px;
-    padding: 12px 16px;
-    font-weight: 800;
-
-    background: linear-gradient(90deg, var(--azul-700), #E67E22);
-    color: #fff;
-
-    box-shadow: 0 8px 24px rgba(16,56,137,.25);
-
-    transition: transform var(--t-rapida),
-                box-shadow var(--t-rapida),
-                filter var(--t-rapida);
+.fila {
+  display: grid;
+  gap: 6px;
 }
 
-.boton:hover{
-    filter: brightness(1.02);
-    box-shadow: 0 10px 28px rgba(16,56,137,.30);
+label {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-soft);
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
 }
 
-.boton:active{
-    transform: translateY(1px);
+input, select {
+  width: 100%;
+  padding: 13px 16px;
+  border-radius: 12px;
+  border: 1.5px solid transparent;
+  background: var(--cream);
+  color: var(--text);
+  font-family: 'DM Sans', system-ui, sans-serif;
+  font-size: 14.5px;
+  box-sizing: border-box;
+  transition: border-color var(--t-rapida), background var(--t-rapida), box-shadow var(--t-rapida);
+  appearance: none;
+  -webkit-appearance: none;
 }
 
-.divisor{
-    height:1px;
-    background: var(--borde);
-    margin: 8px 0 2px 0;
+input::placeholder {
+  color: #a0b0aa;
 }
 
-.pie{
-    display:flex;
-    justify-content: space-between;
-    align-items:center;
-    flex-wrap:wrap;
-    gap:10px;
-    color: var(--texto-700);
-    font-size: .95rem;
-    margin-top: 4px;
+input:hover, select:hover {
+  border-color: rgba(42, 107, 94, 0.3);
+}
+
+input:focus-visible, select:focus-visible {
+  border-color: var(--teal);
+  background: var(--white);
+  box-shadow: 0 0 0 3px rgba(42, 107, 94, 0.12);
+  outline: none;
+}
+
+/* ============================================================
+   ENLACES Y BOTONES
+   ============================================================ */
+.enlace {
+  color: var(--teal);
+  font-weight: 600;
+  font-size: 13.5px;
+  text-decoration: none;
+  transition: color var(--t-rapida);
+}
+
+.enlace:hover {
+  color: var(--teal-light);
+  text-decoration: underline;
+}
+
+.boton {
+  border: none;
+  cursor: pointer;
+  border-radius: 14px;
+  padding: 14px 16px;
+  font-family: 'DM Sans', system-ui, sans-serif;
+  font-weight: 600;
+  font-size: 15px;
+  letter-spacing: 0.03em;
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, var(--teal), var(--teal-light));
+  color: var(--white);
+  box-shadow: 0 8px 24px rgba(42, 107, 94, 0.28);
+  transition: transform var(--t-rapida), box-shadow var(--t-rapida);
+}
+
+/* Hover dorado */
+.boton::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, var(--gold), var(--gold-light));
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.boton:hover::before { opacity: 1; }
+
+.boton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 32px rgba(42, 107, 94, 0.35);
+}
+
+.boton:active {
+  transform: translateY(0);
+}
+
+.boton span {
+  position: relative;
+  z-index: 1;
+}
+
+.divisor {
+  height: 1px;
+  background: var(--border);
+  margin: 8px 0 2px 0;
+}
+
+.pie {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  color: var(--text-soft);
+  font-size: 13.5px;
+  margin-top: 4px;
 }
 
 /* ============================================================
    RESPONSIVE
    ============================================================ */
-@media (max-width: 560px){
+@media (max-width: 560px) {
+  .tarjeta {
+    min-height: 820px;
+  }
 
-    .tarjeta{
-        min-height: 820px;
-    }
+  .pestanas {
+    width: 100%;
+    justify-content: space-between;
+  }
+}
 
-    .pestanas{
-        width:100%;
-        justify-content: space-between;
-    }
+/* ============================================================
+   ANIMACIONES
+   ============================================================ */
+@keyframes fadeDown {
+  from { opacity: 0; transform: translateY(-20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
 
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
