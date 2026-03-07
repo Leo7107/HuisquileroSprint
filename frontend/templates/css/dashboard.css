@@ -1,0 +1,618 @@
+/* ============================================================
+   VARIABLES - Mismo tema que login.css
+   ============================================================ */
+:root {
+  --cream: #f5f0e8;
+  --deep: #1a2e2a;
+  --teal: #2a6b5e;
+  --teal-light: #3d8c7c;
+  --gold: #c9a84c;
+  --gold-light: #e8c96a;
+  --text: #2c3e35;
+  --text-soft: #5a7069;
+  --white: #ffffff;
+  --border: rgba(42, 107, 94, 0.15);
+  --shadow: 0 4px 24px rgba(26, 46, 42, 0.08);
+  --shadow-lg: 0 12px 40px rgba(26, 46, 42, 0.14);
+  --sidebar-w: 248px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* ============================================================
+   BODY - Con el mismo fondo del login
+   ============================================================ */
+body {
+  font-family: 'DM Sans', system-ui, sans-serif;
+  background-color: var(--cream);
+  color: var(--text);
+  min-height: 100vh;
+  position: relative;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    radial-gradient(circle at 10% 15%, rgba(42,107,94,0.07) 0%, transparent 40%),
+    radial-gradient(circle at 90% 85%, rgba(201,168,76,0.06) 0%, transparent 40%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M27 0h6v27h27v6H33v27h-6V33H0v-6h27z' fill='%232a6b5e' fill-opacity='0.025'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ============================================================
+   LAYOUT
+   ============================================================ */
+.layout {
+  display: grid;
+  grid-template-columns: var(--sidebar-w) 1fr;
+  min-height: 100vh;
+  position: relative;
+  z-index: 1;
+}
+
+/* ============================================================
+   SIDEBAR
+   ============================================================ */
+.sidebar {
+  background: var(--deep);
+  display: flex;
+  flex-direction: column;
+  padding: 28px 16px 20px;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+  z-index: 10;
+  box-shadow: 4px 0 24px rgba(26,46,42,0.18);
+}
+
+.sidebar::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--teal), var(--gold));
+}
+
+.sidebar__brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 8px 22px;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+  margin-bottom: 14px;
+}
+
+.brand-icon {
+  color: var(--gold-light);
+  font-size: 20px;
+  animation: spinOnce 0.8s ease 0.3s both;
+}
+
+.brand-name {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.35rem;
+  color: var(--white);
+  font-weight: 700;
+  letter-spacing: 0.3px;
+}
+
+.sidebar__rol {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--gold-light);
+  padding: 5px 14px;
+  border-radius: 100px;
+  text-align: center;
+  margin-bottom: 22px;
+  border: 1px solid rgba(201,168,76,0.25);
+  background: rgba(42,107,94,0.3);
+  animation: fadeDown 0.6s ease 0.2s both;
+}
+
+.sidebar__rol--admin    { background: rgba(26,46,42,0.55);  border-color: rgba(201,168,76,0.35); }
+.sidebar__rol--medico   { background: rgba(42,107,94,0.4);  border-color: rgba(61,140,124,0.4); }
+.sidebar__rol--recep    { background: rgba(201,168,76,0.18); color: var(--gold-light); border-color: rgba(201,168,76,0.38); }
+.sidebar__rol--paciente { background: rgba(61,140,124,0.28); border-color: rgba(61,140,124,0.4); }
+
+.sidebar__nav {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 10px 13px;
+  border-radius: 11px;
+  color: rgba(255,255,255,0.55);
+  text-decoration: none;
+  font-size: 13.5px;
+  font-weight: 400;
+  transition: background 0.2s, color 0.2s, transform 0.15s;
+  animation: fadeRight 0.5s ease both;
+}
+
+.nav-item:nth-child(1) { animation-delay: 0.10s; }
+.nav-item:nth-child(2) { animation-delay: 0.15s; }
+.nav-item:nth-child(3) { animation-delay: 0.20s; }
+.nav-item:nth-child(4) { animation-delay: 0.25s; }
+.nav-item:nth-child(5) { animation-delay: 0.30s; }
+.nav-item:nth-child(6) { animation-delay: 0.35s; }
+.nav-item:nth-child(7) { animation-delay: 0.40s; }
+.nav-item:nth-child(8) { animation-delay: 0.45s; }
+
+.nav-item:hover {
+  background: rgba(255,255,255,0.07);
+  color: rgba(255,255,255,0.92);
+  transform: translateX(3px);
+}
+
+/* Item activo - base */
+.nav-item.active {
+  background: linear-gradient(135deg, var(--teal), var(--teal-light));
+  color: var(--white);
+  font-weight: 600;
+  box-shadow: 0 4px 14px rgba(42,107,94,0.35);
+}
+
+/* Item activo - variante por rol */
+.rol-admin    .nav-item.active { background: linear-gradient(135deg, var(--deep), var(--teal)); }
+.rol-medico   .nav-item.active { background: linear-gradient(135deg, var(--teal), var(--teal-light)); }
+.rol-recep    .nav-item.active { background: linear-gradient(135deg, var(--gold), var(--gold-light)); color: var(--deep); box-shadow: 0 4px 14px rgba(201,168,76,0.3); }
+.rol-paciente .nav-item.active { background: linear-gradient(135deg, var(--teal-light), #5ab8a8); }
+
+.nav-icon { font-size: 15px; width: 20px; text-align: center; flex-shrink: 0; }
+
+.sidebar__logout {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 16px;
+  padding: 11px;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 11px;
+  background: transparent;
+  color: rgba(255,255,255,0.42);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.25s;
+}
+
+.sidebar__logout:hover {
+  background: rgba(201,168,76,0.12);
+  color: var(--gold-light);
+  border-color: rgba(201,168,76,0.28);
+  transform: translateY(-1px);
+}
+
+/* Scrollbar sidebar */
+.sidebar::-webkit-scrollbar { width: 4px; }
+.sidebar::-webkit-scrollbar-track { background: transparent; }
+.sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+
+/* ============================================================
+   ÁREA PRINCIPAL
+   ============================================================ */
+.main {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 30px 36px;
+  overflow-y: auto;
+}
+
+/* ============================================================
+   TOPBAR
+   ============================================================ */
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  animation: fadeDown 0.6s ease both;
+}
+
+.topbar__title h1 {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(1.5rem, 2.5vw, 2.1rem);
+  color: var(--deep);
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.topbar__title h1 span { color: var(--teal); }
+.rol-recep    .topbar__title h1 span { color: var(--gold); }
+.rol-paciente .topbar__title h1 span { color: var(--teal-light); }
+
+.topbar__title p {
+  font-size: 12.5px;
+  color: var(--text-soft);
+  margin-top: 5px;
+  text-transform: capitalize;
+}
+
+.topbar__usuario {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 10px 18px;
+  box-shadow: var(--shadow);
+  position: relative;
+  overflow: hidden;
+}
+
+.topbar__usuario::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+  background: linear-gradient(180deg, var(--teal), var(--gold));
+  border-radius: 3px 0 0 3px;
+}
+
+.rol-recep .topbar__usuario::before {
+  background: linear-gradient(180deg, var(--gold), var(--gold-light));
+}
+
+.avatar {
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--teal), var(--teal-light));
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 17px;
+  flex-shrink: 0;
+}
+
+.avatar--admin    { background: linear-gradient(135deg, var(--deep), var(--teal)); }
+.avatar--medico   { background: linear-gradient(135deg, var(--teal), var(--teal-light)); }
+.avatar--recep    { background: linear-gradient(135deg, var(--gold), var(--gold-light)); color: var(--deep); }
+.avatar--paciente { background: linear-gradient(135deg, var(--teal-light), #5ab8a8); }
+
+.usuario-nombre { font-weight: 600; font-size: 13.5px; color: var(--deep); }
+.usuario-rol    { font-size: 11px; color: var(--text-soft); margin-top: 1px; }
+
+/* ============================================================
+   ESTADÍSTICAS
+   ============================================================ */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  animation: fadeUp 0.6s ease 0.1s both;
+}
+
+.stat-card {
+  background: var(--white);
+  border-radius: 18px;
+  padding: 22px 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border);
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.22s, box-shadow 0.22s;
+}
+
+.stat-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-lg);
+}
+
+.stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 4px;
+}
+
+.stat-card::after {
+  content: '';
+  position: absolute;
+  bottom: -16px; right: -16px;
+  width: 80px; height: 80px;
+  border-radius: 50%;
+  opacity: 0.045;
+}
+
+.stat-card--teal::before { background: linear-gradient(90deg, var(--teal), var(--teal-light)); }
+.stat-card--teal::after  { background: var(--teal); }
+.stat-card--gold::before { background: linear-gradient(90deg, var(--gold), var(--gold-light)); }
+.stat-card--gold::after  { background: var(--gold); }
+.stat-card--soft::before { background: linear-gradient(90deg, var(--teal-light), #5ab8a8); }
+.stat-card--soft::after  { background: var(--teal-light); }
+.stat-card--dark::before { background: linear-gradient(90deg, var(--deep), var(--teal)); }
+.stat-card--dark::after  { background: var(--deep); }
+
+.stat-icon {
+  font-size: 26px;
+  width: 54px; height: 54px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--cream);
+  border-radius: 14px;
+  flex-shrink: 0;
+  border: 1px solid var(--border);
+}
+
+.stat-info { flex: 1; }
+
+.stat-num {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.85rem;
+  font-weight: 700;
+  color: var(--deep);
+  line-height: 1;
+}
+
+.stat-label {
+  font-size: 12px;
+  color: var(--text-soft);
+  margin-top: 5px;
+  line-height: 1.3;
+}
+
+/* ============================================================
+   PANELES
+   ============================================================ */
+.panels-row {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 20px;
+  animation: fadeUp 0.6s ease 0.2s both;
+}
+
+.panel {
+  background: var(--white);
+  border-radius: 20px;
+  padding: 26px;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border);
+  position: relative;
+  overflow: hidden;
+  animation: fadeUp 0.6s ease 0.25s both;
+}
+
+.panel::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--teal), var(--gold));
+  opacity: 0.55;
+}
+
+.rol-recep .panel::before {
+  background: linear-gradient(90deg, var(--gold), var(--teal));
+}
+
+.panel__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.panel__header h2 {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.08rem;
+  color: var(--deep);
+  font-weight: 700;
+}
+
+.panel__link {
+  font-size: 12.5px;
+  color: var(--teal);
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s;
+}
+
+.panel__link:hover { color: var(--gold); text-decoration: underline; }
+
+/* ============================================================
+   TABLA
+   ============================================================ */
+.tabla {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13.5px;
+}
+
+.tabla thead tr { border-bottom: 1.5px solid var(--border); }
+
+.tabla th {
+  text-align: left;
+  padding: 8px 12px;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-soft);
+}
+
+.tabla td {
+  padding: 12px 12px;
+  color: var(--text);
+  border-bottom: 1px solid rgba(42,107,94,0.055);
+  vertical-align: middle;
+}
+
+.tabla tbody tr:last-child td { border-bottom: none; }
+.tabla tbody tr { transition: background 0.15s; }
+.tabla tbody tr:hover { background: rgba(42,107,94,0.03); }
+
+/* ============================================================
+   BADGES
+   ============================================================ */
+.badge {
+  display: inline-block;
+  padding: 3px 11px;
+  border-radius: 100px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.badge--activo    { background: rgba(42,107,94,0.12);  color: var(--teal); }
+.badge--inactivo  { background: rgba(200,50,50,0.1);   color: #c03030; }
+.badge--pendiente { background: rgba(201,168,76,0.15); color: #7a5c00; }
+.badge--admin     { background: rgba(26,46,42,0.1);    color: var(--deep); }
+.badge--medico    { background: rgba(42,107,94,0.12);  color: var(--teal); }
+.badge--recep     { background: rgba(201,168,76,0.15); color: #7a5c00; }
+.badge--paciente  { background: rgba(61,140,124,0.13); color: var(--teal-light); }
+
+/* ============================================================
+   BOTÓN TABLA
+   ============================================================ */
+.btn-tabla {
+  padding: 5px 13px;
+  background: transparent;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  color: var(--teal);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-tabla:hover {
+  background: var(--teal);
+  color: white;
+  border-color: var(--teal);
+  box-shadow: 0 4px 12px rgba(42,107,94,0.2);
+}
+
+/* ============================================================
+   ACCIONES RÁPIDAS
+   ============================================================ */
+.acciones-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.accion-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 18px 10px;
+  background: var(--cream);
+  border: 1.5px solid var(--border);
+  border-radius: 14px;
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text);
+  transition: all 0.22s;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.accion-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, var(--teal), var(--teal-light));
+  opacity: 0;
+  transition: opacity 0.25s;
+}
+
+.accion-btn:hover::before { opacity: 1; }
+
+.accion-btn:hover {
+  color: white;
+  border-color: var(--teal);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(42,107,94,0.22);
+}
+
+.accion-btn span { position: relative; z-index: 1; }
+.accion-btn span:first-child { font-size: 24px; }
+
+/* Recepcionista: hover dorado */
+.rol-recep .accion-btn::before { background: linear-gradient(135deg, var(--gold), var(--gold-light)); }
+.rol-recep .accion-btn:hover { color: var(--deep); border-color: var(--gold); box-shadow: 0 8px 20px rgba(201,168,76,0.25); }
+
+/* ============================================================
+   ANIMACIONES (mismas que login)
+   ============================================================ */
+@keyframes fadeDown {
+  from { opacity: 0; transform: translateY(-16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeRight {
+  from { opacity: 0; transform: translateX(-12px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes spinOnce {
+  from { transform: rotate(-20deg) scale(0.8); opacity: 0; }
+  to   { transform: rotate(0deg) scale(1); opacity: 1; }
+}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width: 1200px) {
+  .panels-row { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 1024px) {
+  .stats-grid { grid-template-columns: repeat(2, 1fr); }
+  .main { padding: 24px; }
+}
+
+@media (max-width: 768px) {
+  .layout { grid-template-columns: 1fr; }
+  .sidebar { display: none; }
+  .main { padding: 20px 16px; }
+  .stats-grid { grid-template-columns: repeat(2, 1fr); }
+  .topbar { flex-direction: column; align-items: flex-start; }
+  .topbar__usuario { width: 100%; }
+}
+
+@media (max-width: 480px) {
+  .stats-grid { grid-template-columns: 1fr 1fr; }
+  .panel { padding: 18px 16px; }
+}

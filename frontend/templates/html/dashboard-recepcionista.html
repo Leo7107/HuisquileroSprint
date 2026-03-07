@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Medisync – Recepcionista</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="/frontend/templates/css/dashboard.css"/>
+</head>
+<body>
+
+<div class="layout rol-recep">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar__brand">
+      <span class="brand-icon">✦</span>
+      <span class="brand-name">Medisync</span>
+    </div>
+    <div class="sidebar__rol sidebar__rol--recep">Recepcionista</div>
+
+    <nav class="sidebar__nav">
+      <a href="#" class="nav-item active">
+        <span class="nav-icon">⊞</span> Panel Principal
+      </a>
+      <a href="#" class="nav-item">
+        <span class="nav-icon">📅</span> Agendar Cita
+      </a>
+      <a href="#" class="nav-item">
+        <span class="nav-icon">📋</span> Gestión Pacientes
+      </a>
+      <a href="#" class="nav-item">
+        <span class="nav-icon">🗓️</span> Agenda del Día
+      </a>
+      <a href="#" class="nav-item">
+        <span class="nav-icon">💰</span> Facturación
+      </a>
+      <a href="#" class="nav-item">
+        <span class="nav-icon">✅</span> Confirmar Citas
+      </a>
+    </nav>
+
+    <button class="sidebar__logout" onclick="cerrarSesion()">
+      <span>⏻</span> Cerrar sesión
+    </button>
+  </aside>
+
+  <!-- CONTENIDO -->
+  <main class="main">
+
+    <header class="topbar">
+      <div class="topbar__title">
+        <h1>Recepción <span>Medisync</span></h1>
+        <p id="fecha-actual"></p>
+      </div>
+      <div class="topbar__usuario">
+        <div class="avatar avatar--recep" id="avatar-inicial">R</div>
+        <div>
+          <div class="usuario-nombre" id="usuario-nombre">Recepcionista</div>
+          <div class="usuario-rol">Personal Administrativo</div>
+        </div>
+      </div>
+    </header>
+
+    <!-- STATS -->
+    <section class="stats-grid">
+      <div class="stat-card stat-card--teal">
+        <div class="stat-icon">📅</div>
+        <div class="stat-info">
+          <div class="stat-num">12</div>
+          <div class="stat-label">Citas Pendientes Hoy</div>
+        </div>
+      </div>
+      <div class="stat-card stat-card--gold">
+        <div class="stat-icon">✅</div>
+        <div class="stat-info">
+          <div class="stat-num">7</div>
+          <div class="stat-label">Citas Confirmadas</div>
+        </div>
+      </div>
+      <div class="stat-card stat-card--soft">
+        <div class="stat-icon">👤</div>
+        <div class="stat-info">
+          <div class="stat-num">3</div>
+          <div class="stat-label">Nuevos Pacientes</div>
+        </div>
+      </div>
+      <div class="stat-card stat-card--dark">
+        <div class="stat-icon">💰</div>
+        <div class="stat-info">
+          <div class="stat-num">5</div>
+          <div class="stat-label">Facturas Emitidas</div>
+        </div>
+      </div>
+    </section>
+
+    <div class="panels-row">
+
+      <!-- Citas del día -->
+      <div class="panel">
+        <div class="panel__header">
+          <h2>Agenda del Día</h2>
+          <a href="#" class="panel__link">Ver completa →</a>
+        </div>
+        <table class="tabla">
+          <thead>
+            <tr><th>Hora</th><th>Paciente</th><th>Doctor</th><th>Estado</th><th></th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>08:00</td><td>María García</td><td>Dr. Hernández</td>
+              <td><span class="badge badge--activo">Confirmada</span></td>
+              <td><button class="btn-tabla">Atender</button></td>
+            </tr>
+            <tr>
+              <td>09:00</td><td>José Pérez</td><td>Dra. Martínez</td>
+              <td><span class="badge badge--pendiente">Pendiente</span></td>
+              <td><button class="btn-tabla">Confirmar</button></td>
+            </tr>
+            <tr>
+              <td>10:30</td><td>Laura Sánchez</td><td>Dr. Flores</td>
+              <td><span class="badge badge--pendiente">Pendiente</span></td>
+              <td><button class="btn-tabla">Confirmar</button></td>
+            </tr>
+            <tr>
+              <td>11:00</td><td>Carlos Torres</td><td>Dr. Hernández</td>
+              <td><span class="badge badge--activo">Confirmada</span></td>
+              <td><button class="btn-tabla">Atender</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Acciones rápidas -->
+      <div class="panel">
+        <div class="panel__header">
+          <h2>Acciones Rápidas</h2>
+        </div>
+        <div class="acciones-grid">
+          <button class="accion-btn">
+            <span>➕</span>
+            <span>Nueva Cita</span>
+          </button>
+          <button class="accion-btn">
+            <span>👤</span>
+            <span>Nuevo Paciente</span>
+          </button>
+          <button class="accion-btn">
+            <span>💰</span>
+            <span>Emitir Factura</span>
+          </button>
+          <button class="accion-btn">
+            <span>🔍</span>
+            <span>Buscar Paciente</span>
+          </button>
+          <button class="accion-btn">
+            <span>✅</span>
+            <span>Confirmar Cita</span>
+          </button>
+          <button class="accion-btn">
+            <span>❌</span>
+            <span>Cancelar Cita</span>
+          </button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Pacientes registrados hoy -->
+    <div class="panel">
+      <div class="panel__header">
+        <h2>Pacientes Registrados Recientemente</h2>
+        <a href="#" class="panel__link">Ver todos →</a>
+      </div>
+      <table class="tabla">
+        <thead>
+          <tr><th>Nombre</th><th>Expediente</th><th>Fecha Registro</th><th>Acción</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Sofía Ramírez</td><td>#EXP-2024-001</td><td>06/03/2026</td>
+            <td><button class="btn-tabla">Ver expediente</button></td>
+          </tr>
+          <tr>
+            <td>Antonio Cruz</td><td>#EXP-2024-002</td><td>05/03/2026</td>
+            <td><button class="btn-tabla">Ver expediente</button></td>
+          </tr>
+          <tr>
+            <td>Elena Morales</td><td>#EXP-2024-003</td><td>05/03/2026</td>
+            <td><button class="btn-tabla">Ver expediente</button></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  </main>
+</div>
+
+
+<script>
+  const usuario = JSON.parse(localStorage.getItem('usuario') || 'null');
+  if (!usuario || usuario.idRol !== 3) {
+    alert('Acceso denegado.');
+    window.location.href = 'index.html';
+  }
+
+  if (usuario) {
+    const nombre = usuario.Nombres || 'Recepcionista';
+    document.getElementById('usuario-nombre').textContent = nombre;
+    document.getElementById('avatar-inicial').textContent = nombre[0].toUpperCase();
+  }
+
+  document.getElementById('fecha-actual').textContent =
+    new Date().toLocaleDateString('es-SV', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+
+  function cerrarSesion() {
+    localStorage.removeItem('token');
+    localStorage.removeItem('usuario');
+    window.location.href = 'index.html';
+  }
+</script>
+</body>
+</html>

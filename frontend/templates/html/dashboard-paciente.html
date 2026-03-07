@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Medisync – Paciente</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="/frontend/templates/css/dashboard.css"/>
+</head>
+<body>
+
+<div class="layout rol-paciente">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar__brand">
+      <span class="brand-icon">✦</span>
+      <span class="brand-name">Medisync</span>
+    </div>
+    <div class="sidebar__rol sidebar__rol--paciente">Paciente</div>
+
+    <nav class="sidebar__nav">
+      <a href="#" class="nav-item active">
+        <span class="nav-icon">⊞</span> Mi Panel
+      </a>
+      <a href="#" class="nav-item">
+        <span class="nav-icon">📅</span> Mis Citas
+      </a>
+      <a href="#" class="nav-item">
+        <span class="nav-icon">🩺</span> Mis Consultas
+      </a>
+      <a href="#" class="nav-item">
+        <span class="nav-icon">📋</span> Mi Historial
+      </a>
+      <a href="#" class="nav-item">
+        <span class="nav-icon">💊</span> Mis Recetas
+      </a>
+      <a href="#" class="nav-item">
+        <span class="nav-icon">💰</span> Mis Facturas
+      </a>
+      <a href="#" class="nav-item">
+        <span class="nav-icon">👤</span> Mi Perfil
+      </a>
+    </nav>
+
+    <button class="sidebar__logout" onclick="cerrarSesion()">
+      <span>⏻</span> Cerrar sesión
+    </button>
+  </aside>
+
+  <!-- CONTENIDO -->
+  <main class="main">
+
+    <header class="topbar">
+      <div class="topbar__title">
+        <h1>Hola, <span id="nombre-paciente">Paciente</span></h1>
+        <p id="fecha-actual"></p>
+      </div>
+      <div class="topbar__usuario">
+        <div class="avatar avatar--paciente" id="avatar-inicial">P</div>
+        <div>
+          <div class="usuario-nombre" id="usuario-nombre">Paciente</div>
+          <div class="usuario-rol">Medisync</div>
+        </div>
+      </div>
+    </header>
+
+    <!-- STATS -->
+    <section class="stats-grid">
+      <div class="stat-card stat-card--teal">
+        <div class="stat-icon">📅</div>
+        <div class="stat-info">
+          <div class="stat-num">1</div>
+          <div class="stat-label">Próxima Cita</div>
+        </div>
+      </div>
+      <div class="stat-card stat-card--gold">
+        <div class="stat-icon">🩺</div>
+        <div class="stat-info">
+          <div class="stat-num">5</div>
+          <div class="stat-label">Consultas Previas</div>
+        </div>
+      </div>
+      <div class="stat-card stat-card--soft">
+        <div class="stat-icon">💊</div>
+        <div class="stat-info">
+          <div class="stat-num">2</div>
+          <div class="stat-label">Recetas Activas</div>
+        </div>
+      </div>
+      <div class="stat-card stat-card--dark">
+        <div class="stat-icon">💰</div>
+        <div class="stat-info">
+          <div class="stat-num">3</div>
+          <div class="stat-label">Facturas Emitidas</div>
+        </div>
+      </div>
+    </section>
+
+    <div class="panels-row">
+
+      <!-- Próximas citas -->
+      <div class="panel">
+        <div class="panel__header">
+          <h2>Mis Próximas Citas</h2>
+          <a href="#" class="panel__link">Ver todas →</a>
+        </div>
+        <table class="tabla">
+          <thead>
+            <tr><th>Fecha</th><th>Hora</th><th>Doctor</th><th>Estado</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>10/03/2026</td><td>09:00</td><td>Dr. Carlos Hernández</td>
+              <td><span class="badge badge--activo">Confirmada</span></td>
+            </tr>
+            <tr>
+              <td>18/03/2026</td><td>11:30</td><td>Dra. Ana Martínez</td>
+              <td><span class="badge badge--pendiente">Pendiente</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Acciones rápidas -->
+      <div class="panel">
+        <div class="panel__header">
+          <h2>Acciones Rápidas</h2>
+        </div>
+        <div class="acciones-grid">
+          <button class="accion-btn">
+            <span>📅</span>
+            <span>Ver mis Citas</span>
+          </button>
+          <button class="accion-btn">
+            <span>🩺</span>
+            <span>Mis Consultas</span>
+          </button>
+          <button class="accion-btn">
+            <span>💊</span>
+            <span>Mis Recetas</span>
+          </button>
+          <button class="accion-btn">
+            <span>📋</span>
+            <span>Mi Historial</span>
+          </button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Últimas consultas -->
+    <div class="panel">
+      <div class="panel__header">
+        <h2>Mis Últimas Consultas</h2>
+        <a href="#" class="panel__link">Ver historial →</a>
+      </div>
+      <table class="tabla">
+        <thead>
+          <tr><th>Fecha</th><th>Doctor</th><th>Diagnóstico</th><th>Acción</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>01/03/2026</td><td>Dr. Hernández</td><td>Chequeo general</td>
+            <td><button class="btn-tabla">Ver detalle</button></td>
+          </tr>
+          <tr>
+            <td>10/02/2026</td><td>Dra. Martínez</td><td>Gripe estacional</td>
+            <td><button class="btn-tabla">Ver detalle</button></td>
+          </tr>
+          <tr>
+            <td>15/01/2026</td><td>Dr. Flores</td><td>Control anual</td>
+            <td><button class="btn-tabla">Ver detalle</button></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  </main>
+</div>
+
+<script>
+  const usuario = JSON.parse(localStorage.getItem('usuario') || 'null');
+  if (!usuario || usuario.idRol !== 4) {
+    alert('Acceso denegado.');
+    window.location.href = 'index.html';
+  }
+
+  if (usuario) {
+    const nombre = usuario.Nombres || 'Paciente';
+    document.getElementById('nombre-paciente').textContent = nombre;
+    document.getElementById('usuario-nombre').textContent = nombre;
+    document.getElementById('avatar-inicial').textContent = nombre[0].toUpperCase();
+  }
+
+  document.getElementById('fecha-actual').textContent =
+    new Date().toLocaleDateString('es-SV', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+
+  function cerrarSesion() {
+    localStorage.removeItem('token');
+    localStorage.removeItem('usuario');
+    window.location.href = 'index.html';
+  }
+</script>
+</body>
+</html>

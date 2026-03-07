@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Medisync – Administrador</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="/frontend/templates/css/dashboard.css"/>
+</head>
+<body>
+
+<div class="layout rol-admin">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar__brand">
+      <span class="brand-icon">✦</span>
+      <span class="brand-name">Medisync</span>
+    </div>
+    <div class="sidebar__rol sidebar__rol--admin">Administrador</div>
+
+    <nav class="sidebar__nav">
+      <a href="#" class="nav-item active">
+        <span class="nav-icon">⊞</span> Panel General
+      </a>
+      <a href="#" class="nav-item">
+        <span class="nav-icon">👥</span> Usuarios
+      </a>
+      <a href="#" class="nav-item">
+        <span class="nav-icon">🔑</span> Roles y Accesos
+      </a>
+      <a href="#" class="nav-item">
+        <span class="nav-icon">🩺</span> Médicos
+      </a>
+      <a href="#" class="nav-item">
+        <span class="nav-icon">📋</span> Pacientes
+      </a>
+      <a href="#" class="nav-item">
+        <span class="nav-icon">📅</span> Citas
+      </a>
+      <a href="#" class="nav-item">
+        <span class="nav-icon">💰</span> Facturación
+      </a>
+      <a href="#" class="nav-item">
+        <span class="nav-icon">📊</span> Reportes
+      </a>
+    </nav>
+
+    <button class="sidebar__logout" onclick="cerrarSesion()">
+      <span>⏻</span> Cerrar sesión
+    </button>
+  </aside>
+
+  <!-- CONTENIDO PRINCIPAL -->
+  <main class="main">
+
+    <!-- TOPBAR -->
+    <header class="topbar">
+      <div class="topbar__title">
+        <h1>Panel <span>General</span></h1>
+        <p id="fecha-actual"></p>
+      </div>
+      <div class="topbar__usuario">
+        <div class="avatar" id="avatar-inicial">A</div>
+        <div>
+          <div class="usuario-nombre" id="usuario-nombre">Administrador</div>
+          <div class="usuario-rol">Sistema Medisync</div>
+        </div>
+      </div>
+    </header>
+
+    <!-- TARJETAS DE ESTADÍSTICAS -->
+    <section class="stats-grid">
+      <div class="stat-card stat-card--teal">
+        <div class="stat-icon">👥</div>
+        <div class="stat-info">
+          <div class="stat-num">124</div>
+          <div class="stat-label">Usuarios Activos</div>
+        </div>
+      </div>
+      <div class="stat-card stat-card--gold">
+        <div class="stat-icon">🩺</div>
+        <div class="stat-info">
+          <div class="stat-num">18</div>
+          <div class="stat-label">Médicos Registrados</div>
+        </div>
+      </div>
+      <div class="stat-card stat-card--soft">
+        <div class="stat-icon">📅</div>
+        <div class="stat-info">
+          <div class="stat-num">47</div>
+          <div class="stat-label">Citas Hoy</div>
+        </div>
+      </div>
+      <div class="stat-card stat-card--dark">
+        <div class="stat-icon">💰</div>
+        <div class="stat-info">
+          <div class="stat-num">$3,840</div>
+          <div class="stat-label">Ingresos del Mes</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FILA DE PANELES -->
+    <div class="panels-row">
+
+      <!-- Usuarios recientes -->
+      <div class="panel">
+        <div class="panel__header">
+          <h2>Usuarios Recientes</h2>
+          <a href="#" class="panel__link">Ver todos →</a>
+        </div>
+        <table class="tabla">
+          <thead>
+            <tr><th>Nombre</th><th>Rol</th><th>Estado</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Ana Martínez</td><td><span class="badge badge--medico">Médico</span></td><td><span class="badge badge--activo">Activo</span></td></tr>
+            <tr><td>Carlos Pérez</td><td><span class="badge badge--recep">Recepcionista</span></td><td><span class="badge badge--activo">Activo</span></td></tr>
+            <tr><td>María López</td><td><span class="badge badge--paciente">Paciente</span></td><td><span class="badge badge--activo">Activo</span></td></tr>
+            <tr><td>Roberto Díaz</td><td><span class="badge badge--medico">Médico</span></td><td><span class="badge badge--inactivo">Inactivo</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Acciones rápidas -->
+      <div class="panel">
+        <div class="panel__header">
+          <h2>Acciones Rápidas</h2>
+        </div>
+        <div class="acciones-grid">
+          <button class="accion-btn">
+            <span>➕</span>
+            <span>Nuevo Usuario</span>
+          </button>
+          <button class="accion-btn">
+            <span>🔑</span>
+            <span>Asignar Rol</span>
+          </button>
+          <button class="accion-btn">
+            <span>🩺</span>
+            <span>Agregar Médico</span>
+          </button>
+          <button class="accion-btn">
+            <span>📊</span>
+            <span>Ver Reportes</span>
+          </button>
+          <button class="accion-btn">
+            <span>🔒</span>
+            <span>Bloquear Usuario</span>
+          </button>
+          <button class="accion-btn">
+            <span>💾</span>
+            <span>Respaldo BD</span>
+          </button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- TABLA ROLES -->
+    <div class="panel">
+      <div class="panel__header">
+        <h2>Gestión de Roles</h2>
+        <a href="#" class="panel__link">Administrar →</a>
+      </div>
+      <table class="tabla">
+        <thead>
+          <tr><th>ID Rol</th><th>Nombre</th><th>Usuarios asignados</th><th>Acciones</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>#1</td>
+            <td><span class="badge badge--admin">Administrador</span></td>
+            <td>3</td>
+            <td><button class="btn-tabla">Editar</button></td>
+          </tr>
+          <tr>
+            <td>#2</td>
+            <td><span class="badge badge--medico">Médico</span></td>
+            <td>18</td>
+            <td><button class="btn-tabla">Editar</button></td>
+          </tr>
+          <tr>
+            <td>#3</td>
+            <td><span class="badge badge--recep">Recepcionista</span></td>
+            <td>5</td>
+            <td><button class="btn-tabla">Editar</button></td>
+          </tr>
+          <tr>
+            <td>#4</td>
+            <td><span class="badge badge--paciente">Paciente</span></td>
+            <td>98</td>
+            <td><button class="btn-tabla">Editar</button></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  </main>
+</div>
+
+<script>
+  // Verificar sesión
+  const usuario = JSON.parse(localStorage.getItem('usuario') || 'null');
+  if (!usuario || usuario.idRol !== 1) {
+    alert('Acceso denegado.');
+    window.location.href = 'index.html';
+  }
+
+  // Mostrar nombre
+  if (usuario) {
+    document.getElementById('usuario-nombre').textContent = usuario.Nombres || 'Administrador';
+    document.getElementById('avatar-inicial').textContent = (usuario.Nombres || 'A')[0].toUpperCase();
+  }
+
+  // Fecha actual
+  const ahora = new Date();
+  document.getElementById('fecha-actual').textContent =
+    ahora.toLocaleDateString('es-SV', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+
+  function cerrarSesion() {
+    localStorage.removeItem('token');
+    localStorage.removeItem('usuario');
+    window.location.href = 'index.html';
+  }
+</script>
+</body>
+</html>
