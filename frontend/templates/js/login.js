@@ -136,11 +136,19 @@ formularioInicio.addEventListener('submit', (ev) => {
     })
 
     .then(res => res.json())
+
     .then(data => {
         if (data.token) {
             localStorage.setItem('token', data.token);
             localStorage.setItem('usuario', JSON.stringify(data.usuario));
-            window.location.href = '/dashboard.html'; // ← página a la que redirige
+            
+            if(data.usuario.rol === 1){
+                window.location.href = '/html/dashboard-admin.html'
+            }else if(data.usuario.rol === 30002){
+                window.location.href = '/html/dashboard-medico.html';
+            }else{
+                window.location.href = '/html/dashboard-paciente.html';
+            }
         } else {
             alert(data.message || 'Error al iniciar sesión');
         }

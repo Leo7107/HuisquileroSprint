@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Medisync – Paciente</title>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
-  <link rel="stylesheet" href="/frontend/templates/css/dashboard.css"/>
+  <link rel="stylesheet" href="/css/dashboard.css"/>
 </head>
 <body>
 
@@ -181,9 +181,9 @@
 
 <script>
   const usuario = JSON.parse(localStorage.getItem('usuario') || 'null');
-  if (!usuario || usuario.idRol !== 4) {
+  if (!usuario || usuario.rol !== 30001) {
     alert('Acceso denegado.');
-    window.location.href = 'index.html';
+    window.location.href = '/';
   }
 
   if (usuario) {
@@ -199,7 +199,7 @@
   function cerrarSesion() {
     localStorage.removeItem('token');
     localStorage.removeItem('usuario');
-    window.location.href = 'index.html';
+    window.location.href = '/';
   }
 </script>
 </body>

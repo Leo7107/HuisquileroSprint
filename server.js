@@ -8,7 +8,11 @@ app.use(express.json());
 
 app.use(express.static(path.join(__dirname, "frontend/templates")));
 app.get("/", (req, res) => {
-    res.sendFile(path.join(__dirname, "frontend/templates", "login.html"));
+    res.sendFile(path.join(__dirname, "frontend/templates/html", "login.html"));
+});
+
+app.get("/html/:pagina", (req, res) => {
+    res.sendFile(path.join(__dirname, "frontend/templates/html", req.params.pagina));
 });
 
 const consultasRoutes = require("./routes/consultas.routes");
