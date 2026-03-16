@@ -146,6 +146,8 @@ formularioInicio.addEventListener('submit', (ev) => {
                 window.location.href = '/html/dashboard-admin.html'
             }else if(data.usuario.rol === 30002){
                 window.location.href = '/html/dashboard-medico.html';
+            }else if(data.usuario.rol === 30003){
+                window.location.href = '/html/dashboard-recepcionista.html'
             }else{
                 window.location.href = '/html/dashboard-paciente.html';
             }

@@ -5,219 +5,400 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Medisync – Recepcionista</title>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
-  <link rel="stylesheet" href="/frontend/templates/css/dashboard.css"/>
+  <link rel="stylesheet" href="/css/dashboard.css"/>
+  <style>
+    .modal-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(26,46,42,0.55); z-index: 1000;
+      align-items: center; justify-content: center;
+    }
+    .modal-overlay.active { display: flex; }
+    .modal {
+      background: #fff; border-radius: 20px; padding: 32px;
+      width: min(540px, 92vw); max-height: 90vh; overflow-y: auto;
+      box-shadow: 0 24px 64px rgba(26,46,42,0.22); animation: fadeDown 0.25s ease;
+    }
+    .modal h3 {
+      font-family: 'Playfair Display', serif; font-size: 1.25rem;
+      color: var(--deep); margin-bottom: 22px;
+    }
+    .form-group { margin-bottom: 14px; }
+    .form-group label {
+      display: block; font-size: 11.5px; font-weight: 600;
+      color: var(--text-soft); margin-bottom: 5px; letter-spacing: 0.04em;
+    }
+    .form-group input, .form-group select, .form-group textarea {
+      width: 100%; padding: 10px 14px; border: 1.5px solid var(--border);
+      border-radius: 11px; font-size: 13.5px; color: var(--text);
+      background: var(--cream); font-family: 'DM Sans', sans-serif;
+      box-sizing: border-box; transition: border 0.2s, background 0.2s;
+    }
+    .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+      outline: none; border-color: var(--gold); background: #fff;
+    }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 22px; }
+    .btn-cancelar {
+      padding: 10px 20px; border: 1.5px solid var(--border); border-radius: 11px;
+      background: #fff; cursor: pointer; font-weight: 600; font-size: 13px;
+      color: var(--text-soft); font-family: 'DM Sans', sans-serif; transition: background 0.2s;
+    }
+    .btn-cancelar:hover { background: var(--cream); }
+    .btn-primary {
+      padding: 10px 22px; border: none; border-radius: 11px;
+      background: linear-gradient(135deg, var(--gold), var(--gold-light));
+      color: var(--deep); cursor: pointer; font-weight: 700; font-size: 13px;
+      font-family: 'DM Sans', sans-serif; transition: opacity 0.2s, transform 0.15s;
+    }
+    .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
+    .header-btn {
+      padding: 8px 18px; border: none; border-radius: 10px;
+      background: linear-gradient(135deg, var(--gold), var(--gold-light));
+      color: var(--deep); cursor: pointer; font-weight: 700; font-size: 12.5px;
+      font-family: 'DM Sans', sans-serif; transition: opacity 0.2s;
+    }
+    .header-btn:hover { opacity: 0.88; }
+    .tabs {
+      display: flex; gap: 4px; background: var(--cream);
+      border-radius: 12px; padding: 4px; margin-bottom: 18px; border: 1px solid var(--border);
+    }
+    .tab-btn {
+      flex: 1; padding: 8px 10px; border: none; background: transparent;
+      border-radius: 10px; cursor: pointer; font-weight: 600; font-size: 12px;
+      color: var(--text-soft); font-family: 'DM Sans', sans-serif; transition: all 0.2s;
+    }
+    .tab-btn.active { background: #fff; color: var(--deep); box-shadow: 0 1px 6px rgba(26,46,42,0.1); }
+    .search-global {
+      display: flex; align-items: center; gap: 10px;
+      background: var(--cream); border: 1.5px solid var(--border);
+      border-radius: 14px; padding: 12px 18px; margin-bottom: 16px; transition: border 0.2s;
+    }
+    .search-global:focus-within { border-color: var(--gold); background: #fff; }
+    .search-global input {
+      border: none; background: transparent; flex: 1;
+      font-size: 14px; color: var(--text); font-family: 'DM Sans', sans-serif;
+    }
+    .search-global input:focus { outline: none; }
+    .search-global span { color: var(--text-soft); font-size: 16px; }
+    .action-icons { display: flex; gap: 6px; }
+    .icon-btn {
+      width: 30px; height: 30px; border: none; border-radius: 8px; cursor: pointer;
+      font-size: 13px; display: flex; align-items: center; justify-content: center; transition: all 0.2s;
+    }
+    .icon-btn--edit   { background: rgba(201,168,76,0.15); color: #7a5c00; }
+    .icon-btn--cancel { background: rgba(200,50,50,0.1);   color: #c03030; }
+    .icon-btn--edit:hover   { background: var(--gold); color: var(--deep); }
+    .icon-btn--cancel:hover { background: #c03030; color: #fff; }
+
+    /* Sala de espera */
+    .espera-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; }
+    .espera-col { background: var(--cream); border-radius: 16px; padding: 18px; min-height: 200px; border: 1px solid var(--border); }
+    .espera-col-title {
+      font-size: 11px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.1em; margin-bottom: 14px;
+      display: flex; align-items: center; gap: 8px; color: var(--text-soft);
+    }
+    .dot { width: 10px; height: 10px; border-radius: 50%; }
+    .dot--llego    { background: var(--gold); }
+    .dot--consulta { background: var(--teal); }
+    .dot--fin      { background: #22c55e; }
+    .pac-card {
+      background: #fff; border-radius: 12px; padding: 13px 14px;
+      margin-bottom: 10px; border: 1px solid var(--border);
+      box-shadow: 0 2px 8px rgba(26,46,42,0.06);
+    }
+    .pac-card strong { display: block; font-size: 13.5px; color: var(--deep); font-weight: 600; }
+    .pac-card span   { font-size: 11.5px; color: var(--text-soft); }
+    .pac-card-actions { margin-top: 10px; display: flex; gap: 6px; }
+    .btn-mover {
+      padding: 5px 12px; border: none; border-radius: 8px; cursor: pointer;
+      font-size: 11.5px; font-weight: 600; font-family: 'DM Sans', sans-serif; transition: all 0.2s;
+    }
+    .btn-mover--consulta { background: rgba(42,107,94,0.12); color: var(--teal); }
+    .btn-mover--consulta:hover { background: var(--teal); color: #fff; }
+    .btn-mover--fin { background: rgba(34,197,94,0.12); color: #16a34a; }
+    .btn-mover--fin:hover { background: #22c55e; color: #fff; }
+    .badge-fin { display: inline-block; padding: 3px 10px; border-radius: 100px; font-size: 11px; font-weight: 600; background: rgba(34,197,94,0.12); color: #16a34a; }
+
+    /* Buscador resultado */
+    .resultado-item {
+      display: flex; align-items: center; gap: 14px;
+      padding: 12px; border-radius: 12px; transition: background 0.15s; cursor: pointer;
+      border-bottom: 1px solid rgba(42,107,94,0.06);
+    }
+    .resultado-item:last-child { border-bottom: none; }
+    .resultado-item:hover { background: var(--cream); }
+    .resultado-avatar {
+      width: 40px; height: 40px; border-radius: 12px;
+      background: linear-gradient(135deg, var(--teal), var(--teal-light));
+      color: #fff; font-weight: 700; display: flex;
+      align-items: center; justify-content: center; font-size: 1.1rem; flex-shrink: 0;
+    }
+    .resultado-info strong { display: block; font-size: 13.5px; color: var(--deep); font-weight: 600; }
+    .resultado-info span   { font-size: 11.5px; color: var(--text-soft); }
+
+    /* Form paciente */
+    .pac-form-wrap { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
+    .pac-form-wrap h3 { font-size: 14px; font-weight: 700; color: var(--deep); margin-bottom: 16px; }
+    .btn-full {
+      width: 100%; padding: 12px; border: none; border-radius: 12px;
+      background: linear-gradient(135deg, var(--gold), var(--gold-light));
+      color: var(--deep); font-weight: 700; font-size: 13.5px;
+      font-family: 'DM Sans', sans-serif; cursor: pointer; transition: opacity 0.2s;
+    }
+    .btn-full:hover { opacity: 0.88; }
+
+    @media (max-width: 900px) {
+      .espera-grid    { grid-template-columns: 1fr; }
+      .pac-form-wrap  { grid-template-columns: 1fr; }
+    }
+  </style>
 </head>
 <body>
-
 <div class="layout rol-recep">
 
-  <!-- SIDEBAR -->
   <aside class="sidebar">
     <div class="sidebar__brand">
       <span class="brand-icon">✦</span>
       <span class="brand-name">Medisync</span>
     </div>
     <div class="sidebar__rol sidebar__rol--recep">Recepcionista</div>
-
     <nav class="sidebar__nav">
-      <a href="#" class="nav-item active">
-        <span class="nav-icon">⊞</span> Panel Principal
-      </a>
-      <a href="#" class="nav-item">
-        <span class="nav-icon">📅</span> Agendar Cita
-      </a>
-      <a href="#" class="nav-item">
-        <span class="nav-icon">📋</span> Gestión Pacientes
-      </a>
-      <a href="#" class="nav-item">
-        <span class="nav-icon">🗓️</span> Agenda del Día
-      </a>
-      <a href="#" class="nav-item">
-        <span class="nav-icon">💰</span> Facturación
-      </a>
-      <a href="#" class="nav-item">
-        <span class="nav-icon">✅</span> Confirmar Citas
-      </a>
+      <a href="#" class="nav-item active" onclick="nav('inicio',this);return false;"><span class="nav-icon">⊞</span> Mi Panel</a>
+      <a href="#" class="nav-item" onclick="nav('citas',this);return false;"><span class="nav-icon">📅</span> Gestión de Citas</a>
+      <a href="#" class="nav-item" onclick="nav('pacientes',this);return false;"><span class="nav-icon">👤</span> Registro de Pacientes</a>
+      <a href="#" class="nav-item" onclick="nav('espera',this);return false;"><span class="nav-icon">🏥</span> Sala de Espera</a>
+      <a href="#" class="nav-item" onclick="nav('buscar',this);return false;"><span class="nav-icon">🔍</span> Buscar Expediente</a>
     </nav>
-
-    <button class="sidebar__logout" onclick="cerrarSesion()">
-      <span>⏻</span> Cerrar sesión
-    </button>
+    <button class="sidebar__logout" onclick="cerrarSesion()"><span>⏻</span> Cerrar sesión</button>
   </aside>
 
-  <!-- CONTENIDO -->
   <main class="main">
 
     <header class="topbar">
       <div class="topbar__title">
-        <h1>Recepción <span>Medisync</span></h1>
+        <h1>Hola, <span id="nombre-recep">Recepcionista</span></h1>
         <p id="fecha-actual"></p>
       </div>
       <div class="topbar__usuario">
         <div class="avatar avatar--recep" id="avatar-inicial">R</div>
         <div>
           <div class="usuario-nombre" id="usuario-nombre">Recepcionista</div>
-          <div class="usuario-rol">Personal Administrativo</div>
+          <div class="usuario-rol">Atención al Paciente</div>
         </div>
       </div>
     </header>
 
-    <!-- STATS -->
-    <section class="stats-grid">
-      <div class="stat-card stat-card--teal">
-        <div class="stat-icon">📅</div>
-        <div class="stat-info">
-          <div class="stat-num">12</div>
-          <div class="stat-label">Citas Pendientes Hoy</div>
+    <!-- INICIO -->
+    <div id="sec-inicio">
+      <section class="stats-grid">
+        <div class="stat-card stat-card--teal">
+          <div class="stat-icon">📅</div>
+          <div class="stat-info"><div class="stat-num" id="s-citas-hoy">—</div><div class="stat-label">Citas de Hoy</div></div>
+        </div>
+        <div class="stat-card stat-card--gold">
+          <div class="stat-icon">⏳</div>
+          <div class="stat-info"><div class="stat-num" id="s-espera">0</div><div class="stat-label">En Sala de Espera</div></div>
+        </div>
+        <div class="stat-card stat-card--soft">
+          <div class="stat-icon">✅</div>
+          <div class="stat-info"><div class="stat-num" id="s-atendidos">0</div><div class="stat-label">Atendidos Hoy</div></div>
+        </div>
+        <div class="stat-card stat-card--dark">
+          <div class="stat-icon">👤</div>
+          <div class="stat-info"><div class="stat-num" id="s-pacientes">—</div><div class="stat-label">Pacientes Registrados</div></div>
+        </div>
+      </section>
+      <div class="panels-row">
+        <div class="panel">
+          <div class="panel__header">
+            <h2>Citas de Hoy</h2>
+            <a href="#" class="panel__link" onclick="nav('citas',null);return false;">Ver todas →</a>
+          </div>
+          <table class="tabla">
+            <thead><tr><th>Hora</th><th>Paciente</th><th>Doctor</th><th>Estado</th></tr></thead>
+            <tbody id="citas-preview"><tr><td colspan="4" style="text-align:center;color:var(--text-soft);padding:16px;">Cargando...</td></tr></tbody>
+          </table>
+        </div>
+        <div class="panel">
+          <div class="panel__header"><h2>Acciones Rápidas</h2></div>
+          <div class="acciones-grid">
+            <button class="accion-btn" onclick="abrirModalCita()"><span>📅</span><span>Nueva Cita</span></button>
+            <button class="accion-btn" onclick="nav('pacientes',null)"><span>👤</span><span>Nuevo Paciente</span></button>
+            <button class="accion-btn" onclick="nav('espera',null)"><span>🏥</span><span>Sala de Espera</span></button>
+            <button class="accion-btn" onclick="nav('buscar',null)"><span>🔍</span><span>Buscar Paciente</span></button>
+          </div>
         </div>
       </div>
-      <div class="stat-card stat-card--gold">
-        <div class="stat-icon">✅</div>
-        <div class="stat-info">
-          <div class="stat-num">7</div>
-          <div class="stat-label">Citas Confirmadas</div>
-        </div>
-      </div>
-      <div class="stat-card stat-card--soft">
-        <div class="stat-icon">👤</div>
-        <div class="stat-info">
-          <div class="stat-num">3</div>
-          <div class="stat-label">Nuevos Pacientes</div>
-        </div>
-      </div>
-      <div class="stat-card stat-card--dark">
-        <div class="stat-icon">💰</div>
-        <div class="stat-info">
-          <div class="stat-num">5</div>
-          <div class="stat-label">Facturas Emitidas</div>
-        </div>
-      </div>
-    </section>
-
-    <div class="panels-row">
-
-      <!-- Citas del día -->
-      <div class="panel">
-        <div class="panel__header">
-          <h2>Agenda del Día</h2>
-          <a href="#" class="panel__link">Ver completa →</a>
-        </div>
-        <table class="tabla">
-          <thead>
-            <tr><th>Hora</th><th>Paciente</th><th>Doctor</th><th>Estado</th><th></th></tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>08:00</td><td>María García</td><td>Dr. Hernández</td>
-              <td><span class="badge badge--activo">Confirmada</span></td>
-              <td><button class="btn-tabla">Atender</button></td>
-            </tr>
-            <tr>
-              <td>09:00</td><td>José Pérez</td><td>Dra. Martínez</td>
-              <td><span class="badge badge--pendiente">Pendiente</span></td>
-              <td><button class="btn-tabla">Confirmar</button></td>
-            </tr>
-            <tr>
-              <td>10:30</td><td>Laura Sánchez</td><td>Dr. Flores</td>
-              <td><span class="badge badge--pendiente">Pendiente</span></td>
-              <td><button class="btn-tabla">Confirmar</button></td>
-            </tr>
-            <tr>
-              <td>11:00</td><td>Carlos Torres</td><td>Dr. Hernández</td>
-              <td><span class="badge badge--activo">Confirmada</span></td>
-              <td><button class="btn-tabla">Atender</button></td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <!-- Acciones rápidas -->
-      <div class="panel">
-        <div class="panel__header">
-          <h2>Acciones Rápidas</h2>
-        </div>
-        <div class="acciones-grid">
-          <button class="accion-btn">
-            <span>➕</span>
-            <span>Nueva Cita</span>
-          </button>
-          <button class="accion-btn">
-            <span>👤</span>
-            <span>Nuevo Paciente</span>
-          </button>
-          <button class="accion-btn">
-            <span>💰</span>
-            <span>Emitir Factura</span>
-          </button>
-          <button class="accion-btn">
-            <span>🔍</span>
-            <span>Buscar Paciente</span>
-          </button>
-          <button class="accion-btn">
-            <span>✅</span>
-            <span>Confirmar Cita</span>
-          </button>
-          <button class="accion-btn">
-            <span>❌</span>
-            <span>Cancelar Cita</span>
-          </button>
-        </div>
-      </div>
-
     </div>
 
-    <!-- Pacientes registrados hoy -->
-    <div class="panel">
-      <div class="panel__header">
-        <h2>Pacientes Registrados Recientemente</h2>
-        <a href="#" class="panel__link">Ver todos →</a>
+    <!-- CITAS -->
+    <div id="sec-citas" style="display:none;">
+      <div class="panel">
+        <div class="panel__header">
+          <h2>Gestión de Citas</h2>
+          <button class="header-btn" onclick="abrirModalCita()">+ Nueva Cita</button>
+        </div>
+        <div class="tabs">
+          <button class="tab-btn active" onclick="setTabCitas('todas',this)">Todas</button>
+          <button class="tab-btn" onclick="setTabCitas('PENDIENTE',this)">Pendientes</button>
+          <button class="tab-btn" onclick="setTabCitas('CONFIRMADA',this)">Confirmadas</button>
+          <button class="tab-btn" onclick="setTabCitas('CANCELADA',this)">Canceladas</button>
+          <button class="tab-btn" onclick="setTabCitas('FINALIZADA',this)">Finalizadas</button>
+        </div>
+        <table class="tabla">
+          <thead><tr><th>ID</th><th>Fecha</th><th>Hora</th><th>Paciente</th><th>Doctor</th><th>Estado</th><th>Acciones</th></tr></thead>
+          <tbody id="tbody-citas"><tr><td colspan="7" style="text-align:center;color:var(--text-soft);padding:24px;">Cargando...</td></tr></tbody>
+        </table>
       </div>
-      <table class="tabla">
-        <thead>
-          <tr><th>Nombre</th><th>Expediente</th><th>Fecha Registro</th><th>Acción</th></tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>Sofía Ramírez</td><td>#EXP-2024-001</td><td>06/03/2026</td>
-            <td><button class="btn-tabla">Ver expediente</button></td>
-          </tr>
-          <tr>
-            <td>Antonio Cruz</td><td>#EXP-2024-002</td><td>05/03/2026</td>
-            <td><button class="btn-tabla">Ver expediente</button></td>
-          </tr>
-          <tr>
-            <td>Elena Morales</td><td>#EXP-2024-003</td><td>05/03/2026</td>
-            <td><button class="btn-tabla">Ver expediente</button></td>
-          </tr>
-        </tbody>
-      </table>
+    </div>
+
+    <!-- PACIENTES -->
+    <div id="sec-pacientes" style="display:none;">
+      <div class="panel">
+        <div class="panel__header"><h2>Registro de Pacientes</h2></div>
+        <div class="pac-form-wrap">
+          <div>
+            <h3>Nuevo Paciente</h3>
+            <div class="form-group"><label>Número de Expediente</label><input type="text" id="pac-exp" placeholder="EXP-001"/></div>
+            <div class="form-row">
+              <div class="form-group"><label>Fecha de Registro</label><input type="date" id="pac-fecha"/></div>
+              <div class="form-group">
+                <label>Tipo de Sangre</label>
+                <select id="pac-sangre">
+                  <option value="">Seleccione</option>
+                  <option>A+</option><option>A-</option><option>B+</option><option>B-</option>
+                  <option>AB+</option><option>AB-</option><option>O+</option><option>O-</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-group"><label>Contacto de Emergencia</label><input type="text" id="pac-contacto" placeholder="Nombre completo"/></div>
+            <div class="form-row">
+              <div class="form-group"><label>Parentesco</label><input type="text" id="pac-parentesco" placeholder="Madre, Padre..."/></div>
+              <div class="form-group"><label>Teléfono Emergencia</label><input type="tel" id="pac-tel" placeholder="7000-0000"/></div>
+            </div>
+            <div class="form-group"><label>ID de Usuario vinculado</label><input type="number" id="pac-usuario" placeholder="ID del usuario"/></div>
+            <div class="form-group">
+              <label>Observaciones</label>
+              <textarea id="pac-obs" rows="3" placeholder="Notas adicionales..."></textarea>
+            </div>
+            <div class="form-group">
+              <label>Estado</label>
+              <select id="pac-estado"><option value="ACTIVO">Activo</option><option value="INACTIVO">Inactivo</option></select>
+            </div>
+            <button class="btn-full" onclick="registrarPaciente()">Registrar Paciente</button>
+          </div>
+          <div>
+            <h3>Pacientes Recientes</h3>
+            <div id="lista-recientes"><p style="color:var(--text-soft);font-size:13px;">Cargando...</p></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SALA DE ESPERA -->
+    <div id="sec-espera" style="display:none;">
+      <div class="panel">
+        <div class="panel__header">
+          <h2>Sala de Espera</h2>
+          <span style="font-size:11.5px;color:var(--text-soft);">Actualiza el estado de cada paciente</span>
+        </div>
+        <div class="espera-grid">
+          <div class="espera-col">
+            <div class="espera-col-title"><span class="dot dot--llego"></span> Llegó</div>
+            <div id="col-llego">
+              <div class="pac-card">
+                <strong>María García</strong>
+                <span>08:00 · Dr. Hernández</span>
+                <div class="pac-card-actions">
+                  <button class="btn-mover btn-mover--consulta" onclick="mover(this,'col-consulta')">→ En Consulta</button>
+                </div>
+              </div>
+              <div class="pac-card">
+                <strong>José Ramos</strong>
+                <span>08:30 · Dr. Flores</span>
+                <div class="pac-card-actions">
+                  <button class="btn-mover btn-mover--consulta" onclick="mover(this,'col-consulta')">→ En Consulta</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="espera-col">
+            <div class="espera-col-title"><span class="dot dot--consulta"></span> En Consulta</div>
+            <div id="col-consulta">
+              <div class="pac-card">
+                <strong>Ana López</strong>
+                <span>07:30 · Dra. Martínez</span>
+                <div class="pac-card-actions">
+                  <button class="btn-mover btn-mover--fin" onclick="mover(this,'col-fin')">✓ Finalizar</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="espera-col">
+            <div class="espera-col-title"><span class="dot dot--fin"></span> Finalizado</div>
+            <div id="col-fin">
+              <div class="pac-card" style="opacity:0.65;">
+                <strong>Carlos Pérez</strong>
+                <span>07:00 · Dr. Hernández</span>
+                <span class="badge-fin">✓ Completado</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- BUSCAR -->
+    <div id="sec-buscar" style="display:none;">
+      <div class="panel">
+        <div class="panel__header"><h2>Buscar Expediente de Paciente</h2></div>
+        <div class="search-global">
+          <span>🔍</span>
+          <input type="text" id="q-global" placeholder="Buscar por nombre, expediente o ID..." oninput="buscarPaciente()"/>
+        </div>
+        <div id="resultados-busqueda">
+          <p style="text-align:center;color:var(--text-soft);padding:24px;font-size:13px;">Escribe para buscar un paciente...</p>
+        </div>
+      </div>
     </div>
 
   </main>
 </div>
 
+<!-- MODAL CITA -->
+<div class="modal-overlay" id="modal-cita">
+  <div class="modal">
+    <h3 id="modal-cita-titulo">Nueva Cita</h3>
+    <input type="hidden" id="cita-id"/>
+    <div class="form-row">
+      <div class="form-group"><label>Fecha</label><input type="date" id="cita-fecha"/></div>
+      <div class="form-group"><label>Hora</label><input type="time" id="cita-hora"/></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>ID Paciente</label><input type="number" id="cita-paciente" placeholder="ID del paciente"/></div>
+      <div class="form-group"><label>ID Doctor</label><input type="number" id="cita-doctor" placeholder="ID del doctor"/></div>
+    </div>
+    <div class="form-group">
+      <label>Estado</label>
+      <select id="cita-estado">
+        <option value="PENDIENTE">Pendiente</option>
+        <option value="CONFIRMADA">Confirmada</option>
+        <option value="CANCELADA">Cancelada</option>
+        <option value="FINALIZADA">Finalizada</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Motivo</label>
+      <textarea id="cita-motivo" rows="3" placeholder="Motivo de la cita..."></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancelar" onclick="cerrarModalCita()">Cancelar</button>
+      <button class="btn-primary" onclick="guardarCita()">Guardar</button>
+    </div>
+  </div>
+</div>
 
-<script>
-  const usuario = JSON.parse(localStorage.getItem('usuario') || 'null');
-  if (!usuario || usuario.idRol !== 3) {
-    alert('Acceso denegado.');
-    window.location.href = 'index.html';
-  }
-
-  if (usuario) {
-    const nombre = usuario.Nombres || 'Recepcionista';
-    document.getElementById('usuario-nombre').textContent = nombre;
-    document.getElementById('avatar-inicial').textContent = nombre[0].toUpperCase();
-  }
-
-  document.getElementById('fecha-actual').textContent =
-    new Date().toLocaleDateString('es-SV', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
-
-  function cerrarSesion() {
-    localStorage.removeItem('token');
-    localStorage.removeItem('usuario');
-    window.location.href = 'index.html';
-  }
-</script>
+<script src="/js/dashboard-recepcionista.js"></script>
 </body>
 </html>
