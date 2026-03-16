@@ -5,225 +5,297 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Medisync – Administrador</title>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
-  <link rel="stylesheet" href="/frontend/templates/css/dashboard.css"/>
+  <link rel="stylesheet" href="/css/dashboard.css"/>
+  <style>
+    .modal-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(26,46,42,0.55); z-index: 1000;
+      align-items: center; justify-content: center;
+    }
+    .modal-overlay.active { display: flex; }
+    .modal {
+      background: #fff; border-radius: 20px; padding: 32px;
+      width: min(520px, 92vw); max-height: 90vh; overflow-y: auto;
+      box-shadow: 0 24px 64px rgba(26,46,42,0.22);
+      animation: fadeDown 0.25s ease;
+    }
+    .modal h3 {
+      font-family: 'Playfair Display', serif; font-size: 1.25rem;
+      color: var(--deep); margin-bottom: 22px;
+    }
+    .form-group { margin-bottom: 14px; }
+    .form-group label {
+      display: block; font-size: 11.5px; font-weight: 600;
+      color: var(--text-soft); margin-bottom: 5px; letter-spacing: 0.04em;
+    }
+    .form-group input, .form-group select {
+      width: 100%; padding: 10px 14px; border: 1.5px solid var(--border);
+      border-radius: 11px; font-size: 13.5px; color: var(--text);
+      background: var(--cream); font-family: 'DM Sans', sans-serif;
+      box-sizing: border-box; transition: border 0.2s, background 0.2s;
+    }
+    .form-group input:focus, .form-group select:focus {
+      outline: none; border-color: var(--teal); background: #fff;
+    }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 22px; }
+    .btn-cancelar {
+      padding: 10px 20px; border: 1.5px solid var(--border); border-radius: 11px;
+      background: #fff; cursor: pointer; font-weight: 600; font-size: 13px;
+      color: var(--text-soft); font-family: 'DM Sans', sans-serif; transition: background 0.2s;
+    }
+    .btn-cancelar:hover { background: var(--cream); }
+    .btn-primary {
+      padding: 10px 22px; border: none; border-radius: 11px;
+      background: linear-gradient(135deg, var(--teal), var(--teal-light));
+      color: #fff; cursor: pointer; font-weight: 600; font-size: 13px;
+      font-family: 'DM Sans', sans-serif; transition: opacity 0.2s, transform 0.15s;
+    }
+    .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
+    .header-btn {
+      padding: 8px 18px; border: none; border-radius: 10px;
+      background: linear-gradient(135deg, var(--teal), var(--teal-light));
+      color: #fff; cursor: pointer; font-weight: 600; font-size: 12.5px;
+      font-family: 'DM Sans', sans-serif; transition: opacity 0.2s;
+    }
+    .header-btn:hover { opacity: 0.88; }
+    .toggle { position: relative; width: 40px; height: 22px; display: inline-block; }
+    .toggle input { display: none; }
+    .toggle-slider {
+      position: absolute; inset: 0; background: #cbd5e1;
+      border-radius: 22px; cursor: pointer; transition: background 0.3s;
+    }
+    .toggle-slider::before {
+      content: ''; position: absolute; width: 16px; height: 16px;
+      background: #fff; border-radius: 50%; top: 3px; left: 3px;
+      transition: transform 0.3s; box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+    }
+    .toggle input:checked + .toggle-slider { background: var(--teal); }
+    .toggle input:checked + .toggle-slider::before { transform: translateX(18px); }
+    .tabs {
+      display: flex; gap: 4px; background: var(--cream);
+      border-radius: 12px; padding: 4px; margin-bottom: 18px;
+      border: 1px solid var(--border);
+    }
+    .tab-btn {
+      flex: 1; padding: 8px 10px; border: none; background: transparent;
+      border-radius: 10px; cursor: pointer; font-weight: 600; font-size: 12px;
+      color: var(--text-soft); font-family: 'DM Sans', sans-serif; transition: all 0.2s;
+    }
+    .tab-btn.active { background: #fff; color: var(--deep); box-shadow: 0 1px 6px rgba(26,46,42,0.1); }
+    .search-wrap {
+      display: flex; align-items: center; gap: 10px;
+      background: var(--cream); border: 1.5px solid var(--border);
+      border-radius: 12px; padding: 10px 16px; margin-bottom: 16px; transition: border 0.2s;
+    }
+    .search-wrap:focus-within { border-color: var(--teal); background: #fff; }
+    .search-wrap input {
+      border: none; background: transparent; flex: 1;
+      font-size: 13.5px; color: var(--text); font-family: 'DM Sans', sans-serif;
+    }
+    .search-wrap input:focus { outline: none; }
+    .search-wrap span { color: var(--text-soft); }
+    .action-icons { display: flex; gap: 6px; }
+    .icon-btn {
+      width: 30px; height: 30px; border: none; border-radius: 8px; cursor: pointer;
+      font-size: 13px; display: flex; align-items: center; justify-content: center; transition: all 0.2s;
+    }
+    .icon-btn--edit { background: rgba(42,107,94,0.1); color: var(--teal); }
+    .icon-btn--del  { background: rgba(200,50,50,0.1); color: #c03030; }
+    .icon-btn--edit:hover { background: var(--teal); color: #fff; }
+    .icon-btn--del:hover  { background: #c03030; color: #fff; }
+    .badge-rol { display: inline-block; padding: 3px 10px; border-radius: 100px; font-size: 11px; font-weight: 600; }
+    .badge-rol--admin  { background: rgba(26,46,42,0.1);   color: var(--deep); }
+    .badge-rol--medico { background: rgba(42,107,94,0.12); color: var(--teal); }
+    .badge-rol--recep  { background: rgba(201,168,76,0.15);color: #7a5c00; }
+    .badge-rol--pac    { background: rgba(61,140,124,0.13);color: var(--teal-light); }
+    .log-item {
+      display: flex; align-items: flex-start; gap: 12px;
+      padding: 12px 0; border-bottom: 1px solid rgba(42,107,94,0.06);
+    }
+    .log-item:last-child { border-bottom: none; }
+    .log-icon {
+      width: 34px; height: 34px; border-radius: 10px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center; font-size: 15px;
+    }
+    .log-icon--crear    { background: rgba(42,107,94,0.1); }
+    .log-icon--editar   { background: rgba(61,140,124,0.12); }
+    .log-icon--eliminar { background: rgba(200,50,50,0.1); }
+    .log-icon--acceso   { background: rgba(201,168,76,0.13); }
+    .log-body { flex: 1; }
+    .log-body strong { display: block; font-size: 13px; color: var(--deep); font-weight: 600; }
+    .log-body span   { font-size: 11.5px; color: var(--text-soft); }
+    .log-time { font-size: 11px; color: var(--text-soft); white-space: nowrap; }
+    select.rol-select {
+      padding: 5px 10px; border: 1.5px solid var(--border); border-radius: 8px;
+      font-size: 12px; background: var(--cream); color: var(--text);
+      font-family: 'DM Sans', sans-serif; cursor: pointer;
+    }
+  </style>
 </head>
 <body>
-
 <div class="layout rol-admin">
 
-  <!-- SIDEBAR -->
   <aside class="sidebar">
     <div class="sidebar__brand">
       <span class="brand-icon">✦</span>
       <span class="brand-name">Medisync</span>
     </div>
     <div class="sidebar__rol sidebar__rol--admin">Administrador</div>
-
     <nav class="sidebar__nav">
-      <a href="#" class="nav-item active">
-        <span class="nav-icon">⊞</span> Panel General
-      </a>
-      <a href="#" class="nav-item">
-        <span class="nav-icon">👥</span> Usuarios
-      </a>
-      <a href="#" class="nav-item">
-        <span class="nav-icon">🔑</span> Roles y Accesos
-      </a>
-      <a href="#" class="nav-item">
-        <span class="nav-icon">🩺</span> Médicos
-      </a>
-      <a href="#" class="nav-item">
-        <span class="nav-icon">📋</span> Pacientes
-      </a>
-      <a href="#" class="nav-item">
-        <span class="nav-icon">📅</span> Citas
-      </a>
-      <a href="#" class="nav-item">
-        <span class="nav-icon">💰</span> Facturación
-      </a>
-      <a href="#" class="nav-item">
-        <span class="nav-icon">📊</span> Reportes
-      </a>
+      <a href="#" class="nav-item active" onclick="nav('inicio',this);return false;"><span class="nav-icon">⊞</span> Panel Principal</a>
+      <a href="#" class="nav-item" onclick="nav('usuarios',this);return false;"><span class="nav-icon">👥</span> Gestión de Usuarios</a>
+      <a href="#" class="nav-item" onclick="nav('roles',this);return false;"><span class="nav-icon">🔑</span> Roles y Accesos</a>
+      <a href="#" class="nav-item" onclick="nav('logs',this);return false;"><span class="nav-icon">📋</span> Logs del Sistema</a>
     </nav>
-
-    <button class="sidebar__logout" onclick="cerrarSesion()">
-      <span>⏻</span> Cerrar sesión
-    </button>
+    <button class="sidebar__logout" onclick="cerrarSesion()"><span>⏻</span> Cerrar sesión</button>
   </aside>
 
-  <!-- CONTENIDO PRINCIPAL -->
   <main class="main">
 
-    <!-- TOPBAR -->
     <header class="topbar">
       <div class="topbar__title">
-        <h1>Panel <span>General</span></h1>
+        <h1>Bienvenido, <span id="nombre-admin">Admin</span></h1>
         <p id="fecha-actual"></p>
       </div>
       <div class="topbar__usuario">
-        <div class="avatar" id="avatar-inicial">A</div>
+        <div class="avatar avatar--admin" id="avatar-inicial">A</div>
         <div>
           <div class="usuario-nombre" id="usuario-nombre">Administrador</div>
-          <div class="usuario-rol">Sistema Medisync</div>
+          <div class="usuario-rol">Control Total</div>
         </div>
       </div>
     </header>
 
-    <!-- TARJETAS DE ESTADÍSTICAS -->
-    <section class="stats-grid">
-      <div class="stat-card stat-card--teal">
-        <div class="stat-icon">👥</div>
-        <div class="stat-info">
-          <div class="stat-num">124</div>
-          <div class="stat-label">Usuarios Activos</div>
+    <!-- INICIO -->
+    <div id="sec-inicio">
+      <section class="stats-grid">
+        <div class="stat-card stat-card--teal">
+          <div class="stat-icon">👤</div>
+          <div class="stat-info"><div class="stat-num" id="s-pacientes">—</div><div class="stat-label">Pacientes Registrados</div></div>
+        </div>
+        <div class="stat-card stat-card--gold">
+          <div class="stat-icon">📅</div>
+          <div class="stat-info"><div class="stat-num" id="s-citas">—</div><div class="stat-label">Citas del Mes</div></div>
+        </div>
+        <div class="stat-card stat-card--soft">
+          <div class="stat-icon">🩺</div>
+          <div class="stat-info"><div class="stat-num" id="s-doctores">—</div><div class="stat-label">Doctores Activos</div></div>
+        </div>
+        <div class="stat-card stat-card--dark">
+          <div class="stat-icon">👥</div>
+          <div class="stat-info"><div class="stat-num" id="s-usuarios">—</div><div class="stat-label">Usuarios Totales</div></div>
+        </div>
+      </section>
+      <div class="panels-row">
+        <div class="panel">
+          <div class="panel__header"><h2>Acciones Rápidas</h2></div>
+          <div class="acciones-grid">
+            <button class="accion-btn" onclick="nav('usuarios',null)"><span>👥</span><span>Gestionar Usuarios</span></button>
+            <button class="accion-btn" onclick="nav('roles',null)"><span>🔑</span><span>Asignar Roles</span></button>
+            <button class="accion-btn" onclick="abrirModal()"><span>➕</span><span>Nuevo Usuario</span></button>
+            <button class="accion-btn" onclick="nav('logs',null)"><span>📋</span><span>Ver Logs</span></button>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel__header">
+            <h2>Últimas Acciones</h2>
+            <a href="#" class="panel__link" onclick="nav('logs',null);return false;">Ver todas →</a>
+          </div>
+          <div id="logs-preview"></div>
         </div>
       </div>
-      <div class="stat-card stat-card--gold">
-        <div class="stat-icon">🩺</div>
-        <div class="stat-info">
-          <div class="stat-num">18</div>
-          <div class="stat-label">Médicos Registrados</div>
-        </div>
-      </div>
-      <div class="stat-card stat-card--soft">
-        <div class="stat-icon">📅</div>
-        <div class="stat-info">
-          <div class="stat-num">47</div>
-          <div class="stat-label">Citas Hoy</div>
-        </div>
-      </div>
-      <div class="stat-card stat-card--dark">
-        <div class="stat-icon">💰</div>
-        <div class="stat-info">
-          <div class="stat-num">$3,840</div>
-          <div class="stat-label">Ingresos del Mes</div>
-        </div>
-      </div>
-    </section>
-
-    <!-- FILA DE PANELES -->
-    <div class="panels-row">
-
-      <!-- Usuarios recientes -->
-      <div class="panel">
-        <div class="panel__header">
-          <h2>Usuarios Recientes</h2>
-          <a href="#" class="panel__link">Ver todos →</a>
-        </div>
-        <table class="tabla">
-          <thead>
-            <tr><th>Nombre</th><th>Rol</th><th>Estado</th></tr>
-          </thead>
-          <tbody>
-            <tr><td>Ana Martínez</td><td><span class="badge badge--medico">Médico</span></td><td><span class="badge badge--activo">Activo</span></td></tr>
-            <tr><td>Carlos Pérez</td><td><span class="badge badge--recep">Recepcionista</span></td><td><span class="badge badge--activo">Activo</span></td></tr>
-            <tr><td>María López</td><td><span class="badge badge--paciente">Paciente</span></td><td><span class="badge badge--activo">Activo</span></td></tr>
-            <tr><td>Roberto Díaz</td><td><span class="badge badge--medico">Médico</span></td><td><span class="badge badge--inactivo">Inactivo</span></td></tr>
-          </tbody>
-        </table>
-      </div>
-
-      <!-- Acciones rápidas -->
-      <div class="panel">
-        <div class="panel__header">
-          <h2>Acciones Rápidas</h2>
-        </div>
-        <div class="acciones-grid">
-          <button class="accion-btn">
-            <span>➕</span>
-            <span>Nuevo Usuario</span>
-          </button>
-          <button class="accion-btn">
-            <span>🔑</span>
-            <span>Asignar Rol</span>
-          </button>
-          <button class="accion-btn">
-            <span>🩺</span>
-            <span>Agregar Médico</span>
-          </button>
-          <button class="accion-btn">
-            <span>📊</span>
-            <span>Ver Reportes</span>
-          </button>
-          <button class="accion-btn">
-            <span>🔒</span>
-            <span>Bloquear Usuario</span>
-          </button>
-          <button class="accion-btn">
-            <span>💾</span>
-            <span>Respaldo BD</span>
-          </button>
-        </div>
-      </div>
-
     </div>
 
-    <!-- TABLA ROLES -->
-    <div class="panel">
-      <div class="panel__header">
-        <h2>Gestión de Roles</h2>
-        <a href="#" class="panel__link">Administrar →</a>
+    <!-- USUARIOS -->
+    <div id="sec-usuarios" style="display:none;">
+      <div class="panel">
+        <div class="panel__header">
+          <h2>Gestión de Usuarios</h2>
+          <button class="header-btn" onclick="abrirModal()">+ Nuevo Usuario</button>
+        </div>
+        <div class="search-wrap">
+          <span>🔍</span>
+          <input type="text" id="q-usuarios" placeholder="Buscar por nombre, email o rol..." oninput="filtrarUsuarios()"/>
+        </div>
+        <div class="tabs">
+          <button class="tab-btn active" onclick="setTab('todos',this)">Todos</button>
+          <button class="tab-btn" onclick="setTab('Admin',this)">Admins</button>
+          <button class="tab-btn" onclick="setTab('Doctor',this)">Doctores</button>
+          <button class="tab-btn" onclick="setTab('Recepcionista',this)">Recepcionistas</button>
+          <button class="tab-btn" onclick="setTab('Paciente',this)">Pacientes</button>
+        </div>
+        <table class="tabla">
+          <thead><tr><th>ID</th><th>Nombre</th><th>Email</th><th>Rol</th><th>Estado</th><th>Acciones</th></tr></thead>
+          <tbody id="tbody-usuarios"><tr><td colspan="6" style="text-align:center;color:var(--text-soft);padding:24px;">Cargando...</td></tr></tbody>
+        </table>
       </div>
-      <table class="tabla">
-        <thead>
-          <tr><th>ID Rol</th><th>Nombre</th><th>Usuarios asignados</th><th>Acciones</th></tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>#1</td>
-            <td><span class="badge badge--admin">Administrador</span></td>
-            <td>3</td>
-            <td><button class="btn-tabla">Editar</button></td>
-          </tr>
-          <tr>
-            <td>#2</td>
-            <td><span class="badge badge--medico">Médico</span></td>
-            <td>18</td>
-            <td><button class="btn-tabla">Editar</button></td>
-          </tr>
-          <tr>
-            <td>#3</td>
-            <td><span class="badge badge--recep">Recepcionista</span></td>
-            <td>5</td>
-            <td><button class="btn-tabla">Editar</button></td>
-          </tr>
-          <tr>
-            <td>#4</td>
-            <td><span class="badge badge--paciente">Paciente</span></td>
-            <td>98</td>
-            <td><button class="btn-tabla">Editar</button></td>
-          </tr>
-        </tbody>
-      </table>
+    </div>
+
+    <!-- ROLES -->
+    <div id="sec-roles" style="display:none;">
+      <div class="panel">
+        <div class="panel__header"><h2>Asignación de Roles y Accesos</h2></div>
+        <p style="font-size:13px;color:var(--text-soft);margin-bottom:18px;">Cambia el rol o activa/desactiva usuarios. Los cambios aplican en el próximo inicio de sesión.</p>
+        <table class="tabla">
+          <thead><tr><th>Usuario</th><th>Email</th><th>Rol Actual</th><th>Cambiar Rol</th><th>Estado</th></tr></thead>
+          <tbody id="tbody-roles"><tr><td colspan="5" style="text-align:center;color:var(--text-soft);padding:24px;">Cargando...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- LOGS -->
+    <div id="sec-logs" style="display:none;">
+      <div class="panel">
+        <div class="panel__header">
+          <h2>Logs del Sistema</h2>
+          <span style="font-size:11.5px;color:var(--text-soft);">Últimas acciones registradas</span>
+        </div>
+        <div id="logs-full"></div>
+      </div>
     </div>
 
   </main>
 </div>
 
-<script>
-  // Verificar sesión
-  const usuario = JSON.parse(localStorage.getItem('usuario') || 'null');
-  if (!usuario || usuario.idRol !== 1) {
-    alert('Acceso denegado.');
-    window.location.href = 'index.html';
-  }
+<!-- MODAL -->
+<div class="modal-overlay" id="modal-usuario">
+  <div class="modal">
+    <h3 id="modal-titulo">Nuevo Usuario</h3>
+    <input type="hidden" id="m-id"/>
+    <div class="form-row">
+      <div class="form-group"><label>Nombres</label><input type="text" id="m-nombres" placeholder="Ana"/></div>
+      <div class="form-group"><label>Apellidos</label><input type="text" id="m-apellidos" placeholder="García"/></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Sexo</label>
+        <select id="m-sexo"><option value="M">Masculino</option><option value="F">Femenino</option><option value="OTRO">Otro</option></select>
+      </div>
+      <div class="form-group"><label>Fecha Nacimiento</label><input type="date" id="m-fecha"/></div>
+    </div>
+    <div class="form-group"><label>Email</label><input type="email" id="m-email" placeholder="correo@ejemplo.com"/></div>
+    <div class="form-row">
+      <div class="form-group"><label>Teléfono</label><input type="tel" id="m-telefono" placeholder="7000-0000"/></div>
+      <div class="form-group">
+        <label>Rol</label>
+        <select id="m-rol">
+          <option value="1">Administrador</option>
+          <option value="30002">Doctor</option>
+          <option value="30003">Recepcionista</option>
+          <option value="30001">Paciente</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group"><label>Dirección</label><input type="text" id="m-direccion" placeholder="Colonia, calle..."/></div>
+    <div class="form-group" id="campo-pass"><label>Contraseña</label><input type="password" id="m-pass" placeholder="Mínimo 6 caracteres"/></div>
+    <div class="modal-actions">
+      <button class="btn-cancelar" onclick="cerrarModal()">Cancelar</button>
+      <button class="btn-primary" onclick="guardarUsuario()">Guardar</button>
+    </div>
+  </div>
+</div>
 
-  // Mostrar nombre
-  if (usuario) {
-    document.getElementById('usuario-nombre').textContent = usuario.Nombres || 'Administrador';
-    document.getElementById('avatar-inicial').textContent = (usuario.Nombres || 'A')[0].toUpperCase();
-  }
-
-  // Fecha actual
-  const ahora = new Date();
-  document.getElementById('fecha-actual').textContent =
-    ahora.toLocaleDateString('es-SV', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
-
-  function cerrarSesion() {
-    localStorage.removeItem('token');
-    localStorage.removeItem('usuario');
-    window.location.href = 'index.html';
-  }
-</script>
+<script src="/js/dashboard-admin.js"></script>
 </body>
 </html>
