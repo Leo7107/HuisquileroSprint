@@ -11,44 +11,24 @@
 
 <div class="layout rol-medico">
 
-  <!-- SIDEBAR -->
   <aside class="sidebar">
     <div class="sidebar__brand">
       <span class="brand-icon">✦</span>
       <span class="brand-name">Medisync</span>
     </div>
     <div class="sidebar__rol sidebar__rol--medico">Médico</div>
-
     <nav class="sidebar__nav">
-      <a href="#" class="nav-item active">
-        <span class="nav-icon">⊞</span> Mi Panel
-      </a>
-      <a href="#" class="nav-item">
-        <span class="nav-icon">📅</span> Mis Citas
-      </a>
-      <a href="#" class="nav-item">
-        <span class="nav-icon">📋</span> Mis Pacientes
-      </a>
-      <a href="#" class="nav-item">
-        <span class="nav-icon">🩺</span> Consultas
-      </a>
-      <a href="#" class="nav-item">
-        <span class="nav-icon">📝</span> Recetas
-      </a>
-      <a href="#" class="nav-item">
-        <span class="nav-icon">🔬</span> Diagnósticos
-      </a>
-      <a href="#" class="nav-item">
-        <span class="nav-icon">🕐</span> Mi Horario
-      </a>
+      <a href="#" class="nav-item active" onclick="nav('inicio',this);return false;"><span class="nav-icon">⊞</span> Mi Panel</a>
+      <a href="#" class="nav-item" onclick="nav('citas',this);return false;"><span class="nav-icon">📅</span> Mis Citas</a>
+      <a href="#" class="nav-item" onclick="nav('consulta',this);return false;"><span class="nav-icon">🩺</span> Consultas</a>
+      <a href="#" class="nav-item" onclick="nav('receta',this);return false;"><span class="nav-icon">📝</span> Recetas</a>
+      <a href="#" class="nav-item" onclick="nav('diagnostico',this);return false;"><span class="nav-icon">🔬</span> Diagnósticos</a>
+      <a href="#" class="nav-item" onclick="nav('expediente',this);return false;"><span class="nav-icon">📋</span> Expedientes</a>
+      <a href="#" class="nav-item" onclick="nav('horario',this);return false;"><span class="nav-icon">🕐</span> Mi Horario</a>
     </nav>
-
-    <button class="sidebar__logout" onclick="cerrarSesion()">
-      <span>⏻</span> Cerrar sesión
-    </button>
+    <button class="sidebar__logout" onclick="cerrarSesion()"><span>⏻</span> Cerrar sesión</button>
   </aside>
 
-  <!-- CONTENIDO -->
   <main class="main">
 
     <header class="topbar">
@@ -65,150 +45,231 @@
       </div>
     </header>
 
-    <!-- STATS -->
-    <section class="stats-grid">
-      <div class="stat-card stat-card--teal">
-        <div class="stat-icon">📅</div>
-        <div class="stat-info">
-          <div class="stat-num">8</div>
-          <div class="stat-label">Citas de Hoy</div>
+    <!-- ══ INICIO ══ -->
+    <div id="sec-inicio">
+      <section class="stats-grid">
+        <div class="stat-card stat-card--teal">
+          <div class="stat-icon">📅</div>
+          <div class="stat-info"><div class="stat-num" id="s-citas">—</div><div class="stat-label">Citas de Hoy</div></div>
         </div>
-      </div>
-      <div class="stat-card stat-card--gold">
-        <div class="stat-icon">👤</div>
-        <div class="stat-info">
-          <div class="stat-num">42</div>
-          <div class="stat-label">Pacientes Activos</div>
+        <div class="stat-card stat-card--gold">
+          <div class="stat-icon">👤</div>
+          <div class="stat-info"><div class="stat-num" id="s-pacientes">—</div><div class="stat-label">Pacientes Activos</div></div>
         </div>
-      </div>
-      <div class="stat-card stat-card--soft">
-        <div class="stat-icon">🩺</div>
-        <div class="stat-info">
-          <div class="stat-num">156</div>
-          <div class="stat-label">Consultas del Mes</div>
+        <div class="stat-card stat-card--soft">
+          <div class="stat-icon">🩺</div>
+          <div class="stat-info"><div class="stat-num" id="s-consultas">—</div><div class="stat-label">Consultas del Mes</div></div>
         </div>
-      </div>
-      <div class="stat-card stat-card--dark">
-        <div class="stat-icon">📝</div>
-        <div class="stat-info">
-          <div class="stat-num">23</div>
-          <div class="stat-label">Recetas Emitidas</div>
+        <div class="stat-card stat-card--dark">
+          <div class="stat-icon">📝</div>
+          <div class="stat-info"><div class="stat-num" id="s-recetas">—</div><div class="stat-label">Recetas Emitidas</div></div>
         </div>
-      </div>
-    </section>
+      </section>
 
-    <div class="panels-row">
+      <div class="panels-row">
+        <div class="panel">
+          <div class="panel__header">
+            <h2>Citas de Hoy</h2>
+            <a href="#" class="panel__link" onclick="nav('citas',null);return false;">Ver todas →</a>
+          </div>
+          <table class="tabla">
+            <thead><tr><th>Hora</th><th>Paciente</th><th>Motivo</th><th>Estado</th></tr></thead>
+            <tbody id="citas-preview">
+              <tr><td colspan="4" style="text-align:center;color:var(--text-soft);padding:16px;">Cargando...</td></tr>
+            </tbody>
+          </table>
+        </div>
 
-      <!-- Citas del día -->
+        <div class="panel">
+          <div class="panel__header"><h2>Acciones Rápidas</h2></div>
+          <div class="acciones-grid">
+            <button class="accion-btn" onclick="nav('consulta',this)"><span>🩺</span><span>Nueva Consulta</span></button>
+            <button class="accion-btn" onclick="nav('receta',this)"><span>📝</span><span>Emitir Receta</span></button>
+            <button class="accion-btn" onclick="nav('diagnostico',this)"><span>🔬</span><span>Nuevo Diagnóstico</span></button>
+            <button class="accion-btn" onclick="nav('expediente',this)"><span>📋</span><span>Ver Expediente</span></button>
+          </div>
+        </div>
+      </div>
+
       <div class="panel">
         <div class="panel__header">
-          <h2>Citas de Hoy</h2>
-          <a href="#" class="panel__link">Ver todas →</a>
+          <h2>Últimas Consultas Registradas</h2>
+          <a href="#" class="panel__link" onclick="nav('consulta',null);return false;">Ver historial →</a>
         </div>
         <table class="tabla">
-          <thead>
-            <tr><th>Hora</th><th>Paciente</th><th>Motivo</th><th>Estado</th></tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>08:00</td><td>María García</td><td>Chequeo general</td>
-              <td><span class="badge badge--activo">Confirmada</span></td>
-            </tr>
-            <tr>
-              <td>09:30</td><td>José Hernández</td><td>Seguimiento</td>
-              <td><span class="badge badge--activo">Confirmada</span></td>
-            </tr>
-            <tr>
-              <td>11:00</td><td>Ana Ramos</td><td>Dolor de cabeza</td>
-              <td><span class="badge badge--pendiente">Pendiente</span></td>
-            </tr>
-            <tr>
-              <td>14:00</td><td>Luis Martínez</td><td>Resultados lab.</td>
-              <td><span class="badge badge--pendiente">Pendiente</span></td>
-            </tr>
+          <thead><tr><th>Fecha</th><th>Paciente</th><th>Diagnóstico</th><th>Acción</th></tr></thead>
+          <tbody id="consultas-preview">
+            <tr><td colspan="4" style="text-align:center;color:var(--text-soft);padding:16px;">Cargando...</td></tr>
           </tbody>
         </table>
       </div>
-
-      <!-- Acciones rápidas -->
-      <div class="panel">
-        <div class="panel__header">
-          <h2>Acciones Rápidas</h2>
-        </div>
-        <div class="acciones-grid">
-          <button class="accion-btn">
-            <span>🩺</span>
-            <span>Nueva Consulta</span>
-          </button>
-          <button class="accion-btn">
-            <span>📝</span>
-            <span>Emitir Receta</span>
-          </button>
-          <button class="accion-btn">
-            <span>🔬</span>
-            <span>Nuevo Diagnóstico</span>
-          </button>
-          <button class="accion-btn">
-            <span>📋</span>
-            <span>Ver Expediente</span>
-          </button>
-        </div>
-      </div>
-
     </div>
 
-    <!-- Últimas consultas -->
-    <div class="panel">
-      <div class="panel__header">
-        <h2>Últimas Consultas Registradas</h2>
-        <a href="#" class="panel__link">Ver historial →</a>
+    <!-- ══ CITAS ══ -->
+    <div id="sec-citas" style="display:none;">
+      <div class="panel">
+        <div class="panel__header"><h2>Mis Citas</h2></div>
+        <table class="tabla">
+          <thead><tr><th>Fecha</th><th>Hora</th><th>Paciente</th><th>Motivo</th><th>Estado</th></tr></thead>
+          <tbody id="tbody-citas">
+            <tr><td colspan="5" style="text-align:center;color:var(--text-soft);padding:20px;">Cargando...</td></tr>
+          </tbody>
+        </table>
       </div>
-      <table class="tabla">
-        <thead>
-          <tr><th>Fecha</th><th>Paciente</th><th>Diagnóstico</th><th>Acción</th></tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>05/03/2026</td><td>Pedro Alvarado</td><td>Hipertensión leve</td>
-            <td><button class="btn-tabla">Ver detalle</button></td>
-          </tr>
-          <tr>
-            <td>04/03/2026</td><td>Sandra Flores</td><td>Gripe estacional</td>
-            <td><button class="btn-tabla">Ver detalle</button></td>
-          </tr>
-          <tr>
-            <td>03/03/2026</td><td>Diego Castillo</td><td>Diabetes tipo 2</td>
-            <td><button class="btn-tabla">Ver detalle</button></td>
-          </tr>
-        </tbody>
-      </table>
+    </div>
+
+    <!-- ══ NUEVA CONSULTA ══ -->
+    <div id="sec-consulta" style="display:none;">
+      <div class="panel">
+        <div class="panel__header"><h2>Registrar Consulta</h2></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+          <div>
+            <div style="margin-bottom:14px;">
+              <label style="display:block;font-size:11.5px;font-weight:600;color:var(--text-soft);margin-bottom:5px;">ID de Cita</label>
+              <input type="number" id="con-cita" placeholder="ID de la cita" style="width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:11px;font-size:13.5px;background:var(--cream);box-sizing:border-box;"/>
+            </div>
+            <div style="margin-bottom:14px;">
+              <label style="display:block;font-size:11.5px;font-weight:600;color:var(--text-soft);margin-bottom:5px;">ID de Historial</label>
+              <input type="number" id="con-historial" placeholder="ID del historial" style="width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:11px;font-size:13.5px;background:var(--cream);box-sizing:border-box;"/>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
+              <div>
+                <label style="display:block;font-size:11.5px;font-weight:600;color:var(--text-soft);margin-bottom:5px;">Peso (kg)</label>
+                <input type="number" id="con-peso" placeholder="70.5" style="width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:11px;font-size:13.5px;background:var(--cream);box-sizing:border-box;"/>
+              </div>
+              <div>
+                <label style="display:block;font-size:11.5px;font-weight:600;color:var(--text-soft);margin-bottom:5px;">Altura (cm)</label>
+                <input type="number" id="con-altura" placeholder="170" style="width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:11px;font-size:13.5px;background:var(--cream);box-sizing:border-box;"/>
+              </div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
+              <div>
+                <label style="display:block;font-size:11.5px;font-weight:600;color:var(--text-soft);margin-bottom:5px;">Presión Arterial</label>
+                <input type="text" id="con-presion" placeholder="120/80" style="width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:11px;font-size:13.5px;background:var(--cream);box-sizing:border-box;"/>
+              </div>
+              <div>
+                <label style="display:block;font-size:11.5px;font-weight:600;color:var(--text-soft);margin-bottom:5px;">Temperatura (°C)</label>
+                <input type="number" id="con-temp" placeholder="36.5" style="width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:11px;font-size:13.5px;background:var(--cream);box-sizing:border-box;"/>
+              </div>
+            </div>
+            <div style="margin-bottom:14px;">
+              <label style="display:block;font-size:11.5px;font-weight:600;color:var(--text-soft);margin-bottom:5px;">Observaciones</label>
+              <textarea id="con-obs" rows="4" placeholder="Observaciones de la consulta..." style="width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:11px;font-size:13.5px;background:var(--cream);box-sizing:border-box;font-family:'DM Sans',sans-serif;"></textarea>
+            </div>
+            <button onclick="guardarConsulta()" style="width:100%;padding:12px;border:none;border-radius:12px;background:linear-gradient(135deg,var(--teal),var(--teal-light));color:#fff;font-weight:700;font-size:13.5px;font-family:'DM Sans',sans-serif;cursor:pointer;">Registrar Consulta</button>
+          </div>
+          <div>
+            <h3 style="font-size:14px;font-weight:700;color:var(--deep);margin-bottom:16px;">Consultas Recientes</h3>
+            <div id="consultas-recientes"><p style="color:var(--text-soft);font-size:13px;">Cargando...</p></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ EMITIR RECETA ══ -->
+    <div id="sec-receta" style="display:none;">
+      <div class="panel">
+        <div class="panel__header"><h2>Emitir Receta</h2></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+          <div>
+            <div style="margin-bottom:14px;">
+              <label style="display:block;font-size:11.5px;font-weight:600;color:var(--text-soft);margin-bottom:5px;">ID de Diagnóstico</label>
+              <input type="number" id="rec-diagnostico" placeholder="ID del diagnóstico" style="width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:11px;font-size:13.5px;background:var(--cream);box-sizing:border-box;"/>
+            </div>
+            <div style="margin-bottom:14px;">
+              <label style="display:block;font-size:11.5px;font-weight:600;color:var(--text-soft);margin-bottom:5px;">ID de Factura</label>
+              <input type="number" id="rec-factura" placeholder="ID de la factura" style="width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:11px;font-size:13.5px;background:var(--cream);box-sizing:border-box;"/>
+            </div>
+            <div style="margin-bottom:14px;">
+              <label style="display:block;font-size:11.5px;font-weight:600;color:var(--text-soft);margin-bottom:5px;">Medicamento</label>
+              <input type="text" id="rec-medicamento" placeholder="Nombre del medicamento" style="width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:11px;font-size:13.5px;background:var(--cream);box-sizing:border-box;"/>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
+              <div>
+                <label style="display:block;font-size:11.5px;font-weight:600;color:var(--text-soft);margin-bottom:5px;">Dosis</label>
+                <input type="text" id="rec-dosis" placeholder="500mg" style="width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:11px;font-size:13.5px;background:var(--cream);box-sizing:border-box;"/>
+              </div>
+              <div>
+                <label style="display:block;font-size:11.5px;font-weight:600;color:var(--text-soft);margin-bottom:5px;">Frecuencia</label>
+                <input type="text" id="rec-frecuencia" placeholder="Cada 8 horas" style="width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:11px;font-size:13.5px;background:var(--cream);box-sizing:border-box;"/>
+              </div>
+            </div>
+            <div style="margin-bottom:14px;">
+              <label style="display:block;font-size:11.5px;font-weight:600;color:var(--text-soft);margin-bottom:5px;">Duración</label>
+              <input type="text" id="rec-duracion" placeholder="7 días" style="width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:11px;font-size:13.5px;background:var(--cream);box-sizing:border-box;"/>
+            </div>
+            <div style="margin-bottom:14px;">
+              <label style="display:block;font-size:11.5px;font-weight:600;color:var(--text-soft);margin-bottom:5px;">Indicaciones</label>
+              <textarea id="rec-indicaciones" rows="3" placeholder="Tomar con alimentos..." style="width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:11px;font-size:13.5px;background:var(--cream);box-sizing:border-box;font-family:'DM Sans',sans-serif;"></textarea>
+            </div>
+            <button onclick="guardarReceta()" style="width:100%;padding:12px;border:none;border-radius:12px;background:linear-gradient(135deg,var(--teal),var(--teal-light));color:#fff;font-weight:700;font-size:13.5px;font-family:'DM Sans',sans-serif;cursor:pointer;">Emitir Receta</button>
+          </div>
+          <div>
+            <h3 style="font-size:14px;font-weight:700;color:var(--deep);margin-bottom:16px;">Recetas Recientes</h3>
+            <div id="recetas-recientes"><p style="color:var(--text-soft);font-size:13px;">Cargando...</p></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ NUEVO DIAGNÓSTICO ══ -->
+    <div id="sec-diagnostico" style="display:none;">
+      <div class="panel">
+        <div class="panel__header"><h2>Registrar Diagnóstico</h2></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+          <div>
+            <div style="margin-bottom:14px;">
+              <label style="display:block;font-size:11.5px;font-weight:600;color:var(--text-soft);margin-bottom:5px;">ID de Consulta</label>
+              <input type="number" id="diag-consulta" placeholder="ID de la consulta" style="width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:11px;font-size:13.5px;background:var(--cream);box-sizing:border-box;"/>
+            </div>
+            <div style="margin-bottom:14px;">
+              <label style="display:block;font-size:11.5px;font-weight:600;color:var(--text-soft);margin-bottom:5px;">Fecha del Diagnóstico</label>
+              <input type="datetime-local" id="diag-fecha" style="width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:11px;font-size:13.5px;background:var(--cream);box-sizing:border-box;"/>
+            </div>
+            <div style="margin-bottom:14px;">
+              <label style="display:block;font-size:11.5px;font-weight:600;color:var(--text-soft);margin-bottom:5px;">Descripción</label>
+              <textarea id="diag-descripcion" rows="5" placeholder="Descripción del diagnóstico..." style="width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:11px;font-size:13.5px;background:var(--cream);box-sizing:border-box;font-family:'DM Sans',sans-serif;"></textarea>
+            </div>
+            <button onclick="guardarDiagnostico()" style="width:100%;padding:12px;border:none;border-radius:12px;background:linear-gradient(135deg,var(--teal),var(--teal-light));color:#fff;font-weight:700;font-size:13.5px;font-family:'DM Sans',sans-serif;cursor:pointer;">Registrar Diagnóstico</button>
+          </div>
+          <div>
+            <h3 style="font-size:14px;font-weight:700;color:var(--deep);margin-bottom:16px;">Diagnósticos Recientes</h3>
+            <div id="diagnosticos-recientes"><p style="color:var(--text-soft);font-size:13px;">Cargando...</p></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ VER EXPEDIENTE ══ -->
+    <div id="sec-expediente" style="display:none;">
+      <div class="panel">
+        <div class="panel__header"><h2>Buscar Expediente</h2></div>
+        <div style="display:flex;align-items:center;gap:10px;background:var(--cream);border:1.5px solid var(--border);border-radius:14px;padding:12px 18px;margin-bottom:16px;">
+          <span style="color:var(--text-soft);font-size:16px;">🔍</span>
+          <input type="text" id="q-expediente" placeholder="Buscar por número de expediente o ID..." oninput="buscarExpediente()" style="border:none;background:transparent;flex:1;font-size:14px;color:var(--text);font-family:'DM Sans',sans-serif;"/>
+        </div>
+        <div id="resultados-expediente">
+          <p style="text-align:center;color:var(--text-soft);padding:24px;font-size:13px;">Escribe para buscar un expediente...</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ MI HORARIO ══ -->
+    <div id="sec-horario" style="display:none;">
+      <div class="panel">
+        <div class="panel__header"><h2>Mi Horario</h2></div>
+        <table class="tabla">
+          <thead><tr><th>Día</th><th>Hora Inicio</th><th>Hora Fin</th><th>Consultorio</th></tr></thead>
+          <tbody id="tbody-horario">
+            <tr><td colspan="4" style="text-align:center;color:var(--text-soft);padding:20px;">Cargando...</td></tr>
+          </tbody>
+        </table>
+      </div>
     </div>
 
   </main>
 </div>
 
-<script>
-  const usuario = JSON.parse(localStorage.getItem('usuario') || 'null');
-  if (!usuario || usuario.rol !== 30002) {
-    alert('Acceso denegado.');
-    window.location.href = 'index.html';
-  }
-
-  if (usuario) {
-    const nombre = usuario.Nombres || 'Doctor';
-    document.getElementById('nombre-medico').textContent = nombre;
-    document.getElementById('usuario-nombre').textContent = nombre;
-    document.getElementById('avatar-inicial').textContent = nombre[0].toUpperCase();
-  }
-
-  document.getElementById('fecha-actual').textContent =
-    new Date().toLocaleDateString('es-SV', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
-
-  function cerrarSesion() {
-    localStorage.removeItem('token');
-    localStorage.removeItem('usuario');
-    window.location.href = '/';
-  }
-</script>
+<script src="/js/dashboard-medico.js"></script>
 </body>
 </html>
