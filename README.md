@@ -66,7 +66,7 @@ DB_PASSWORD=tu_contraseña
 DB_NAME=nombre_de_la_base_de_datos
 ```
 
-> ⚠️ **Importante:** Nunca subas el archivo `.env` al repositorio. Asegurate de incluirlo en el `.gitignore`.
+>  **Importante:** Nunca subas el archivo `.env` al repositorio. Asegurate de incluirlo en el `.gitignore`.
 
 ### 4. Configurar la base de datos
 
