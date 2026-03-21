@@ -33,7 +33,7 @@ El proyecto sigue una arquitectura **MVC (Modelo - Vista - Controlador)**, separ
 
 ## Instrucciones de instalación
 
-### Prerrequisitos
+### Prerequisitos
 
 Asegurate de tener instalado lo siguiente antes de comenzar:
 
