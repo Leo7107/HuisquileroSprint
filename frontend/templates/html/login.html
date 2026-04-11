@@ -6,34 +6,23 @@
     <title>Medisync</title>
     <link rel="icon" type="image/png" sizes="32x32" href="/genfavicon-32.png"/>
     <link rel="icon" type="image/png" sizes="16x16" href="/genfavicon-16.png"/>
-    <link rel="stylesheet" href="css/login.css">
+    <link rel="stylesheet" href="/css/login.css">
 </head>
 <body>
     <div class="envoltura">
-        <!-- 
-             ENCABEZADO: Explicativo y accesible
-            aria-labelledby vincula el header con el h1
-        -->
         <header class="encabezado" aria-labelledby="titulo-principal">
             <h1 id="titulo-principal"> Bienvenidos a Medisync </h1>
         </header>
 
-        <!--  ESCENA 3D: Contenedor con perspectiva -->
         <div class="escena" aria-label="Tarjeta con formularios de autenticación">
-            <!-- 🃏 TARJETA: Se voltea con JS -->
             <div class="tarjeta" id="tarjeta">
                 
-                <!-- ========================================= -->
-                <!-- CARA FRONTAL: INICIAR SESIÓN            -->
-                <!-- ========================================= -->
                 <section class="tarjeta__cara tarjeta__cara--frente" aria-labelledby="leyenda-inicio">
-                    <!--  PESTAÑAS DE NAVEGACIÓN -->
                     <div class="pestanas" role="tablist" aria-label="Selector de formulario">
                         <button id="pestana-inicio" class="pestana" role="tab" aria-selected="true" aria-controls="panel-inicio">Login</button>
                         <button id="pestana-registro" class="pestana" role="tab" aria-selected="false" aria-controls="panel-registro">Register</button>
                     </div>
 
-                    <!--  FORMULARIO DE LOGIN -->
                     <form id="formulario-inicio" role="tabpanel" aria-labelledby="leyenda-inicio" autocomplete="on">
                         <h2 id="leyenda-inicio" class="leyenda">Inicia sesión</h2>
                         
@@ -62,17 +51,12 @@
                     </form>
                 </section>
 
-                <!-- ========================================= -->
-                <!-- CARA POSTERIOR: REGISTRO                -->
-                <!-- ========================================= -->
                 <section class="tarjeta__cara tarjeta__cara--atras" aria-labelledby="leyenda-registro">
-                    <!-- Pestañas duplicadas para coherencia visual -->
                     <div class="pestanas" role="tablist" aria-label="Selector de formulario">
                         <button id="pestana-inicio-atras" class="pestana" role="tab" aria-selected="false">Login</button>
                         <button id="pestana-registro-atras" class="pestana" role="tab" aria-selected="true">Register</button>
                     </div>
 
-                    <!--  FORMULARIO DE REGISTRO -->
                     <form id="formulario-registro" role="tabpanel" aria-labelledby="leyenda-registro" autocomplete="on">
                         <h2 id="leyenda-registro" class="leyenda">Crea tu cuenta</h2>
 
@@ -139,6 +123,6 @@
         </div>
     </div>
     
-    <script src="js/login.js"></script>
+    <script src="/js/login.js"></script>
 </body>
 </html>
