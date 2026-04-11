@@ -11,9 +11,9 @@ if (!usuario || usuario.rol !== 30003) {
 
 if (usuario) {
   const nombre = usuario.nombre || 'Recepcionista';
-  document.getElementById('nombre-recep').textContent   = nombre;
-  document.getElementById('usuario-nombre').textContent  = nombre;
-  document.getElementById('avatar-inicial').textContent  = nombre[0].toUpperCase();
+  document.getElementById('nombre-recep').textContent  = nombre;
+  document.getElementById('usuario-nombre').textContent = nombre;
+  document.getElementById('avatar-inicial').textContent = nombre[0].toUpperCase();
 }
 
 document.getElementById('fecha-actual').textContent =
@@ -52,27 +52,26 @@ async function cargarStats() {
     document.getElementById('s-citas-hoy').textContent = citasHoy.length;
     document.getElementById('s-pacientes').textContent = Array.isArray(pacientes) ? pacientes.length : '—';
 
-    // Preview tabla
     document.getElementById('citas-preview').innerHTML = citasHoy.length
       ? citasHoy.slice(0,4).map(c => `
-        <tr>
-          <td>${c.hora || '—'}</td>
-          <td>#${c.idPaciente}</td>
-          <td>#${c.idDoctor}</td>
-          <td><span class="badge badge--${c.estado === 'CONFIRMADA' ? 'activo' : 'pendiente'}">${c.estado}</span></td>
-        </tr>`).join('')
+          <tr>
+            <td>${c.hora || '—'}</td>
+            <td>#${c.idPaciente}</td>
+            <td>#${c.idDoctor}</td>
+            <td><span class="badge badge--${c.estado === 'CONFIRMADA' ? 'activo' : 'pendiente'}">${c.estado}</span></td>
+          </tr>`).join('')
       : '<tr><td colspan="4" style="text-align:center;color:var(--text-soft);padding:16px;">Sin citas para hoy</td></tr>';
   } catch { /* sin datos */ }
 }
 
 // ── CITAS ─────────────────────────────────────
-let todasCitas     = [];
-let tabCitaActual  = 'todas';
+let todasCitas    = [];
+let tabCitaActual = 'todas';
 
 async function cargarCitas() {
   try {
-    const res   = await fetch('/api/citas', { headers: H });
-    todasCitas  = await res.json();
+    const res  = await fetch('/api/citas', { headers: H });
+    todasCitas = await res.json();
     renderCitas(todasCitas);
   } catch {
     document.getElementById('tbody-citas').innerHTML =
@@ -125,21 +124,25 @@ function abrirModalCita() {
   document.getElementById('modal-cita-titulo').textContent = 'Nueva Cita';
   document.getElementById('cita-id').value = '';
   ['fecha','hora','motivo'].forEach(f => document.getElementById('cita-' + f).value = '');
-  document.getElementById('cita-paciente').value = '';
-  document.getElementById('cita-doctor').value   = '';
-  document.getElementById('cita-estado').value   = 'PENDIENTE';
+  document.getElementById('cita-paciente').value        = '';
+  document.getElementById('cita-paciente-nombre').value = '';
+  document.getElementById('cita-doctor').value          = '';
+  document.getElementById('cita-doctor-nombre').value   = '';
+  document.getElementById('cita-estado').value          = 'PENDIENTE';
   document.getElementById('modal-cita').classList.add('active');
 }
 
 function abrirModalEditarCita(c) {
-  document.getElementById('modal-cita-titulo').textContent = 'Editar Cita';
-  document.getElementById('cita-id').value      = c.idCita;
-  document.getElementById('cita-fecha').value   = c.fecha      || '';
-  document.getElementById('cita-hora').value    = c.hora       || '';
-  document.getElementById('cita-paciente').value= c.idPaciente || '';
-  document.getElementById('cita-doctor').value  = c.idDoctor   || '';
-  document.getElementById('cita-estado').value  = c.estado     || 'PENDIENTE';
-  document.getElementById('cita-motivo').value  = c.motivo     || '';
+  document.getElementById('modal-cita-titulo').textContent  = 'Editar Cita';
+  document.getElementById('cita-id').value                  = c.idCita;
+  document.getElementById('cita-fecha').value               = c.fecha      || '';
+  document.getElementById('cita-hora').value                = c.hora       || '';
+  document.getElementById('cita-paciente').value            = c.idPaciente || '';
+  document.getElementById('cita-paciente-nombre').value     = `Paciente #${c.idPaciente}`;
+  document.getElementById('cita-doctor').value              = c.idDoctor   || '';
+  document.getElementById('cita-doctor-nombre').value       = `Doctor #${c.idDoctor}`;
+  document.getElementById('cita-estado').value              = c.estado     || 'PENDIENTE';
+  document.getElementById('cita-motivo').value              = c.motivo     || '';
   document.getElementById('modal-cita').classList.add('active');
 }
 
@@ -148,19 +151,29 @@ function cerrarModalCita() {
 }
 
 async function guardarCita() {
-  const id = document.getElementById('cita-id').value;
+  const id         = document.getElementById('cita-id').value;
+  const idPaciente = parseInt(document.getElementById('cita-paciente').value);
+  const idDoctor   = parseInt(document.getElementById('cita-doctor').value);
+
+  if (!idPaciente || !idDoctor) {
+    alert('Debes seleccionar un paciente y un doctor.');
+    return;
+  }
+
   const payload = {
     fecha:      document.getElementById('cita-fecha').value,
     hora:       document.getElementById('cita-hora').value,
-    idPaciente: parseInt(document.getElementById('cita-paciente').value),
-    idDoctor:   parseInt(document.getElementById('cita-doctor').value),
+    idPaciente,
+    idDoctor,
     estado:     document.getElementById('cita-estado').value,
     motivo:     document.getElementById('cita-motivo').value,
   };
+
   const url    = id ? `/api/citas/${id}` : '/api/citas';
   const method = id ? 'PUT' : 'POST';
   const res    = await fetch(url, { method, headers: H, body: JSON.stringify(payload) });
   const data   = await res.json();
+
   if (data.id || data.message) {
     cerrarModalCita();
     cargarCitas();
@@ -172,20 +185,20 @@ async function guardarCita() {
 // ── PACIENTES ─────────────────────────────────
 async function cargarPacientesRecientes() {
   try {
-    const res  = await fetch('/api/pacientes', { headers: H });
+    const res   = await fetch('/api/pacientes', { headers: H });
     const lista = await res.json();
     const recientes = Array.isArray(lista) ? lista.slice(-6).reverse() : [];
     document.getElementById('lista-recientes').innerHTML = recientes.length
       ? recientes.map(p => `
-        <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid rgba(42,107,94,0.07);">
-          <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--teal),var(--teal-light));color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex-shrink:0;">
-            ${(p.numero_expediente || 'P')[0]}
-          </div>
-          <div>
-            <strong style="display:block;font-size:13px;color:var(--deep);">${p.numero_expediente}</strong>
-            <span style="font-size:11.5px;color:var(--text-soft);">${p.estado_paciente} · ${p.tipo_sangre || 'Sin tipo'}</span>
-          </div>
-        </div>`).join('')
+          <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid rgba(42,107,94,0.07);">
+            <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--teal),var(--teal-light));color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex-shrink:0;">
+              ${(p.numero_expediente || 'P')[0]}
+            </div>
+            <div>
+              <strong style="display:block;font-size:13px;color:var(--deep);">${p.numero_expediente}</strong>
+              <span style="font-size:11.5px;color:var(--text-soft);">${p.estado_paciente} · ${p.tipo_sangre || 'Sin tipo'}</span>
+            </div>
+          </div>`).join('')
       : '<p style="color:var(--text-soft);font-size:13px;">Sin pacientes registrados aún.</p>';
   } catch { /* sin datos */ }
 }
@@ -241,7 +254,7 @@ function mover(btn, colDestino) {
 let todosPacientes = [];
 
 async function iniciarBuscador() {
-  if (todosPacientes.length) return; // ya cargado
+  if (todosPacientes.length) return;
   try {
     const res = await fetch('/api/pacientes', { headers: H });
     todosPacientes = await res.json();
@@ -265,15 +278,90 @@ function buscarPaciente() {
 
   cont.innerHTML = res.length
     ? res.map(p => `
-      <div class="resultado-item">
-        <div class="resultado-avatar">${(p.numero_expediente || 'P')[0]}</div>
-        <div class="resultado-info">
-          <strong>Expediente: ${p.numero_expediente}</strong>
-          <span>ID ${p.idPaciente} · ${p.estado_paciente} · Sangre: ${p.tipo_sangre || 'N/A'} · Contacto: ${p.contacto_emergencia || '—'}</span>
-        </div>
-      </div>`).join('')
-    : '<p style="text-align:center;color:var(--text-soft);padding:24px;font-size:13px;">No se encontraron resultados para "<strong>' + q + '</strong>".</p>';
+        <div class="resultado-item">
+          <div class="resultado-avatar">${(p.numero_expediente || 'P')[0]}</div>
+          <div class="resultado-info">
+            <strong>Expediente: ${p.numero_expediente}</strong>
+            <span>ID ${p.idPaciente} · ${p.estado_paciente} · Sangre: ${p.tipo_sangre || 'N/A'} · Contacto: ${p.contacto_emergencia || '—'}</span>
+          </div>
+        </div>`).join('')
+    : `<p style="text-align:center;color:var(--text-soft);padding:24px;font-size:13px;">No se encontraron resultados para "<strong>${q}</strong>".</p>`;
 }
+
+// ── AUTOCOMPLETADO ────────────────────────────
+let listaPacientes = [];
+let listaDoctores  = [];
+
+async function cargarListasAutocompletado() {
+  try {
+    const [pRes, dRes] = await Promise.all([
+      fetch('/api/pacientes',        { headers: H }),
+      fetch('/api/doctores/activos', { headers: H }),
+    ]);
+    listaPacientes = await pRes.json();
+    listaDoctores  = await dRes.json();
+  } catch { /* sin datos */ }
+}
+
+function buscarAutocompletado(tipo) {
+  const inputNombre = document.getElementById(`cita-${tipo}-nombre`);
+  const sugerencias = document.getElementById(`sugerencias-${tipo}`);
+  const q = inputNombre.value.toLowerCase().trim();
+
+  if (!q) { sugerencias.style.display = 'none'; return; }
+
+  let lista = [];
+
+  if (tipo === 'paciente') {
+    lista = Array.isArray(listaPacientes)
+      ? listaPacientes.filter(p =>
+          (p.numero_expediente || '').toLowerCase().includes(q) ||
+          String(p.idPaciente).includes(q))
+      : [];
+    sugerencias.innerHTML = lista.length
+      ? lista.map(p => `
+          <div class="autocomplete-item"
+            onclick="seleccionar('paciente', ${p.idPaciente}, 'Exp: ${p.numero_expediente}')">
+            <strong>Exp: ${p.numero_expediente}</strong>
+            <span>ID: ${p.idPaciente} · ${p.estado_paciente}</span>
+          </div>`).join('')
+      : '<div class="autocomplete-item">Sin resultados</div>';
+  }
+
+  if (tipo === 'doctor') {
+    lista = Array.isArray(listaDoctores)
+      ? listaDoctores.filter(d =>
+          (d.Nombres + ' ' + d.Apellidos).toLowerCase().includes(q) ||
+          (d.Especialidad || '').toLowerCase().includes(q))
+      : [];
+    sugerencias.innerHTML = lista.length
+      ? lista.map(d => `
+          <div class="autocomplete-item"
+            onclick="seleccionar('doctor', ${d.idDoctor}, '${d.Nombres} ${d.Apellidos}')">
+            <strong>${d.Nombres} ${d.Apellidos}</strong>
+            <span>${d.Especialidad}</span>
+          </div>`).join('')
+      : '<div class="autocomplete-item">Sin resultados</div>';
+  }
+
+  sugerencias.style.display = 'block';
+}
+
+function seleccionar(tipo, id, nombre) {
+  document.getElementById(`cita-${tipo}-nombre`).value = nombre;
+  document.getElementById(`cita-${tipo}`).value        = id;
+  document.getElementById(`sugerencias-${tipo}`).style.display = 'none';
+}
+
+document.addEventListener('click', (e) => {
+  ['paciente','doctor'].forEach(tipo => {
+    const input = document.getElementById(`cita-${tipo}-nombre`);
+    const sug   = document.getElementById(`sugerencias-${tipo}`);
+    if (input && sug && !input.contains(e.target) && !sug.contains(e.target)) {
+      sug.style.display = 'none';
+    }
+  });
+});
 
 // ── CERRAR SESIÓN ─────────────────────────────
 function cerrarSesion() {
@@ -284,3 +372,4 @@ function cerrarSesion() {
 
 // ── INIT ──────────────────────────────────────
 cargarStats();
+cargarListasAutocompletado();

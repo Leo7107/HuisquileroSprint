@@ -15,7 +15,7 @@
     .modal-overlay.active { display: flex; }
     .modal {
       background: #fff; border-radius: 20px; padding: 32px;
-      width: min(520px, 92vw); max-height: 90vh; overflow-y: auto;
+      width: min(560px, 92vw); max-height: 92vh; overflow-y: auto;
       box-shadow: 0 24px 64px rgba(26,46,42,0.22);
       animation: fadeDown 0.25s ease;
     }
@@ -28,13 +28,13 @@
       display: block; font-size: 11.5px; font-weight: 600;
       color: var(--text-soft); margin-bottom: 5px; letter-spacing: 0.04em;
     }
-    .form-group input, .form-group select {
+    .form-group input, .form-group select, .form-group textarea {
       width: 100%; padding: 10px 14px; border: 1.5px solid var(--border);
       border-radius: 11px; font-size: 13.5px; color: var(--text);
       background: var(--cream); font-family: 'DM Sans', sans-serif;
       box-sizing: border-box; transition: border 0.2s, background 0.2s;
     }
-    .form-group input:focus, .form-group select:focus {
+    .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
       outline: none; border-color: var(--teal); background: #fff;
     }
     .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
@@ -100,15 +100,19 @@
       width: 30px; height: 30px; border: none; border-radius: 8px; cursor: pointer;
       font-size: 13px; display: flex; align-items: center; justify-content: center; transition: all 0.2s;
     }
-    .icon-btn--edit { background: rgba(42,107,94,0.1); color: var(--teal); }
-    .icon-btn--del  { background: rgba(200,50,50,0.1); color: #c03030; }
-    .icon-btn--edit:hover { background: var(--teal); color: #fff; }
-    .icon-btn--del:hover  { background: #c03030; color: #fff; }
+    .icon-btn--edit   { background: rgba(42,107,94,0.1);   color: var(--teal); }
+    .icon-btn--del    { background: rgba(200,50,50,0.1);   color: #c03030; }
+    .icon-btn--toggle { background: rgba(201,168,76,0.15); color: #7a5c00; }
+    .icon-btn--edit:hover   { background: var(--teal); color: #fff; }
+    .icon-btn--del:hover    { background: #c03030; color: #fff; }
+    .icon-btn--toggle:hover { background: var(--gold); color: var(--deep); }
     .badge-rol { display: inline-block; padding: 3px 10px; border-radius: 100px; font-size: 11px; font-weight: 600; }
     .badge-rol--admin  { background: rgba(26,46,42,0.1);   color: var(--deep); }
     .badge-rol--medico { background: rgba(42,107,94,0.12); color: var(--teal); }
     .badge-rol--recep  { background: rgba(201,168,76,0.15);color: #7a5c00; }
     .badge-rol--pac    { background: rgba(61,140,124,0.13);color: var(--teal-light); }
+    .badge-estado--activo   { display:inline-block;padding:3px 10px;border-radius:100px;font-size:11px;font-weight:600;background:rgba(42,107,94,0.12);color:var(--teal); }
+    .badge-estado--inactivo { display:inline-block;padding:3px 10px;border-radius:100px;font-size:11px;font-weight:600;background:rgba(200,50,50,0.1);color:#c03030; }
     .log-item {
       display: flex; align-items: flex-start; gap: 12px;
       padding: 12px 0; border-bottom: 1px solid rgba(42,107,94,0.06);
@@ -131,6 +135,11 @@
       font-size: 12px; background: var(--cream); color: var(--text);
       font-family: 'DM Sans', sans-serif; cursor: pointer;
     }
+    .horario-chip {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: rgba(42,107,94,0.1); color: var(--teal);
+      border-radius: 8px; padding: 4px 10px; font-size: 12px; font-weight: 600;
+    }
   </style>
 </head>
 <body>
@@ -145,6 +154,7 @@
     <nav class="sidebar__nav">
       <a href="#" class="nav-item active" onclick="nav('inicio',this);return false;"><span class="nav-icon">⊞</span> Panel Principal</a>
       <a href="#" class="nav-item" onclick="nav('usuarios',this);return false;"><span class="nav-icon">👥</span> Gestión de Usuarios</a>
+      <a href="#" class="nav-item" onclick="nav('medicos',this);return false;"><span class="nav-icon">🩺</span> Gestión de Médicos</a>
       <a href="#" class="nav-item" onclick="nav('roles',this);return false;"><span class="nav-icon">🔑</span> Roles y Accesos</a>
       <a href="#" class="nav-item" onclick="nav('logs',this);return false;"><span class="nav-icon">📋</span> Logs del Sistema</a>
     </nav>
@@ -192,7 +202,7 @@
           <div class="panel__header"><h2>Acciones Rápidas</h2></div>
           <div class="acciones-grid">
             <button class="accion-btn" onclick="nav('usuarios',null)"><span>👥</span><span>Gestionar Usuarios</span></button>
-            <button class="accion-btn" onclick="nav('roles',null)"><span>🔑</span><span>Asignar Roles</span></button>
+            <button class="accion-btn" onclick="nav('medicos',null)"><span>🩺</span><span>Gestionar Médicos</span></button>
             <button class="accion-btn" onclick="abrirModal()"><span>➕</span><span>Nuevo Usuario</span></button>
             <button class="accion-btn" onclick="nav('logs',null)"><span>📋</span><span>Ver Logs</span></button>
           </div>
@@ -232,6 +242,33 @@
       </div>
     </div>
 
+    <!-- MÉDICOS -->
+    <div id="sec-medicos" style="display:none;">
+      <div class="panel">
+        <div class="panel__header">
+          <h2>Gestión de Médicos</h2>
+          <button class="header-btn" onclick="abrirModalMedico()">+ Nuevo Médico</button>
+        </div>
+        <div class="search-wrap">
+          <span>🔍</span>
+          <input type="text" id="q-medicos" placeholder="Buscar por nombre, especialidad o consultorio..." oninput="filtrarMedicos()"/>
+        </div>
+        <div class="tabs">
+          <button class="tab-btn active" onclick="setTabMedicos('todos',this)">Todos</button>
+          <button class="tab-btn" onclick="setTabMedicos('ACTIVO',this)">Activos</button>
+          <button class="tab-btn" onclick="setTabMedicos('INACTIVO',this)">Inactivos</button>
+        </div>
+        <table class="tabla">
+          <thead>
+            <tr><th>ID</th><th>Nombre</th><th>Especialidad</th><th>Consultorio</th><th>Horario</th><th>Estado</th><th>Acciones</th></tr>
+          </thead>
+          <tbody id="tbody-medicos">
+            <tr><td colspan="7" style="text-align:center;color:var(--text-soft);padding:24px;">Cargando...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
     <!-- ROLES -->
     <div id="sec-roles" style="display:none;">
       <div class="panel">
@@ -258,7 +295,7 @@
   </main>
 </div>
 
-<!-- MODAL -->
+<!-- MODAL USUARIO -->
 <div class="modal-overlay" id="modal-usuario">
   <div class="modal">
     <h3 id="modal-titulo">Nuevo Usuario</h3>
@@ -292,6 +329,64 @@
     <div class="modal-actions">
       <button class="btn-cancelar" onclick="cerrarModal()">Cancelar</button>
       <button class="btn-primary" onclick="guardarUsuario()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL MÉDICO -->
+<div class="modal-overlay" id="modal-medico">
+  <div class="modal">
+    <h3 id="modal-medico-titulo">Nuevo Médico</h3>
+    <input type="hidden" id="md-id"/>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Especialidad</label>
+        <select id="md-especialidad">
+          <option value="">Seleccione...</option>
+          <option>Medicina General</option>
+          <option>Pediatría</option>
+          <option>Ginecología</option>
+          <option>Cardiología</option>
+          <option>Neurología</option>
+          <option>Ortopedia</option>
+          <option>Dermatología</option>
+          <option>Psiquiatría</option>
+          <option>Oftalmología</option>
+          <option>Odontología</option>
+          <option>Otra</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Consultorio</label>
+        <input type="text" id="md-consultorio" placeholder="Consultorio 1"/>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Horario</label>
+        <input type="text" id="md-horario" placeholder="08:00 - 16:00"/>
+      </div>
+      <div class="form-group">
+        <label>Teléfono</label>
+        <input type="tel" id="md-telefono" placeholder="7000-0000"/>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Estado</label>
+        <select id="md-estado">
+          <option value="ACTIVO">Activo</option>
+          <option value="INACTIVO">Inactivo</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>ID Usuario vinculado</label>
+        <input type="number" id="md-usuario" placeholder="ID del usuario doctor"/>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancelar" onclick="cerrarModalMedico()">Cancelar</button>
+      <button class="btn-primary" onclick="guardarMedico()">Guardar</button>
     </div>
   </div>
 </div>

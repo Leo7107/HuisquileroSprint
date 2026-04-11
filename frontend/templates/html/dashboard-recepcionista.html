@@ -169,6 +169,9 @@
       <a href="#" class="nav-item" onclick="nav('pacientes',this);return false;"><span class="nav-icon">👤</span> Registro de Pacientes</a>
       <a href="#" class="nav-item" onclick="nav('espera',this);return false;"><span class="nav-icon">🏥</span> Sala de Espera</a>
       <a href="#" class="nav-item" onclick="nav('buscar',this);return false;"><span class="nav-icon">🔍</span> Buscar Expediente</a>
+      <a href="#" class="nav-item" onclick="nav('medicos',this);return false;">
+  <span class="nav-icon">🩺</span> Médicos Disponibles
+</a>
     </nav>
     <button class="sidebar__logout" onclick="cerrarSesion()"><span>⏻</span> Cerrar sesión</button>
   </aside>
@@ -376,9 +379,21 @@
       <div class="form-group"><label>Hora</label><input type="time" id="cita-hora"/></div>
     </div>
     <div class="form-row">
-      <div class="form-group"><label>ID Paciente</label><input type="number" id="cita-paciente" placeholder="ID del paciente"/></div>
-      <div class="form-group"><label>ID Doctor</label><input type="number" id="cita-doctor" placeholder="ID del doctor"/></div>
-    </div>
+  <div class="form-group autocomplete-wrap">
+    <label>Paciente</label>
+    <input type="text" id="cita-paciente-nombre" placeholder="Buscar paciente..." 
+      oninput="buscarAutocompletado('paciente')" autocomplete="off"/>
+    <input type="hidden" id="cita-paciente"/>
+    <div id="sugerencias-paciente" class="autocomplete-lista"></div>
+  </div>
+  <div class="form-group autocomplete-wrap">
+    <label>Doctor</label>
+    <input type="text" id="cita-doctor-nombre" placeholder="Buscar doctor..."
+      oninput="buscarAutocompletado('doctor')" autocomplete="off"/>
+    <input type="hidden" id="cita-doctor"/>
+    <div id="sugerencias-doctor" class="autocomplete-lista"></div>
+  </div>
+</div>
     <div class="form-group">
       <label>Estado</label>
       <select id="cita-estado">
