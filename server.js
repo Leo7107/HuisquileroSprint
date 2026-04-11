@@ -5,8 +5,10 @@ const path = require("path");
 const app = express();
 
 app.use(express.json());
-
 app.use(express.static(path.join(__dirname, "frontend/templates")));
+app.use('/css', express.static(path.join(__dirname, "frontend/templates/css")));
+app.use('/js', express.static(path.join(__dirname, "frontend/templates/js")));
+
 app.get("/", (req, res) => {
     res.sendFile(path.join(__dirname, "frontend/templates/html", "login.html"));
 });
@@ -36,7 +38,6 @@ app.use("/api/citas", citasRoutes);
 app.use("/api/diagnosticos", diagnosticosRoutes);
 app.use("/api/historial", historialRoutes);
 app.use("/api/detalles-factura", detallesFacturaRoutes);
-
 
 const PORT = process.env.PORT || 3000;
 
