@@ -1,5 +1,5 @@
 /* ============================================================
-   VARIABLES - Mismo tema que login.css
+   VARIABLES
    ============================================================ */
 :root {
   --cream: #f5f0e8;
@@ -20,7 +20,7 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 /* ============================================================
-   BODY - Con el mismo fondo del login
+   BODY
    ============================================================ */
 body {
   font-family: 'DM Sans', system-ui, sans-serif;
@@ -123,8 +123,8 @@ body::after {
   animation: fadeDown 0.6s ease 0.2s both;
 }
 
-.sidebar__rol--admin    { background: rgba(26,46,42,0.55);  border-color: rgba(201,168,76,0.35); }
-.sidebar__rol--medico   { background: rgba(42,107,94,0.4);  border-color: rgba(61,140,124,0.4); }
+.sidebar__rol--admin    { background: rgba(26,46,42,0.55);   border-color: rgba(201,168,76,0.35); }
+.sidebar__rol--medico   { background: rgba(42,107,94,0.4);   border-color: rgba(61,140,124,0.4); }
 .sidebar__rol--recep    { background: rgba(201,168,76,0.18); color: var(--gold-light); border-color: rgba(201,168,76,0.38); }
 .sidebar__rol--paciente { background: rgba(61,140,124,0.28); border-color: rgba(61,140,124,0.4); }
 
@@ -164,7 +164,6 @@ body::after {
   transform: translateX(3px);
 }
 
-/* Item activo - base */
 .nav-item.active {
   background: linear-gradient(135deg, var(--teal), var(--teal-light));
   color: var(--white);
@@ -172,7 +171,6 @@ body::after {
   box-shadow: 0 4px 14px rgba(42,107,94,0.35);
 }
 
-/* Item activo - variante por rol */
 .rol-admin    .nav-item.active { background: linear-gradient(135deg, var(--deep), var(--teal)); }
 .rol-medico   .nav-item.active { background: linear-gradient(135deg, var(--teal), var(--teal-light)); }
 .rol-recep    .nav-item.active { background: linear-gradient(135deg, var(--gold), var(--gold-light)); color: var(--deep); box-shadow: 0 4px 14px rgba(201,168,76,0.3); }
@@ -204,7 +202,6 @@ body::after {
   transform: translateY(-1px);
 }
 
-/* Scrollbar sidebar */
 .sidebar::-webkit-scrollbar { width: 4px; }
 .sidebar::-webkit-scrollbar-track { background: transparent; }
 .sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
@@ -490,6 +487,9 @@ body::after {
 .badge--recep     { background: rgba(201,168,76,0.15); color: #7a5c00; }
 .badge--paciente  { background: rgba(61,140,124,0.13); color: var(--teal-light); }
 
+.badge-estado--activo   { display:inline-block;padding:3px 10px;border-radius:100px;font-size:11px;font-weight:600;background:rgba(42,107,94,0.12);color:var(--teal); }
+.badge-estado--inactivo { display:inline-block;padding:3px 10px;border-radius:100px;font-size:11px;font-weight:600;background:rgba(200,50,50,0.1);color:#c03030; }
+
 /* ============================================================
    BOTÓN TABLA
    ============================================================ */
@@ -564,12 +564,414 @@ body::after {
 .accion-btn span { position: relative; z-index: 1; }
 .accion-btn span:first-child { font-size: 24px; }
 
-/* Recepcionista: hover dorado */
 .rol-recep .accion-btn::before { background: linear-gradient(135deg, var(--gold), var(--gold-light)); }
 .rol-recep .accion-btn:hover { color: var(--deep); border-color: var(--gold); box-shadow: 0 8px 20px rgba(201,168,76,0.25); }
 
 /* ============================================================
-   ANIMACIONES (mismas que login)
+   MODAL
+   ============================================================ */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(26, 46, 42, 0.55);
+  z-index: 1000;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-overlay.active { display: flex; }
+
+.modal {
+  background: var(--white);
+  border-radius: 20px;
+  padding: 32px;
+  width: min(600px, 92vw);
+  max-height: 85vh;
+  overflow-y: auto;
+  box-shadow: var(--shadow-lg);
+  animation: fadeDown 0.25s ease;
+  border: 1px solid var(--border);
+}
+
+.modal__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 22px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.modal__header h3 {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.2rem;
+  color: var(--deep);
+  font-weight: 700;
+  margin: 0;
+}
+
+.modal__close {
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  cursor: pointer;
+  color: var(--text-soft);
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s, color 0.2s;
+}
+
+.modal__close:hover {
+  background: var(--cream);
+  color: var(--deep);
+}
+
+.modal__empty {
+  text-align: center;
+  color: var(--text-soft);
+  padding: 30px;
+  font-size: 13px;
+}
+
+.modal::-webkit-scrollbar { width: 4px; }
+.modal::-webkit-scrollbar-track { background: transparent; }
+.modal::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+/* ============================================================
+   AUTOCOMPLETADO
+   ============================================================ */
+.autocomplete-wrap {
+  position: relative;
+}
+
+.autocomplete-lista {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: var(--white);
+  border: 1.5px solid var(--border);
+  border-radius: 11px;
+  box-shadow: var(--shadow-lg);
+  z-index: 100;
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.autocomplete-item {
+  padding: 10px 14px;
+  cursor: pointer;
+  font-size: 13px;
+  border-bottom: 1px solid rgba(42,107,94,0.06);
+  transition: background 0.15s;
+}
+
+.autocomplete-item:last-child { border-bottom: none; }
+.autocomplete-item:hover { background: var(--cream); }
+
+.autocomplete-item strong {
+  display: block;
+  color: var(--deep);
+  font-weight: 600;
+}
+
+.autocomplete-item span {
+  font-size: 11.5px;
+  color: var(--text-soft);
+}
+
+/* ============================================================
+   FORMULARIOS EN MODAL
+   ============================================================ */
+.form-group { margin-bottom: 14px; }
+
+.form-group label {
+  display: block;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-soft);
+  margin-bottom: 5px;
+  letter-spacing: 0.04em;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: 11px;
+  font-size: 13.5px;
+  color: var(--text);
+  background: var(--cream);
+  font-family: 'DM Sans', sans-serif;
+  box-sizing: border-box;
+  transition: border 0.2s, background 0.2s;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: var(--gold);
+  background: var(--white);
+}
+
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+.modal-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 22px;
+}
+
+.btn-cancelar {
+  padding: 10px 20px;
+  border: 1.5px solid var(--border);
+  border-radius: 11px;
+  background: var(--white);
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--text-soft);
+  font-family: 'DM Sans', sans-serif;
+  transition: background 0.2s;
+}
+
+.btn-cancelar:hover { background: var(--cream); }
+
+.btn-primary {
+  padding: 10px 22px;
+  border: none;
+  border-radius: 11px;
+  background: linear-gradient(135deg, var(--gold), var(--gold-light));
+  color: var(--deep);
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 13px;
+  font-family: 'DM Sans', sans-serif;
+  transition: opacity 0.2s, transform 0.15s;
+}
+
+.btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
+
+.header-btn {
+  padding: 8px 18px;
+  border: none;
+  border-radius: 10px;
+  background: linear-gradient(135deg, var(--gold), var(--gold-light));
+  color: var(--deep);
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 12.5px;
+  font-family: 'DM Sans', sans-serif;
+  transition: opacity 0.2s;
+}
+
+.header-btn:hover { opacity: 0.88; }
+
+/* ============================================================
+   TABS
+   ============================================================ */
+.tabs {
+  display: flex;
+  gap: 4px;
+  background: var(--cream);
+  border-radius: 12px;
+  padding: 4px;
+  margin-bottom: 18px;
+  border: 1px solid var(--border);
+}
+
+.tab-btn {
+  flex: 1;
+  padding: 8px 10px;
+  border: none;
+  background: transparent;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 12px;
+  color: var(--text-soft);
+  font-family: 'DM Sans', sans-serif;
+  transition: all 0.2s;
+}
+
+.tab-btn.active {
+  background: var(--white);
+  color: var(--deep);
+  box-shadow: 0 1px 6px rgba(26,46,42,0.1);
+}
+
+/* ============================================================
+   SEARCH WRAP
+   ============================================================ */
+.search-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--cream);
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  padding: 10px 16px;
+  margin-bottom: 16px;
+  transition: border 0.2s;
+}
+
+.search-wrap:focus-within { border-color: var(--gold); background: var(--white); }
+
+.search-wrap input {
+  border: none;
+  background: transparent;
+  flex: 1;
+  font-size: 13.5px;
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+}
+
+.search-wrap input:focus { outline: none; }
+.search-wrap span { color: var(--text-soft); }
+
+/* ============================================================
+   ACTION ICONS
+   ============================================================ */
+.action-icons { display: flex; gap: 6px; }
+
+.icon-btn {
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.icon-btn--edit   { background: rgba(201,168,76,0.15); color: #7a5c00; }
+.icon-btn--cancel { background: rgba(200,50,50,0.1);   color: #c03030; }
+.icon-btn--del    { background: rgba(200,50,50,0.1);   color: #c03030; }
+.icon-btn--toggle { background: rgba(201,168,76,0.15); color: #7a5c00; }
+
+.icon-btn--edit:hover   { background: var(--gold);  color: var(--deep); }
+.icon-btn--cancel:hover { background: #c03030; color: var(--white); }
+.icon-btn--del:hover    { background: #c03030; color: var(--white); }
+.icon-btn--toggle:hover { background: var(--gold);  color: var(--deep); }
+
+/* ============================================================
+   HORARIO CHIP — para tabla de médicos
+   ============================================================ */
+.horario-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(42,107,94,0.1);
+  color: var(--teal);
+  border-radius: 8px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* ============================================================
+   TOGGLE — para activar/desactivar
+   ============================================================ */
+.toggle { position: relative; width: 40px; height: 22px; display: inline-block; }
+.toggle input { display: none; }
+
+.toggle-slider {
+  position: absolute;
+  inset: 0;
+  background: #cbd5e1;
+  border-radius: 22px;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.toggle-slider::before {
+  content: '';
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  background: var(--white);
+  border-radius: 50%;
+  top: 3px;
+  left: 3px;
+  transition: transform 0.3s;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+}
+
+.toggle input:checked + .toggle-slider { background: var(--teal); }
+.toggle input:checked + .toggle-slider::before { transform: translateX(18px); }
+
+/* ============================================================
+   BADGE ROL
+   ============================================================ */
+.badge-rol { display: inline-block; padding: 3px 10px; border-radius: 100px; font-size: 11px; font-weight: 600; }
+.badge-rol--admin  { background: rgba(26,46,42,0.1);   color: var(--deep); }
+.badge-rol--medico { background: rgba(42,107,94,0.12); color: var(--teal); }
+.badge-rol--recep  { background: rgba(201,168,76,0.15);color: #7a5c00; }
+.badge-rol--pac    { background: rgba(61,140,124,0.13);color: var(--teal-light); }
+
+/* ============================================================
+   SELECT ROL
+   ============================================================ */
+select.rol-select {
+  padding: 5px 10px;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  font-size: 12px;
+  background: var(--cream);
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  cursor: pointer;
+}
+
+/* ============================================================
+   LOGS
+   ============================================================ */
+.log-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(42,107,94,0.06);
+}
+
+.log-item:last-child { border-bottom: none; }
+
+.log-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+}
+
+.log-icon--crear    { background: rgba(42,107,94,0.1); }
+.log-icon--editar   { background: rgba(61,140,124,0.12); }
+.log-icon--eliminar { background: rgba(200,50,50,0.1); }
+.log-icon--acceso   { background: rgba(201,168,76,0.13); }
+
+.log-body { flex: 1; }
+.log-body strong { display: block; font-size: 13px; color: var(--deep); font-weight: 600; }
+.log-body span   { font-size: 11.5px; color: var(--text-soft); }
+.log-time { font-size: 11px; color: var(--text-soft); white-space: nowrap; }
+
+/* ============================================================
+   ANIMACIONES
    ============================================================ */
 @keyframes fadeDown {
   from { opacity: 0; transform: translateY(-16px); }
@@ -615,120 +1017,4 @@ body::after {
 @media (max-width: 480px) {
   .stats-grid { grid-template-columns: 1fr 1fr; }
   .panel { padding: 18px 16px; }
-}
-
-.modal-overlay {
-  display: none;
-  position: fixed;
-  inset: 0;
-  background: rgba(26, 46, 0, 0.55);
-  z-index: 1000;
-  align-items: center;
-  justify-content: center;
-}
-
-modal-overlay.active { display: flex;}
-
-.modal {
-  background: var(--white);
-  border-radius: 20px;
-  padding: 32px;
-  width: mnin(600px, 92vw);
-  max-height: 85vh;
-  overflow-y: auto;
-  box-shadow: var(--shadow-lg);
-  animation: fadeDown 0.25s ease;
-  border: 1px solid var(--border);
-}
-
-.modal__header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 22px;
-  padding-bottom: 14px;
-  border-bottom: 1px solid var(--border);
-}
-
-.modal__header h3 {
-  font-family: 'Plyfair Display', serif;
-  font-size: 1.2rem;
-  color: var(--deep);
-  font-weight: 700;
-  margin: 0;
-}
-
-.mdoal__close {
-  background: none;
-  border: none;
-  font-size: 1.2rem;
-  cursor: pointer;
-  color: var(--text-soft);
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background 0.2s color 0.2s;
-}
-
-.modal__close:hover {
-  background: var(--cream);
-  color: var(--deep);
-}
-
-.modal__empty {
-  text-align: center;
-  color: var(--text-soft);
-  padding: 30px;
-  font-size: 13px;
-}
-
-.modal::-webkit-scrollbar {width: 4px;}
-.modal::-webkit-scrollbar-track {background: transparent;}
-.modal::-webkit-scrollbar-thumb {background: var(--border); border-radius: 4px;}
-
-/* ============================================================
-   AUTOCOMPLETADO
-   ============================================================ */
-.autocomplete-wrap {
-  position: relative;
-}
-
-.autocomplete-lista {
-  display: none;
-  position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
-  background: var(--white);
-  border: 1.5px solid var(--border);
-  border-radius: 11px;
-  box-shadow: var(--shadow-lg);
-  z-index: 100;
-  max-height: 180px;
-  overflow-y: auto;
-}
-
-.autocomplete-item {
-  padding: 10px 14px;
-  cursor: pointer;
-  font-size: 13px;
-  border-bottom: 1px solid rgba(42,107,94,0.06);
-  transition: background 0.15s;
-}
-
-.autocomplete-item:last-child { border-bottom: none; }
-.autocomplete-item:hover { background: var(--cream); }
-
-.autocomplete-item strong {
-  display: block;
-  color: var(--deep);
-  font-weight: 600;
-}
-
-.autocomplete-item span {
-  font-size: 11.5px;
-  color: var(--text-soft);
 }

@@ -6,141 +6,6 @@
   <title>Medisync – Administrador</title>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="/css/dashboard.css"/>
-  <style>
-    .modal-overlay {
-      display: none; position: fixed; inset: 0;
-      background: rgba(26,46,42,0.55); z-index: 1000;
-      align-items: center; justify-content: center;
-    }
-    .modal-overlay.active { display: flex; }
-    .modal {
-      background: #fff; border-radius: 20px; padding: 32px;
-      width: min(560px, 92vw); max-height: 92vh; overflow-y: auto;
-      box-shadow: 0 24px 64px rgba(26,46,42,0.22);
-      animation: fadeDown 0.25s ease;
-    }
-    .modal h3 {
-      font-family: 'Playfair Display', serif; font-size: 1.25rem;
-      color: var(--deep); margin-bottom: 22px;
-    }
-    .form-group { margin-bottom: 14px; }
-    .form-group label {
-      display: block; font-size: 11.5px; font-weight: 600;
-      color: var(--text-soft); margin-bottom: 5px; letter-spacing: 0.04em;
-    }
-    .form-group input, .form-group select, .form-group textarea {
-      width: 100%; padding: 10px 14px; border: 1.5px solid var(--border);
-      border-radius: 11px; font-size: 13.5px; color: var(--text);
-      background: var(--cream); font-family: 'DM Sans', sans-serif;
-      box-sizing: border-box; transition: border 0.2s, background 0.2s;
-    }
-    .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
-      outline: none; border-color: var(--teal); background: #fff;
-    }
-    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-    .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 22px; }
-    .btn-cancelar {
-      padding: 10px 20px; border: 1.5px solid var(--border); border-radius: 11px;
-      background: #fff; cursor: pointer; font-weight: 600; font-size: 13px;
-      color: var(--text-soft); font-family: 'DM Sans', sans-serif; transition: background 0.2s;
-    }
-    .btn-cancelar:hover { background: var(--cream); }
-    .btn-primary {
-      padding: 10px 22px; border: none; border-radius: 11px;
-      background: linear-gradient(135deg, var(--teal), var(--teal-light));
-      color: #fff; cursor: pointer; font-weight: 600; font-size: 13px;
-      font-family: 'DM Sans', sans-serif; transition: opacity 0.2s, transform 0.15s;
-    }
-    .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
-    .header-btn {
-      padding: 8px 18px; border: none; border-radius: 10px;
-      background: linear-gradient(135deg, var(--teal), var(--teal-light));
-      color: #fff; cursor: pointer; font-weight: 600; font-size: 12.5px;
-      font-family: 'DM Sans', sans-serif; transition: opacity 0.2s;
-    }
-    .header-btn:hover { opacity: 0.88; }
-    .toggle { position: relative; width: 40px; height: 22px; display: inline-block; }
-    .toggle input { display: none; }
-    .toggle-slider {
-      position: absolute; inset: 0; background: #cbd5e1;
-      border-radius: 22px; cursor: pointer; transition: background 0.3s;
-    }
-    .toggle-slider::before {
-      content: ''; position: absolute; width: 16px; height: 16px;
-      background: #fff; border-radius: 50%; top: 3px; left: 3px;
-      transition: transform 0.3s; box-shadow: 0 1px 4px rgba(0,0,0,0.15);
-    }
-    .toggle input:checked + .toggle-slider { background: var(--teal); }
-    .toggle input:checked + .toggle-slider::before { transform: translateX(18px); }
-    .tabs {
-      display: flex; gap: 4px; background: var(--cream);
-      border-radius: 12px; padding: 4px; margin-bottom: 18px;
-      border: 1px solid var(--border);
-    }
-    .tab-btn {
-      flex: 1; padding: 8px 10px; border: none; background: transparent;
-      border-radius: 10px; cursor: pointer; font-weight: 600; font-size: 12px;
-      color: var(--text-soft); font-family: 'DM Sans', sans-serif; transition: all 0.2s;
-    }
-    .tab-btn.active { background: #fff; color: var(--deep); box-shadow: 0 1px 6px rgba(26,46,42,0.1); }
-    .search-wrap {
-      display: flex; align-items: center; gap: 10px;
-      background: var(--cream); border: 1.5px solid var(--border);
-      border-radius: 12px; padding: 10px 16px; margin-bottom: 16px; transition: border 0.2s;
-    }
-    .search-wrap:focus-within { border-color: var(--teal); background: #fff; }
-    .search-wrap input {
-      border: none; background: transparent; flex: 1;
-      font-size: 13.5px; color: var(--text); font-family: 'DM Sans', sans-serif;
-    }
-    .search-wrap input:focus { outline: none; }
-    .search-wrap span { color: var(--text-soft); }
-    .action-icons { display: flex; gap: 6px; }
-    .icon-btn {
-      width: 30px; height: 30px; border: none; border-radius: 8px; cursor: pointer;
-      font-size: 13px; display: flex; align-items: center; justify-content: center; transition: all 0.2s;
-    }
-    .icon-btn--edit   { background: rgba(42,107,94,0.1);   color: var(--teal); }
-    .icon-btn--del    { background: rgba(200,50,50,0.1);   color: #c03030; }
-    .icon-btn--toggle { background: rgba(201,168,76,0.15); color: #7a5c00; }
-    .icon-btn--edit:hover   { background: var(--teal); color: #fff; }
-    .icon-btn--del:hover    { background: #c03030; color: #fff; }
-    .icon-btn--toggle:hover { background: var(--gold); color: var(--deep); }
-    .badge-rol { display: inline-block; padding: 3px 10px; border-radius: 100px; font-size: 11px; font-weight: 600; }
-    .badge-rol--admin  { background: rgba(26,46,42,0.1);   color: var(--deep); }
-    .badge-rol--medico { background: rgba(42,107,94,0.12); color: var(--teal); }
-    .badge-rol--recep  { background: rgba(201,168,76,0.15);color: #7a5c00; }
-    .badge-rol--pac    { background: rgba(61,140,124,0.13);color: var(--teal-light); }
-    .badge-estado--activo   { display:inline-block;padding:3px 10px;border-radius:100px;font-size:11px;font-weight:600;background:rgba(42,107,94,0.12);color:var(--teal); }
-    .badge-estado--inactivo { display:inline-block;padding:3px 10px;border-radius:100px;font-size:11px;font-weight:600;background:rgba(200,50,50,0.1);color:#c03030; }
-    .log-item {
-      display: flex; align-items: flex-start; gap: 12px;
-      padding: 12px 0; border-bottom: 1px solid rgba(42,107,94,0.06);
-    }
-    .log-item:last-child { border-bottom: none; }
-    .log-icon {
-      width: 34px; height: 34px; border-radius: 10px; flex-shrink: 0;
-      display: flex; align-items: center; justify-content: center; font-size: 15px;
-    }
-    .log-icon--crear    { background: rgba(42,107,94,0.1); }
-    .log-icon--editar   { background: rgba(61,140,124,0.12); }
-    .log-icon--eliminar { background: rgba(200,50,50,0.1); }
-    .log-icon--acceso   { background: rgba(201,168,76,0.13); }
-    .log-body { flex: 1; }
-    .log-body strong { display: block; font-size: 13px; color: var(--deep); font-weight: 600; }
-    .log-body span   { font-size: 11.5px; color: var(--text-soft); }
-    .log-time { font-size: 11px; color: var(--text-soft); white-space: nowrap; }
-    select.rol-select {
-      padding: 5px 10px; border: 1.5px solid var(--border); border-radius: 8px;
-      font-size: 12px; background: var(--cream); color: var(--text);
-      font-family: 'DM Sans', sans-serif; cursor: pointer;
-    }
-    .horario-chip {
-      display: inline-flex; align-items: center; gap: 6px;
-      background: rgba(42,107,94,0.1); color: var(--teal);
-      border-radius: 8px; padding: 4px 10px; font-size: 12px; font-weight: 600;
-    }
-  </style>
 </head>
 <body>
 <div class="layout rol-admin">
@@ -177,7 +42,7 @@
       </div>
     </header>
 
-    <!-- INICIO -->
+    <!-- ══ INICIO ══ -->
     <div id="sec-inicio">
       <section class="stats-grid">
         <div class="stat-card stat-card--teal">
@@ -217,7 +82,7 @@
       </div>
     </div>
 
-    <!-- USUARIOS -->
+    <!-- ══ USUARIOS ══ -->
     <div id="sec-usuarios" style="display:none;">
       <div class="panel">
         <div class="panel__header">
@@ -237,12 +102,14 @@
         </div>
         <table class="tabla">
           <thead><tr><th>ID</th><th>Nombre</th><th>Email</th><th>Rol</th><th>Estado</th><th>Acciones</th></tr></thead>
-          <tbody id="tbody-usuarios"><tr><td colspan="6" style="text-align:center;color:var(--text-soft);padding:24px;">Cargando...</td></tr></tbody>
+          <tbody id="tbody-usuarios">
+            <tr><td colspan="6" style="text-align:center;color:var(--text-soft);padding:24px;">Cargando...</td></tr>
+          </tbody>
         </table>
       </div>
     </div>
 
-    <!-- MÉDICOS -->
+    <!-- ══ MÉDICOS ══ -->
     <div id="sec-medicos" style="display:none;">
       <div class="panel">
         <div class="panel__header">
@@ -251,7 +118,7 @@
         </div>
         <div class="search-wrap">
           <span>🔍</span>
-          <input type="text" id="q-medicos" placeholder="Buscar por nombre, especialidad o consultorio..." oninput="filtrarMedicos()"/>
+          <input type="text" id="q-medicos" placeholder="Buscar por nombre, especialidad o junta médica..." oninput="filtrarMedicos()"/>
         </div>
         <div class="tabs">
           <button class="tab-btn active" onclick="setTabMedicos('todos',this)">Todos</button>
@@ -260,7 +127,7 @@
         </div>
         <table class="tabla">
           <thead>
-            <tr><th>ID</th><th>Nombre</th><th>Especialidad</th><th>Consultorio</th><th>Horario</th><th>Estado</th><th>Acciones</th></tr>
+            <tr><th>ID</th><th>Nombre</th><th>Especialidad</th><th>Junta Médica</th><th>Horario</th><th>Estado</th><th>Acciones</th></tr>
           </thead>
           <tbody id="tbody-medicos">
             <tr><td colspan="7" style="text-align:center;color:var(--text-soft);padding:24px;">Cargando...</td></tr>
@@ -269,19 +136,21 @@
       </div>
     </div>
 
-    <!-- ROLES -->
+    <!-- ══ ROLES ══ -->
     <div id="sec-roles" style="display:none;">
       <div class="panel">
         <div class="panel__header"><h2>Asignación de Roles y Accesos</h2></div>
         <p style="font-size:13px;color:var(--text-soft);margin-bottom:18px;">Cambia el rol o activa/desactiva usuarios. Los cambios aplican en el próximo inicio de sesión.</p>
         <table class="tabla">
           <thead><tr><th>Usuario</th><th>Email</th><th>Rol Actual</th><th>Cambiar Rol</th><th>Estado</th></tr></thead>
-          <tbody id="tbody-roles"><tr><td colspan="5" style="text-align:center;color:var(--text-soft);padding:24px;">Cargando...</td></tr></tbody>
+          <tbody id="tbody-roles">
+            <tr><td colspan="5" style="text-align:center;color:var(--text-soft);padding:24px;">Cargando...</td></tr>
+          </tbody>
         </table>
       </div>
     </div>
 
-    <!-- LOGS -->
+    <!-- ══ LOGS ══ -->
     <div id="sec-logs" style="display:none;">
       <div class="panel">
         <div class="panel__header">
@@ -357,18 +226,28 @@
         </select>
       </div>
       <div class="form-group">
-        <label>Consultorio</label>
-        <input type="text" id="md-consultorio" placeholder="Consultorio 1"/>
+        <label>N° Junta Médica</label>
+        <input type="text" id="md-junta" placeholder="JM-0001"/>
       </div>
     </div>
     <div class="form-row">
       <div class="form-group">
-        <label>Horario</label>
-        <input type="text" id="md-horario" placeholder="08:00 - 16:00"/>
+        <label>Consultorio</label>
+        <input type="text" id="md-consultorio" placeholder="Consultorio 1"/>
       </div>
       <div class="form-group">
         <label>Teléfono</label>
         <input type="tel" id="md-telefono" placeholder="7000-0000"/>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Hora Inicio</label>
+        <input type="time" id="md-hora-inicio"/>
+      </div>
+      <div class="form-group">
+        <label>Hora Fin</label>
+        <input type="time" id="md-hora-fin"/>
       </div>
     </div>
     <div class="form-row">
@@ -379,9 +258,12 @@
           <option value="INACTIVO">Inactivo</option>
         </select>
       </div>
-      <div class="form-group">
-        <label>ID Usuario vinculado</label>
-        <input type="number" id="md-usuario" placeholder="ID del usuario doctor"/>
+      <div class="form-group autocomplete-wrap">
+        <label>Usuario Doctor</label>
+        <input type="text" id="md-usuario-nombre" placeholder="Buscar por nombre..."
+          oninput="buscarUsuarioDoctor()" autocomplete="off"/>
+        <input type="hidden" id="md-usuario"/>
+        <div id="sugerencias-usuario-doctor" class="autocomplete-lista"></div>
       </div>
     </div>
     <div class="modal-actions">

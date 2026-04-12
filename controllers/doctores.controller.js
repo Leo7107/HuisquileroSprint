@@ -1,5 +1,6 @@
 const Doctor = require("../models/doctores.model");
 
+// GET todos los doctores — para admin y recepcionista
 exports.getDoctores = (req, res) => {
   Doctor.getAll((err, results) => {
     if (err) return res.status(500).json({ error: err });
@@ -7,6 +8,7 @@ exports.getDoctores = (req, res) => {
   });
 };
 
+// GET solo activos — criterio 4: médico desactivado no aparece para agendar citas
 exports.getDoctoresActivos = (req, res) => {
   Doctor.getAllActivos((err, results) => {
     if (err) return res.status(500).json({ error: err });
@@ -21,38 +23,82 @@ exports.getDoctorById = (req, res) => {
   });
 };
 
+// POST crear doctor
+// Criterio 1: registrar médico con datos y especialidad
+// Criterio 3: no permitir dos médicos con el mismo número de junta médica
 exports.createDoctor = (req, res) => {
-  const { idUsuario } = req.body;
+  const { idUsuario, numero_junta_medica, hora_inicio, hora_fin } = req.body;
 
+  // Validar que se envíe un usuario
   if (!idUsuario) {
     return res.status(400).json({ error: "El idUsuario es obligatorio." });
   }
 
-  Doctor.getByUsuario(idUsuario, null, (err, existing) => {
-    if (err) return res.status(500).json({ error: err });
-    if (existing.length > 0) {
-      return res.status(409).json({
-        error: "Ya existe un médico registrado con ese usuario.",
-      });
-    }
+  // Criterio 2: validar que hora_fin sea posterior a hora_inicio
+  if (hora_inicio && hora_fin && hora_inicio >= hora_fin) {
+    return res.status(400).json({ error: "La hora de fin debe ser posterior a la hora de inicio." });
+  }
 
-    Doctor.create(req.body, (err, result) => {
-      if (err) return res.status(500).json({ error: err });
-      res.json({ message: "Doctor creado", id: result.insertId });
-    });
-  });
-};
-
-exports.updateDoctor = (req, res) => {
-  const id = req.params.id;
-  const { idUsuario } = req.body;
-
-  if (idUsuario) {
-    Doctor.getByUsuario(idUsuario, id, (err, existing) => {
+  // Criterio 3: verificar que el número de junta médica no esté duplicado
+  if (numero_junta_medica) {
+    Doctor.getByJunta(numero_junta_medica, null, (err, existing) => {
       if (err) return res.status(500).json({ error: err });
       if (existing.length > 0) {
         return res.status(409).json({
-          error: "Ya existe otro médico vinculado a ese usuario.",
+          error: "Ya existe un médico registrado con ese número de junta médica.",
+        });
+      }
+      // Verificar que el usuario no esté ya registrado como doctor
+      Doctor.getByUsuario(idUsuario, null, (err, existingUser) => {
+        if (err) return res.status(500).json({ error: err });
+        if (existingUser.length > 0) {
+          return res.status(409).json({
+            error: "Ya existe un médico registrado con ese usuario.",
+          });
+        }
+        Doctor.create(req.body, (err, result) => {
+          if (err) return res.status(500).json({ error: err });
+          res.json({ message: "Doctor creado", id: result.insertId });
+        });
+      });
+    });
+  } else {
+    // Sin número de junta médica, solo verificar usuario
+    Doctor.getByUsuario(idUsuario, null, (err, existingUser) => {
+      if (err) return res.status(500).json({ error: err });
+      if (existingUser.length > 0) {
+        return res.status(409).json({
+          error: "Ya existe un médico registrado con ese usuario.",
+        });
+      }
+      Doctor.create(req.body, (err, result) => {
+        if (err) return res.status(500).json({ error: err });
+        res.json({ message: "Doctor creado", id: result.insertId });
+      });
+    });
+  }
+};
+
+// PUT actualizar doctor
+// Criterio 1: editar datos y especialidad
+// Criterio 2: actualizar horarios
+// Criterio 3: verificar junta médica única al editar
+exports.updateDoctor = (req, res) => {
+  const id = req.params.id;
+  const { idUsuario, numero_junta_medica, hora_inicio, hora_fin } = req.body;
+
+  // Criterio 2: validar horario
+  if (hora_inicio && hora_fin && hora_inicio >= hora_fin) {
+    return res.status(400).json({ error: "La hora de fin debe ser posterior a la hora de inicio." });
+  }
+
+  // Criterio 3: verificar junta médica única excluyendo al doctor actual
+  if (numero_junta_medica) {
+    Doctor.getByJunta(numero_junta_medica, id, (err, existing) => {
+      if (err) return res.status(500).json({ error: err });
+      if (existing.length > 0) {
+        return res.status(409).json({
+          error: "Ya existe otro médico con ese número de junta médica.",
         });
       }
       Doctor.update(id, req.body, (err) => {
@@ -68,6 +114,7 @@ exports.updateDoctor = (req, res) => {
   }
 };
 
+// PATCH desactivar — criterio 1 y 4
 exports.desactivarDoctor = (req, res) => {
   Doctor.desactivar(req.params.id, (err) => {
     if (err) return res.status(500).json({ error: err });
@@ -75,6 +122,7 @@ exports.desactivarDoctor = (req, res) => {
   });
 };
 
+// PATCH activar — criterio 1
 exports.activarDoctor = (req, res) => {
   Doctor.activar(req.params.id, (err) => {
     if (err) return res.status(500).json({ error: err });

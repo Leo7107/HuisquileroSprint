@@ -33,6 +33,7 @@ function nav(seccion, linkEl) {
   if (seccion === 'citas')     cargarCitas();
   if (seccion === 'pacientes') cargarPacientesRecientes();
   if (seccion === 'buscar')    iniciarBuscador();
+  if (seccion === 'medicos')   cargarMedicos();
 }
 
 // ── STATS ─────────────────────────────────────
@@ -99,8 +100,7 @@ function renderCitas(lista) {
           <button class="icon-btn icon-btn--cancel" title="Cancelar" onclick="cancelarCita(${c.idCita})">✕</button>
         </div>
       </td>
-    </tr>
-  `).join('');
+    </tr>`).join('');
 }
 
 function setTabCitas(estado, btn) {
@@ -121,14 +121,14 @@ async function cancelarCita(id) {
 
 // ── MODAL CITA ────────────────────────────────
 function abrirModalCita() {
-  document.getElementById('modal-cita-titulo').textContent = 'Nueva Cita';
-  document.getElementById('cita-id').value = '';
+  document.getElementById('modal-cita-titulo').textContent  = 'Nueva Cita';
+  document.getElementById('cita-id').value                  = '';
   ['fecha','hora','motivo'].forEach(f => document.getElementById('cita-' + f).value = '');
-  document.getElementById('cita-paciente').value        = '';
-  document.getElementById('cita-paciente-nombre').value = '';
-  document.getElementById('cita-doctor').value          = '';
-  document.getElementById('cita-doctor-nombre').value   = '';
-  document.getElementById('cita-estado').value          = 'PENDIENTE';
+  document.getElementById('cita-paciente').value            = '';
+  document.getElementById('cita-paciente-nombre').value     = '';
+  document.getElementById('cita-doctor').value              = '';
+  document.getElementById('cita-doctor-nombre').value       = '';
+  document.getElementById('cita-estado').value              = 'PENDIENTE';
   document.getElementById('modal-cita').classList.add('active');
 }
 
@@ -288,10 +288,11 @@ function buscarPaciente() {
     : `<p style="text-align:center;color:var(--text-soft);padding:24px;font-size:13px;">No se encontraron resultados para "<strong>${q}</strong>".</p>`;
 }
 
-// ── AUTOCOMPLETADO ────────────────────────────
+// ── AUTOCOMPLETADO CITAS ──────────────────────
 let listaPacientes = [];
 let listaDoctores  = [];
 
+// Carga pacientes y doctores ACTIVOS para el autocompletado del modal de citas
 async function cargarListasAutocompletado() {
   try {
     const [pRes, dRes] = await Promise.all([
@@ -329,6 +330,7 @@ function buscarAutocompletado(tipo) {
   }
 
   if (tipo === 'doctor') {
+    // Criterio 4: solo muestra doctores ACTIVOS
     lista = Array.isArray(listaDoctores)
       ? listaDoctores.filter(d =>
           (d.Nombres + ' ' + d.Apellidos).toLowerCase().includes(q) ||
@@ -353,6 +355,51 @@ function seleccionar(tipo, id, nombre) {
   document.getElementById(`sugerencias-${tipo}`).style.display = 'none';
 }
 
+// ── AUTOCOMPLETADO USUARIO DOCTOR ─────────────
+let listaUsuariosDoctores = [];
+
+// Carga usuarios con rol Doctor (30002) para vincular al registrar un médico
+async function cargarUsuariosDoctores() {
+  try {
+    const res   = await fetch('/api/usuarios', { headers: H });
+    const todos = await res.json();
+    listaUsuariosDoctores = Array.isArray(todos)
+      ? todos.filter(u => u.idRol === 30002)
+      : [];
+  } catch { /* sin datos */ }
+}
+
+function buscarUsuarioDoctor() {
+  const input     = document.getElementById('md-usuario-nombre');
+  const sugerencias = document.getElementById('sugerencias-usuario-doctor');
+  const q = input.value.toLowerCase().trim();
+
+  if (!q) { sugerencias.style.display = 'none'; return; }
+
+  const lista = listaUsuariosDoctores.filter(u =>
+    `${u.Nombres} ${u.Apellidos}`.toLowerCase().includes(q) ||
+    (u.Email || '').toLowerCase().includes(q)
+  );
+
+  sugerencias.innerHTML = lista.length
+    ? lista.map(u => `
+        <div class="autocomplete-item"
+          onclick="seleccionarUsuarioDoctor(${u.idUsuario}, '${u.Nombres} ${u.Apellidos}')">
+          <strong>${u.Nombres} ${u.Apellidos}</strong>
+          <span>${u.Email}</span>
+        </div>`).join('')
+    : '<div class="autocomplete-item">Sin resultados</div>';
+
+  sugerencias.style.display = 'block';
+}
+
+function seleccionarUsuarioDoctor(id, nombre) {
+  document.getElementById('md-usuario-nombre').value = nombre;
+  document.getElementById('md-usuario').value        = id;
+  document.getElementById('sugerencias-usuario-doctor').style.display = 'none';
+}
+
+// Cierra todas las listas de sugerencias al hacer clic fuera
 document.addEventListener('click', (e) => {
   ['paciente','doctor'].forEach(tipo => {
     const input = document.getElementById(`cita-${tipo}-nombre`);
@@ -361,7 +408,184 @@ document.addEventListener('click', (e) => {
       sug.style.display = 'none';
     }
   });
+
+  const inputMd = document.getElementById('md-usuario-nombre');
+  const sugMd   = document.getElementById('sugerencias-usuario-doctor');
+  if (inputMd && sugMd && !inputMd.contains(e.target) && !sugMd.contains(e.target)) {
+    sugMd.style.display = 'none';
+  }
 });
+
+// ── MÉDICOS ───────────────────────────────────
+let todosMedicos   = [];
+let tabMedicActual = 'todos';
+
+async function cargarMedicos() {
+  try {
+    const res    = await fetch('/api/doctores', { headers: H });
+    todosMedicos = await res.json();
+    renderMedicos(todosMedicos);
+  } catch {
+    document.getElementById('tbody-medicos').innerHTML =
+      '<tr><td colspan="7" style="text-align:center;color:#c03030;padding:20px;">Error al cargar médicos</td></tr>';
+  }
+}
+
+function renderMedicos(lista) {
+  if (!Array.isArray(lista) || !lista.length) {
+    document.getElementById('tbody-medicos').innerHTML =
+      '<tr><td colspan="7" style="text-align:center;color:var(--text-soft);padding:20px;">Sin médicos registrados</td></tr>';
+    return;
+  }
+  document.getElementById('tbody-medicos').innerHTML = lista.map(d => {
+    const esActivo = d.Estado === 'ACTIVO';
+    // Criterio 2: muestra hora_inicio y hora_fin si existen
+    const horario = (d.hora_inicio && d.hora_fin)
+      ? `<span class="horario-chip">🕐 ${d.hora_inicio.substring(0,5)} – ${d.hora_fin.substring(0,5)}</span>`
+      : (d.Horario || '<span style="color:var(--text-soft);font-size:12px;">Sin horario</span>');
+    return `
+      <tr>
+        <td>#${d.idDoctor}</td>
+        <td><strong>${d.Nombres || '—'} ${d.Apellidos || ''}</strong></td>
+        <td>${d.Especialidad || '—'}</td>
+        <td style="font-size:12.5px;font-family:monospace;">${d.numero_junta_medica || '—'}</td>
+        <td>${horario}</td>
+        <td><span class="badge-estado--${esActivo ? 'activo' : 'inactivo'}">${d.Estado}</span></td>
+        <td>
+          <div class="action-icons">
+            <button class="icon-btn icon-btn--edit" title="Editar"
+              onclick='abrirModalEditarMedico(${JSON.stringify(d)})'>✏️</button>
+            <button class="icon-btn icon-btn--toggle"
+              title="${esActivo ? 'Desactivar' : 'Activar'}"
+              onclick="toggleMedico(${d.idDoctor}, ${esActivo})">
+              ${esActivo ? '🔴' : '🟢'}
+            </button>
+          </div>
+        </td>
+      </tr>`;
+  }).join('');
+}
+
+function setTabMedicos(filtro, btn) {
+  tabMedicActual = filtro;
+  document.querySelectorAll('#sec-medicos .tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const lista = filtro === 'todos' ? todosMedicos
+    : todosMedicos.filter(d => d.Estado === filtro);
+  renderMedicos(lista);
+}
+
+function filtrarMedicos() {
+  const q = document.getElementById('q-medicos').value.toLowerCase();
+  const base = tabMedicActual === 'todos' ? todosMedicos
+    : todosMedicos.filter(d => d.Estado === tabMedicActual);
+  renderMedicos(base.filter(d =>
+    `${d.Nombres || ''} ${d.Apellidos || ''}`.toLowerCase().includes(q) ||
+    (d.Especialidad        || '').toLowerCase().includes(q) ||
+    (d.numero_junta_medica || '').toLowerCase().includes(q)
+  ));
+}
+
+function abrirModalMedico() {
+  document.getElementById('modal-medico-titulo').textContent  = 'Nuevo Médico';
+  document.getElementById('md-id').value                      = '';
+  document.getElementById('md-especialidad').value            = '';
+  document.getElementById('md-junta').value                   = '';
+  document.getElementById('md-consultorio').value             = '';
+  document.getElementById('md-telefono').value                = '';
+  document.getElementById('md-hora-inicio').value             = '';
+  document.getElementById('md-hora-fin').value                = '';
+  document.getElementById('md-estado').value                  = 'ACTIVO';
+  document.getElementById('md-usuario').value                 = '';
+  document.getElementById('md-usuario-nombre').value          = '';
+  document.getElementById('modal-medico').classList.add('active');
+}
+
+function abrirModalEditarMedico(d) {
+  document.getElementById('modal-medico-titulo').textContent  = 'Editar Médico';
+  document.getElementById('md-id').value                      = d.idDoctor;
+  document.getElementById('md-especialidad').value            = d.Especialidad        || '';
+  document.getElementById('md-junta').value                   = d.numero_junta_medica || '';
+  document.getElementById('md-consultorio').value             = d.Consultorio         || '';
+  document.getElementById('md-telefono').value                = d.Telefono            || '';
+  document.getElementById('md-hora-inicio').value             = d.hora_inicio ? d.hora_inicio.substring(0,5) : '';
+  document.getElementById('md-hora-fin').value                = d.hora_fin    ? d.hora_fin.substring(0,5)    : '';
+  document.getElementById('md-estado').value                  = d.Estado              || 'ACTIVO';
+  document.getElementById('md-usuario').value                 = d.idUsuario           || '';
+  document.getElementById('md-usuario-nombre').value          = d.Nombres ? `${d.Nombres} ${d.Apellidos}` : '';
+  document.getElementById('modal-medico').classList.add('active');
+}
+
+function cerrarModalMedico() {
+  document.getElementById('modal-medico').classList.remove('active');
+}
+
+async function guardarMedico() {
+  const id         = document.getElementById('md-id').value;
+  const horaInicio = document.getElementById('md-hora-inicio').value;
+  const horaFin    = document.getElementById('md-hora-fin').value;
+
+  // Criterio 1: especialidad obligatoria
+  if (!document.getElementById('md-especialidad').value) {
+    alert('La especialidad es obligatoria.');
+    return;
+  }
+
+  // Criterio 2: hora_fin debe ser posterior a hora_inicio
+  if (horaInicio && horaFin && horaInicio >= horaFin) {
+    alert('La hora de fin debe ser posterior a la hora de inicio.');
+    return;
+  }
+
+  const payload = {
+    Especialidad:        document.getElementById('md-especialidad').value,
+    numero_junta_medica: document.getElementById('md-junta').value       || null,
+    Consultorio:         document.getElementById('md-consultorio').value  || null,
+    Telefono:            document.getElementById('md-telefono').value     || null,
+    hora_inicio:         horaInicio || null,
+    hora_fin:            horaFin    || null,
+    Estado:              document.getElementById('md-estado').value,
+    idUsuario:           parseInt(document.getElementById('md-usuario').value) || null,
+  };
+
+  const url    = id ? `/api/doctores/${id}` : '/api/doctores';
+  const method = id ? 'PUT' : 'POST';
+  const res    = await fetch(url, { method, headers: H, body: JSON.stringify(payload) });
+  const data   = await res.json();
+
+  // Criterio 3: backend devuelve 409 si número de junta ya existe
+  if (res.status === 409) {
+    alert('⚠️ ' + data.error);
+    return;
+  }
+
+  if (data.message || data.id) {
+    cerrarModalMedico();
+    cargarMedicos();
+    cargarListasAutocompletado(); // refresca doctores activos en modal de citas
+  } else {
+    alert('Error: ' + (data.error?.sqlMessage || data.error || 'Revisa los datos'));
+  }
+}
+
+// Criterio 1 y 4: activa o desactiva un médico
+async function toggleMedico(id, estaActivo) {
+  const accion  = estaActivo ? 'desactivar' : 'activar';
+  const mensaje = estaActivo
+    ? '¿Desactivar este médico? No aparecerá disponible para agendar citas.'
+    : '¿Activar este médico?';
+  if (!confirm(mensaje)) return;
+
+  const res  = await fetch(`/api/doctores/${id}/${accion}`, { method: 'PATCH', headers: H });
+  const data = await res.json();
+
+  if (data.message) {
+    cargarMedicos();
+    cargarListasAutocompletado(); // refresca el autocompletado de citas
+  } else {
+    alert('Error: ' + (data.error || ''));
+  }
+}
 
 // ── CERRAR SESIÓN ─────────────────────────────
 function cerrarSesion() {
@@ -373,3 +597,4 @@ function cerrarSesion() {
 // ── INIT ──────────────────────────────────────
 cargarStats();
 cargarListasAutocompletado();
+cargarUsuariosDoctores();

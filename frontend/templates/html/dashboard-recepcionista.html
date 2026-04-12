@@ -6,153 +6,6 @@
   <title>Medisync – Recepcionista</title>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="/css/dashboard.css"/>
-  <style>
-    .modal-overlay {
-      display: none; position: fixed; inset: 0;
-      background: rgba(26,46,42,0.55); z-index: 1000;
-      align-items: center; justify-content: center;
-    }
-    .modal-overlay.active { display: flex; }
-    .modal {
-      background: #fff; border-radius: 20px; padding: 32px;
-      width: min(540px, 92vw); max-height: 90vh; overflow-y: auto;
-      box-shadow: 0 24px 64px rgba(26,46,42,0.22); animation: fadeDown 0.25s ease;
-    }
-    .modal h3 {
-      font-family: 'Playfair Display', serif; font-size: 1.25rem;
-      color: var(--deep); margin-bottom: 22px;
-    }
-    .form-group { margin-bottom: 14px; }
-    .form-group label {
-      display: block; font-size: 11.5px; font-weight: 600;
-      color: var(--text-soft); margin-bottom: 5px; letter-spacing: 0.04em;
-    }
-    .form-group input, .form-group select, .form-group textarea {
-      width: 100%; padding: 10px 14px; border: 1.5px solid var(--border);
-      border-radius: 11px; font-size: 13.5px; color: var(--text);
-      background: var(--cream); font-family: 'DM Sans', sans-serif;
-      box-sizing: border-box; transition: border 0.2s, background 0.2s;
-    }
-    .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
-      outline: none; border-color: var(--gold); background: #fff;
-    }
-    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-    .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 22px; }
-    .btn-cancelar {
-      padding: 10px 20px; border: 1.5px solid var(--border); border-radius: 11px;
-      background: #fff; cursor: pointer; font-weight: 600; font-size: 13px;
-      color: var(--text-soft); font-family: 'DM Sans', sans-serif; transition: background 0.2s;
-    }
-    .btn-cancelar:hover { background: var(--cream); }
-    .btn-primary {
-      padding: 10px 22px; border: none; border-radius: 11px;
-      background: linear-gradient(135deg, var(--gold), var(--gold-light));
-      color: var(--deep); cursor: pointer; font-weight: 700; font-size: 13px;
-      font-family: 'DM Sans', sans-serif; transition: opacity 0.2s, transform 0.15s;
-    }
-    .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
-    .header-btn {
-      padding: 8px 18px; border: none; border-radius: 10px;
-      background: linear-gradient(135deg, var(--gold), var(--gold-light));
-      color: var(--deep); cursor: pointer; font-weight: 700; font-size: 12.5px;
-      font-family: 'DM Sans', sans-serif; transition: opacity 0.2s;
-    }
-    .header-btn:hover { opacity: 0.88; }
-    .tabs {
-      display: flex; gap: 4px; background: var(--cream);
-      border-radius: 12px; padding: 4px; margin-bottom: 18px; border: 1px solid var(--border);
-    }
-    .tab-btn {
-      flex: 1; padding: 8px 10px; border: none; background: transparent;
-      border-radius: 10px; cursor: pointer; font-weight: 600; font-size: 12px;
-      color: var(--text-soft); font-family: 'DM Sans', sans-serif; transition: all 0.2s;
-    }
-    .tab-btn.active { background: #fff; color: var(--deep); box-shadow: 0 1px 6px rgba(26,46,42,0.1); }
-    .search-global {
-      display: flex; align-items: center; gap: 10px;
-      background: var(--cream); border: 1.5px solid var(--border);
-      border-radius: 14px; padding: 12px 18px; margin-bottom: 16px; transition: border 0.2s;
-    }
-    .search-global:focus-within { border-color: var(--gold); background: #fff; }
-    .search-global input {
-      border: none; background: transparent; flex: 1;
-      font-size: 14px; color: var(--text); font-family: 'DM Sans', sans-serif;
-    }
-    .search-global input:focus { outline: none; }
-    .search-global span { color: var(--text-soft); font-size: 16px; }
-    .action-icons { display: flex; gap: 6px; }
-    .icon-btn {
-      width: 30px; height: 30px; border: none; border-radius: 8px; cursor: pointer;
-      font-size: 13px; display: flex; align-items: center; justify-content: center; transition: all 0.2s;
-    }
-    .icon-btn--edit   { background: rgba(201,168,76,0.15); color: #7a5c00; }
-    .icon-btn--cancel { background: rgba(200,50,50,0.1);   color: #c03030; }
-    .icon-btn--edit:hover   { background: var(--gold); color: var(--deep); }
-    .icon-btn--cancel:hover { background: #c03030; color: #fff; }
-
-    /* Sala de espera */
-    .espera-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; }
-    .espera-col { background: var(--cream); border-radius: 16px; padding: 18px; min-height: 200px; border: 1px solid var(--border); }
-    .espera-col-title {
-      font-size: 11px; font-weight: 700; text-transform: uppercase;
-      letter-spacing: 0.1em; margin-bottom: 14px;
-      display: flex; align-items: center; gap: 8px; color: var(--text-soft);
-    }
-    .dot { width: 10px; height: 10px; border-radius: 50%; }
-    .dot--llego    { background: var(--gold); }
-    .dot--consulta { background: var(--teal); }
-    .dot--fin      { background: #22c55e; }
-    .pac-card {
-      background: #fff; border-radius: 12px; padding: 13px 14px;
-      margin-bottom: 10px; border: 1px solid var(--border);
-      box-shadow: 0 2px 8px rgba(26,46,42,0.06);
-    }
-    .pac-card strong { display: block; font-size: 13.5px; color: var(--deep); font-weight: 600; }
-    .pac-card span   { font-size: 11.5px; color: var(--text-soft); }
-    .pac-card-actions { margin-top: 10px; display: flex; gap: 6px; }
-    .btn-mover {
-      padding: 5px 12px; border: none; border-radius: 8px; cursor: pointer;
-      font-size: 11.5px; font-weight: 600; font-family: 'DM Sans', sans-serif; transition: all 0.2s;
-    }
-    .btn-mover--consulta { background: rgba(42,107,94,0.12); color: var(--teal); }
-    .btn-mover--consulta:hover { background: var(--teal); color: #fff; }
-    .btn-mover--fin { background: rgba(34,197,94,0.12); color: #16a34a; }
-    .btn-mover--fin:hover { background: #22c55e; color: #fff; }
-    .badge-fin { display: inline-block; padding: 3px 10px; border-radius: 100px; font-size: 11px; font-weight: 600; background: rgba(34,197,94,0.12); color: #16a34a; }
-
-    /* Buscador resultado */
-    .resultado-item {
-      display: flex; align-items: center; gap: 14px;
-      padding: 12px; border-radius: 12px; transition: background 0.15s; cursor: pointer;
-      border-bottom: 1px solid rgba(42,107,94,0.06);
-    }
-    .resultado-item:last-child { border-bottom: none; }
-    .resultado-item:hover { background: var(--cream); }
-    .resultado-avatar {
-      width: 40px; height: 40px; border-radius: 12px;
-      background: linear-gradient(135deg, var(--teal), var(--teal-light));
-      color: #fff; font-weight: 700; display: flex;
-      align-items: center; justify-content: center; font-size: 1.1rem; flex-shrink: 0;
-    }
-    .resultado-info strong { display: block; font-size: 13.5px; color: var(--deep); font-weight: 600; }
-    .resultado-info span   { font-size: 11.5px; color: var(--text-soft); }
-
-    /* Form paciente */
-    .pac-form-wrap { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
-    .pac-form-wrap h3 { font-size: 14px; font-weight: 700; color: var(--deep); margin-bottom: 16px; }
-    .btn-full {
-      width: 100%; padding: 12px; border: none; border-radius: 12px;
-      background: linear-gradient(135deg, var(--gold), var(--gold-light));
-      color: var(--deep); font-weight: 700; font-size: 13.5px;
-      font-family: 'DM Sans', sans-serif; cursor: pointer; transition: opacity 0.2s;
-    }
-    .btn-full:hover { opacity: 0.88; }
-
-    @media (max-width: 900px) {
-      .espera-grid    { grid-template-columns: 1fr; }
-      .pac-form-wrap  { grid-template-columns: 1fr; }
-    }
-  </style>
 </head>
 <body>
 <div class="layout rol-recep">
@@ -169,9 +22,7 @@
       <a href="#" class="nav-item" onclick="nav('pacientes',this);return false;"><span class="nav-icon">👤</span> Registro de Pacientes</a>
       <a href="#" class="nav-item" onclick="nav('espera',this);return false;"><span class="nav-icon">🏥</span> Sala de Espera</a>
       <a href="#" class="nav-item" onclick="nav('buscar',this);return false;"><span class="nav-icon">🔍</span> Buscar Expediente</a>
-      <a href="#" class="nav-item" onclick="nav('medicos',this);return false;">
-  <span class="nav-icon">🩺</span> Médicos Disponibles
-</a>
+      <a href="#" class="nav-item" onclick="nav('medicos',this);return false;"><span class="nav-icon">🩺</span> Gestión de Médicos</a>
     </nav>
     <button class="sidebar__logout" onclick="cerrarSesion()"><span>⏻</span> Cerrar sesión</button>
   </aside>
@@ -192,7 +43,7 @@
       </div>
     </header>
 
-    <!-- INICIO -->
+    <!-- ══ INICIO ══ -->
     <div id="sec-inicio">
       <section class="stats-grid">
         <div class="stat-card stat-card--teal">
@@ -212,6 +63,7 @@
           <div class="stat-info"><div class="stat-num" id="s-pacientes">—</div><div class="stat-label">Pacientes Registrados</div></div>
         </div>
       </section>
+
       <div class="panels-row">
         <div class="panel">
           <div class="panel__header">
@@ -220,7 +72,9 @@
           </div>
           <table class="tabla">
             <thead><tr><th>Hora</th><th>Paciente</th><th>Doctor</th><th>Estado</th></tr></thead>
-            <tbody id="citas-preview"><tr><td colspan="4" style="text-align:center;color:var(--text-soft);padding:16px;">Cargando...</td></tr></tbody>
+            <tbody id="citas-preview">
+              <tr><td colspan="4" style="text-align:center;color:var(--text-soft);padding:16px;">Cargando...</td></tr>
+            </tbody>
           </table>
         </div>
         <div class="panel">
@@ -229,13 +83,13 @@
             <button class="accion-btn" onclick="abrirModalCita()"><span>📅</span><span>Nueva Cita</span></button>
             <button class="accion-btn" onclick="nav('pacientes',null)"><span>👤</span><span>Nuevo Paciente</span></button>
             <button class="accion-btn" onclick="nav('espera',null)"><span>🏥</span><span>Sala de Espera</span></button>
-            <button class="accion-btn" onclick="nav('buscar',null)"><span>🔍</span><span>Buscar Paciente</span></button>
+            <button class="accion-btn" onclick="nav('medicos',null)"><span>🩺</span><span>Médicos</span></button>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- CITAS -->
+    <!-- ══ CITAS ══ -->
     <div id="sec-citas" style="display:none;">
       <div class="panel">
         <div class="panel__header">
@@ -251,12 +105,14 @@
         </div>
         <table class="tabla">
           <thead><tr><th>ID</th><th>Fecha</th><th>Hora</th><th>Paciente</th><th>Doctor</th><th>Estado</th><th>Acciones</th></tr></thead>
-          <tbody id="tbody-citas"><tr><td colspan="7" style="text-align:center;color:var(--text-soft);padding:24px;">Cargando...</td></tr></tbody>
+          <tbody id="tbody-citas">
+            <tr><td colspan="7" style="text-align:center;color:var(--text-soft);padding:24px;">Cargando...</td></tr>
+          </tbody>
         </table>
       </div>
     </div>
 
-    <!-- PACIENTES -->
+    <!-- ══ PACIENTES ══ -->
     <div id="sec-pacientes" style="display:none;">
       <div class="panel">
         <div class="panel__header"><h2>Registro de Pacientes</h2></div>
@@ -299,7 +155,7 @@
       </div>
     </div>
 
-    <!-- SALA DE ESPERA -->
+    <!-- ══ SALA DE ESPERA ══ -->
     <div id="sec-espera" style="display:none;">
       <div class="panel">
         <div class="panel__header">
@@ -352,17 +208,52 @@
       </div>
     </div>
 
-    <!-- BUSCAR -->
+    <!-- ══ BUSCAR ══ -->
     <div id="sec-buscar" style="display:none;">
       <div class="panel">
         <div class="panel__header"><h2>Buscar Expediente de Paciente</h2></div>
-        <div class="search-global">
+        <div class="search-wrap">
           <span>🔍</span>
-          <input type="text" id="q-global" placeholder="Buscar por nombre, expediente o ID..." oninput="buscarPaciente()"/>
+          <input type="text" id="q-global" placeholder="Buscar por expediente o ID..." oninput="buscarPaciente()"/>
         </div>
         <div id="resultados-busqueda">
           <p style="text-align:center;color:var(--text-soft);padding:24px;font-size:13px;">Escribe para buscar un paciente...</p>
         </div>
+      </div>
+    </div>
+
+    <!-- ══ MÉDICOS ══ -->
+    <div id="sec-medicos" style="display:none;">
+      <div class="panel">
+        <div class="panel__header">
+          <h2>Gestión de Médicos</h2>
+          <button class="header-btn" onclick="abrirModalMedico()">+ Nuevo Médico</button>
+        </div>
+        <div class="search-wrap">
+          <span>🔍</span>
+          <input type="text" id="q-medicos" placeholder="Buscar por nombre, especialidad o junta médica..." oninput="filtrarMedicos()"/>
+        </div>
+        <div class="tabs">
+          <button class="tab-btn active" onclick="setTabMedicos('todos',this)">Todos</button>
+          <button class="tab-btn" onclick="setTabMedicos('ACTIVO',this)">Activos</button>
+          <button class="tab-btn" onclick="setTabMedicos('INACTIVO',this)">Inactivos</button>
+        </div>
+        <table class="tabla">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Nombre</th>
+              <th>Especialidad</th>
+              <th>Junta Médica</th>
+              <th>Horario</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-medicos">
+            <tr><td colspan="7" style="text-align:center;color:var(--text-soft);padding:24px;">Cargando...</td></tr>
+          </tbody>
+        </table>
       </div>
     </div>
 
@@ -379,21 +270,21 @@
       <div class="form-group"><label>Hora</label><input type="time" id="cita-hora"/></div>
     </div>
     <div class="form-row">
-  <div class="form-group autocomplete-wrap">
-    <label>Paciente</label>
-    <input type="text" id="cita-paciente-nombre" placeholder="Buscar paciente..." 
-      oninput="buscarAutocompletado('paciente')" autocomplete="off"/>
-    <input type="hidden" id="cita-paciente"/>
-    <div id="sugerencias-paciente" class="autocomplete-lista"></div>
-  </div>
-  <div class="form-group autocomplete-wrap">
-    <label>Doctor</label>
-    <input type="text" id="cita-doctor-nombre" placeholder="Buscar doctor..."
-      oninput="buscarAutocompletado('doctor')" autocomplete="off"/>
-    <input type="hidden" id="cita-doctor"/>
-    <div id="sugerencias-doctor" class="autocomplete-lista"></div>
-  </div>
-</div>
+      <div class="form-group autocomplete-wrap">
+        <label>Paciente</label>
+        <input type="text" id="cita-paciente-nombre" placeholder="Buscar paciente..."
+          oninput="buscarAutocompletado('paciente')" autocomplete="off"/>
+        <input type="hidden" id="cita-paciente"/>
+        <div id="sugerencias-paciente" class="autocomplete-lista"></div>
+      </div>
+      <div class="form-group autocomplete-wrap">
+        <label>Doctor</label>
+        <input type="text" id="cita-doctor-nombre" placeholder="Buscar doctor..."
+          oninput="buscarAutocompletado('doctor')" autocomplete="off"/>
+        <input type="hidden" id="cita-doctor"/>
+        <div id="sugerencias-doctor" class="autocomplete-lista"></div>
+      </div>
+    </div>
     <div class="form-group">
       <label>Estado</label>
       <select id="cita-estado">
@@ -410,6 +301,77 @@
     <div class="modal-actions">
       <button class="btn-cancelar" onclick="cerrarModalCita()">Cancelar</button>
       <button class="btn-primary" onclick="guardarCita()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL MÉDICO -->
+<div class="modal-overlay" id="modal-medico">
+  <div class="modal">
+    <h3 id="modal-medico-titulo">Nuevo Médico</h3>
+    <input type="hidden" id="md-id"/>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Especialidad</label>
+        <select id="md-especialidad">
+          <option value="">Seleccione...</option>
+          <option>Medicina General</option>
+          <option>Pediatría</option>
+          <option>Ginecología</option>
+          <option>Cardiología</option>
+          <option>Neurología</option>
+          <option>Ortopedia</option>
+          <option>Dermatología</option>
+          <option>Psiquiatría</option>
+          <option>Oftalmología</option>
+          <option>Odontología</option>
+          <option>Otra</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>N° Junta Médica</label>
+        <input type="text" id="md-junta" placeholder="JM-0001"/>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Consultorio</label>
+        <input type="text" id="md-consultorio" placeholder="Consultorio 1"/>
+      </div>
+      <div class="form-group">
+        <label>Teléfono</label>
+        <input type="tel" id="md-telefono" placeholder="7000-0000"/>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Hora Inicio</label>
+        <input type="time" id="md-hora-inicio"/>
+      </div>
+      <div class="form-group">
+        <label>Hora Fin</label>
+        <input type="time" id="md-hora-fin"/>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Estado</label>
+        <select id="md-estado">
+          <option value="ACTIVO">Activo</option>
+          <option value="INACTIVO">Inactivo</option>
+        </select>
+      </div>
+      <div class="form-group autocomplete-wrap">
+        <label>Usuario Doctor</label>
+        <input type="text" id="md-usuario-nombre" placeholder="Buscar por nombre..."
+          oninput="buscarUsuarioDoctor()" autocomplete="off"/>
+        <input type="hidden" id="md-usuario"/>
+        <div id="sugerencias-usuario-doctor" class="autocomplete-lista"></div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancelar" onclick="cerrarModalMedico()">Cancelar</button>
+      <button class="btn-primary" onclick="guardarMedico()">Guardar</button>
     </div>
   </div>
 </div>
