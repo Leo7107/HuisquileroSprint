@@ -136,7 +136,16 @@
               <div class="form-group"><label>Parentesco</label><input type="text" id="pac-parentesco" placeholder="Madre, Padre..."/></div>
               <div class="form-group"><label>Teléfono Emergencia</label><input type="tel" id="pac-tel" placeholder="7000-0000"/></div>
             </div>
-            <div class="form-group"><label>ID de Usuario vinculado</label><input type="number" id="pac-usuario" placeholder="ID del usuario"/></div>
+
+            <!-- AUTOCOMPLETADO USUARIO PACIENTE -->
+            <div class="form-group autocomplete-wrap">
+              <label>Usuario Paciente</label>
+              <input type="text" id="pac-usuario-nombre" placeholder="Buscar por nombre..."
+                oninput="buscarUsuarioPaciente()" autocomplete="off"/>
+              <input type="hidden" id="pac-usuario"/>
+              <div id="sugerencias-usuario-paciente" class="autocomplete-lista"></div>
+            </div>
+
             <div class="form-group">
               <label>Observaciones</label>
               <textarea id="pac-obs" rows="3" placeholder="Notas adicionales..."></textarea>
