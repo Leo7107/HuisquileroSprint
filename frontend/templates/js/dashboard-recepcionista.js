@@ -161,11 +161,17 @@ async function guardarCita() {
   const method = id ? 'PUT' : 'POST';
   const res    = await fetch(url, { method, headers: H, body: JSON.stringify(payload) });
   const data   = await res.json();
+
+  if (res.status === 409) {
+    alert('⚠️ ' + data.error);
+    return;
+  }
+
   if (data.id || data.message) {
     cerrarModalCita();
     cargarCitas();
   } else {
-    alert('Error al guardar cita: ' + (data.error?.sqlMessage || 'Revisa los datos'));
+    alert('Error al guardar cita: ' + (data.error?.sqlMessage || data.error || 'Revisa los datos'));
   }
 }
 
