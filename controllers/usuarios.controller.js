@@ -76,7 +76,7 @@ exports.login = (req, res) => {
                 console.error("Error bcrypt:", err);
                 return res.status(500).json({ error: err });
             }
-            if (!coincide) return res.status(401).json({ message: "ContraseÃ±a incorrecta" });
+            if (!coincide) return res.status(401).json({ message: "Contraseña incorrecta" });
             const token = jwt.sign(
                 { id: usuario.idUsuario, rol: usuario.idRol },
                 process.env.JWT_SECRET,
