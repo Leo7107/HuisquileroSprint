@@ -91,12 +91,12 @@ exports.forgotPassword = (req, res) => {
     const { Email } = req.body;
 
     if (!Email || !/\S+@\S+\.\S+/.test(Email)) {
-        return res.status(400).json({ message: "Correo invÃ¡lido." });
+        return res.status(400).json({ message: "Correo invalido." });
     }
     Usuario.getByEmail(Email, (err, results) => {
         if (err) return res.status(500).json({ error: err });
         if (results.length === 0) {
-            return res.status(200).json({ message: "Si el correo existe, recibirÃ¡s un enlace." });
+            return res.status(200).json({ message: "Si el correo existe, recibiras un enlace." });
         }
         const usuario = results[0];
         const token = crypto.randomBytes(32).toString('hex');
@@ -107,27 +107,27 @@ exports.forgotPassword = (req, res) => {
             let rolTexto = "";
             if (usuario.idRol === ROLES.DOCTOR) rolTexto = "Dr(a).";
             const mailOptions = {
-                from: `"ClÃ­nica" <${process.env.SMTP_USER}>`,
+                from: `"Cli­nica" <${process.env.SMTP_USER}>`,
                 to: usuario.Email,
-                subject: 'Restablecer tu contraseÃ±a',
+                subject: 'Restablecer tu contraseña',
                 html: `
                     <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 32px; background: #f9fafb; border-radius: 12px;">
-                        <h2 style="color: #111827; margin-bottom: 8px;">Restablecer contraseÃ±a</h2>
+                        <h2 style="color: #111827; margin-bottom: 8px;">Restablecer contraseña</h2>
                         <p style="color: #374151; margin-bottom: 4px;">
                             Hola, <strong>${rolTexto} ${usuario.Nombres} ${usuario.Apellidos}</strong>.
                         </p>
                         <p style="color: #6b7280; margin-bottom: 24px;">
-                            Recibimos una solicitud para restablecer la contraseÃ±a de tu cuenta.
+                            Recibimos una solicitud para restablecer la contraseña de tu cuenta.
                             Este enlace expira en <strong>15 minutos</strong>.
                         </p>
                         <a href="${resetLink}"
                             style="display: inline-block; background: #4f8ef7; color: #fff;
                                    padding: 13px 28px; border-radius: 8px; text-decoration: none;
                                    font-weight: 600; font-size: 15px; margin-bottom: 24px;">
-                            Restablecer contraseÃ±a
+                            Restablecer contraseña
                         </a>
                         <p style="color: #9ca3af; font-size: 13px;">
-                            Si no solicitaste esto, puedes ignorar este correo. Tu contraseÃ±a no cambiarÃ¡.
+                            Si no solicitaste esto, puedes ignorar este correo. Tu contraseña no cambiara¡.
                         </p>
                         <p style="color: #d1d5db; font-size: 12px; margin-top: 24px; border-top: 1px solid #e5e7eb; padding-top: 16px;">
                             O copia este enlace en tu navegador:<br/>
@@ -141,7 +141,7 @@ exports.forgotPassword = (req, res) => {
                     console.error("[forgot-password] Error enviando email:", err.message);
                     return res.status(500).json({ message: "No se pudo enviar el correo." });
                 }
-                res.status(200).json({ message: "Si el correo existe, recibirÃ¡s un enlace." });
+                res.status(200).json({ message: "Si el correo existe, recibiras un enlace." });
             });
         });
     });
@@ -153,19 +153,19 @@ exports.resetPassword = (req, res) => {
         return res.status(400).json({ message: "Datos incompletos." });
     }
     if (password.length < 8) {
-        return res.status(400).json({ message: "La contraseÃ±a debe tener al menos 8 caracteres." });
+        return res.status(400).json({ message: "La contraseña debe tener al menos 8 caracteres." });
     }
     Usuario.getByResetToken(token, (err, results) => {
         if (err) return res.status(500).json({ error: err });
         if (results.length === 0) {
-            return res.status(400).json({ message: "El enlace no es vÃ¡lido o ya expirÃ³. Solicita uno nuevo." });
+            return res.status(400).json({ message: "El enlace no es valido o ya expiro. Solicita uno nuevo." });
         }
         const usuario = results[0];
         bcrypt.hash(password, 10, (err, hash) => {
             if (err) return res.status(500).json({ error: err });
             Usuario.updatePassword(usuario.idUsuario, hash, (err) => {
                 if (err) return res.status(500).json({ error: err });
-                res.json({ message: "ContraseÃ±a actualizada correctamente." });
+                res.json({ message: "Contraseña actualizada correctamente." });
             });
         });
     });
