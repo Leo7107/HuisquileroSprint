@@ -53,14 +53,22 @@ async function cargarStats() {
     document.getElementById('s-citas-hoy').textContent = citasHoy.length;
     document.getElementById('s-pacientes').textContent = Array.isArray(pacientes) ? pacientes.length : '—';
 
-    document.getElementById('citas-preview').innerHTML = citasHoy.length
-      ? citasHoy.slice(0,4).map(c => `
-          <tr>
-            <td>${c.hora || '—'}</td>
-            <td>#${c.idPaciente}</td>
-            <td>#${c.idDoctor}</td>
-            <td><span class="badge badge--${c.estado === 'CONFIRMADA' ? 'activo' : 'pendiente'}">${c.estado}</span></td>
-          </tr>`).join('')
+   document.getElementById('citas-preview').innerHTML = citasHoy.length
+      ? citasHoy.slice(0,4).map(c => {
+          const paciente = c.NombrePaciente
+            ? `${c.NombrePaciente} ${c.ApellidosPaciente}`
+            : `#${c.idPaciente}`;
+          const doctor = c.NombreDoctor
+            ? `${c.NombreDoctor} ${c.ApellidosDoctor}`
+            : `#${c.idDoctor}`;
+          return `
+            <tr>
+              <td>${c.hora || '—'}</td>
+              <td>${paciente}</td>
+              <td>${doctor}</td>
+              <td><span class="badge badge--${c.estado === 'CONFIRMADA' ? 'activo' : 'pendiente'}">${c.estado}</span></td>
+            </tr>`;
+        }).join('')
       : '<tr><td colspan="4" style="text-align:center;color:var(--text-soft);padding:16px;">Sin citas para hoy</td></tr>';
   } catch { /* sin datos */ }
 }
@@ -86,21 +94,29 @@ function renderCitas(lista) {
       '<tr><td colspan="7" style="text-align:center;color:var(--text-soft);padding:20px;">Sin citas</td></tr>';
     return;
   }
-  document.getElementById('tbody-citas').innerHTML = lista.map(c => `
-    <tr>
-      <td>#${c.idCita}</td>
-      <td>${c.fecha || '—'}</td>
-      <td>${c.hora  || '—'}</td>
-      <td>#${c.idPaciente}</td>
-      <td>#${c.idDoctor}</td>
-      <td><span class="badge badge--${['CONFIRMADA','FINALIZADA'].includes(c.estado) ? 'activo' : 'pendiente'}">${c.estado}</span></td>
-      <td>
-        <div class="action-icons">
-          <button class="icon-btn icon-btn--edit"   title="Editar"   onclick='abrirModalEditarCita(${JSON.stringify(c)})'>✏️</button>
-          <button class="icon-btn icon-btn--cancel" title="Cancelar" onclick="cancelarCita(${c.idCita})">✕</button>
-        </div>
-      </td>
-    </tr>`).join('');
+  document.getElementById('tbody-citas').innerHTML = lista.map(c => {
+    const paciente = c.NombrePaciente
+      ? `${c.NombrePaciente} ${c.ApellidosPaciente}`
+      : `#${c.idPaciente}`;
+    const doctor = c.NombreDoctor
+      ? `${c.NombreDoctor} ${c.ApellidosDoctor}`
+      : `#${c.idDoctor}`;
+    return `
+      <tr>
+        <td>#${c.idCita}</td>
+        <td>${c.fecha ? c.fecha.split('T')[0] : '—'}</td>
+        <td>${c.hora  || '—'}</td>
+        <td>${paciente}</td>
+        <td>${doctor}</td>
+        <td><span class="badge badge--${['CONFIRMADA','FINALIZADA'].includes(c.estado) ? 'activo' : 'pendiente'}">${c.estado}</span></td>
+        <td>
+          <div class="action-icons">
+            <button class="icon-btn icon-btn--edit"   title="Editar"   onclick='abrirModalEditarCita(${JSON.stringify(c)})'>✏️</button>
+            <button class="icon-btn icon-btn--cancel" title="Cancelar" onclick="cancelarCita(${c.idCita})">✕</button>
+          </div>
+        </td>
+      </tr>`;
+  }).join('');
 }
 
 function setTabCitas(estado, btn) {
@@ -133,16 +149,14 @@ function abrirModalCita() {
 }
 
 function abrirModalEditarCita(c) {
-  document.getElementById('modal-cita-titulo').textContent  = 'Editar Cita';
-  document.getElementById('cita-id').value                  = c.idCita;
-  document.getElementById('cita-fecha').value               = c.fecha      || '';
-  document.getElementById('cita-hora').value                = c.hora       || '';
-  document.getElementById('cita-paciente').value            = c.idPaciente || '';
-  document.getElementById('cita-paciente-nombre').value     = `Paciente #${c.idPaciente}`;
-  document.getElementById('cita-doctor').value              = c.idDoctor   || '';
-  document.getElementById('cita-doctor-nombre').value       = `Doctor #${c.idDoctor}`;
-  document.getElementById('cita-estado').value              = c.estado     || 'PENDIENTE';
-  document.getElementById('cita-motivo').value              = c.motivo     || '';
+  document.getElementById('modal-cita-titulo').textContent = 'Editar Cita';
+  document.getElementById('cita-id').value       = c.idCita;
+  document.getElementById('cita-fecha').value    = c.fecha ? c.fecha.split('T')[0] : '';
+  document.getElementById('cita-hora').value     = c.hora       || '';
+  document.getElementById('cita-paciente').value = c.idPaciente || '';
+  document.getElementById('cita-doctor').value   = c.idDoctor   || '';
+  document.getElementById('cita-estado').value   = c.estado     || 'PENDIENTE';
+  document.getElementById('cita-motivo').value   = c.motivo     || '';
   document.getElementById('modal-cita').classList.add('active');
 }
 
@@ -314,23 +328,23 @@ function buscarAutocompletado(tipo) {
   let lista = [];
 
   if (tipo === 'paciente') {
-    lista = Array.isArray(listaPacientes)
-      ? listaPacientes.filter(p =>
-          (p.numero_expediente || '').toLowerCase().includes(q) ||
-          String(p.idPaciente).includes(q))
-      : [];
-    sugerencias.innerHTML = lista.length
-      ? lista.map(p => `
-          <div class="autocomplete-item"
-            onclick="seleccionar('paciente', ${p.idPaciente}, 'Exp: ${p.numero_expediente}')">
-            <strong>Exp: ${p.numero_expediente}</strong>
-            <span>ID: ${p.idPaciente} · ${p.estado_paciente}</span>
-          </div>`).join('')
-      : '<div class="autocomplete-item">Sin resultados</div>';
-  }
+  lista = Array.isArray(listaPacientes)
+    ? listaPacientes.filter(p =>
+        (p.numero_expediente || '').toLowerCase().includes(q) ||
+        (`${p.Nombres || ''} ${p.Apellidos || ''}`).toLowerCase().includes(q) ||
+        String(p.idPaciente).includes(q))
+    : [];
+  sugerencias.innerHTML = lista.length
+    ? lista.map(p => `
+        <div class="autocomplete-item"
+          onclick="seleccionar('paciente', ${p.idPaciente}, '${p.Nombres || ''} ${p.Apellidos || ''}')">
+          <strong>${p.Nombres || ''} ${p.Apellidos || ''}</strong>
+          <span>Exp: ${p.numero_expediente} · ${p.estado_paciente}</span>
+        </div>`).join('')
+    : '<div class="autocomplete-item">Sin resultados</div>';
+}
 
   if (tipo === 'doctor') {
-    // Criterio 4: solo muestra doctores ACTIVOS
     lista = Array.isArray(listaDoctores)
       ? listaDoctores.filter(d =>
           (d.Nombres + ' ' + d.Apellidos).toLowerCase().includes(q) ||
