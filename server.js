@@ -27,6 +27,7 @@ const citasRoutes = require("./routes/citas.routes");
 const diagnosticosRoutes = require("./routes/diagnosticos.routes");
 const historialRoutes = require("./routes/historial.routes");
 const detallesFacturaRoutes = require("./routes/detalles_factura.routes");
+const perfilRoutes = require("./routes/perfil.routes");   // ← NUEVA LÍNEA
 
 app.use("/api/consultas", consultasRoutes);
 app.use("/api/facturas", facturasRoutes);
@@ -38,6 +39,7 @@ app.use("/api/citas", citasRoutes);
 app.use("/api/diagnosticos", diagnosticosRoutes);
 app.use("/api/historial", historialRoutes);
 app.use("/api/detalles-factura", detallesFacturaRoutes);
+app.use("/api/perfil", perfilRoutes);   // ← NUEVA LÍNEA
 
 const PORT = process.env.PORT || 3000;
 
