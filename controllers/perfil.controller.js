@@ -1,72 +1,80 @@
-const Cita = require("../models/citas.model");
+const Perfil = require("../models/perfil.model");
 
-exports.getCitas = (req, res) => {
-    Cita.getAll((err, results) => {
-        if (err) return res.status(500).json({ error: err });
-        res.json(results);
-    });
+exports.getPerfil = (req, res) => {
+  Perfil.getPerfil(req.params.idUsuario, (err, result) => {
+    if (err) return res.status(500).json({ error: err });
+    if (!result.length) return res.status(404).json({ error: "Usuario no encontrado" });
+    res.json(result[0]);
+  });
 };
 
-exports.getCitaById = (req, res) => {
-    Cita.getById(req.params.id, (err, result) => {
-        if (err) return res.status(500).json({ error: err });
-        res.json(result);
-    });
-};
+exports.updatePerfil = (req, res) => {
+  const idUsuario = req.params.idUsuario;
+  const {
+    Telefono, Direccion,
+    idPaciente, tipo_sangre, contacto_emergencia, parentesco_emergencia, telefono_emergencia,
+    antecedentes_familiares, antecedentes_personales, alergias,
+    padecimientos_cronicos, cirugias_previas, observaciones_generales
+  } = req.body;
 
-exports.createCita = (req, res) => {
-    const { idDoctor, fecha, hora } = req.body;
-    if (!idDoctor || !fecha || !hora) {
-        return res.status(400).json({ error: "Doctor, fecha y hora son obligatorios." });
-    }
-    Cita.checkDuplicado(idDoctor, fecha, hora, null, (err, existing) => {
-        if (err) return res.status(500).json({ error: err });
-        if (existing.length > 0) {
-            return res.status(409).json({
-                error: "El médico ya tiene una cita programada en esa fecha y hora."
-            });
-        }
-        Cita.create(req.body, (err, result) => {
-            if (err) return res.status(500).json({ error: err });
-            res.json({ message: "Cita creada", id: result.insertId });
+  const dataUsuario = {};
+  if (Telefono  !== undefined) dataUsuario.Telefono  = Telefono;
+  if (Direccion !== undefined) dataUsuario.Direccion = Direccion;
+
+  const actualizarHistorial = () => {
+    if (!idPaciente) return res.json({ message: "Perfil actualizado" });
+
+    Perfil.getHistorialByPaciente(idPaciente, (err, rows) => {
+      if (err) return res.status(500).json({ error: err });
+
+      const dataHist = {
+        antecedentes_familiares: antecedentes_familiares || null,
+        antecedentes_personales: antecedentes_personales || null,
+        alergias:                alergias                || null,
+        padecimientos_cronicos:  padecimientos_cronicos  || null,
+        cirugias_previas:        cirugias_previas        || null,
+        observaciones_generales: observaciones_generales || null
+      };
+
+      if (rows.length > 0) {
+        Perfil.updateHistorial(rows[0].idHistorial, dataHist, (err) => {
+          if (err) return res.status(500).json({ error: err });
+          res.json({ message: "Perfil actualizado correctamente" });
         });
-    });
-};
-
-exports.updateCita = (req, res) => {
-    const id = req.params.id;
-    const { idDoctor, fecha, hora } = req.body;
-    if (idDoctor && fecha && hora) {
-        Cita.checkDuplicado(idDoctor, fecha, hora, id, (err, existing) => {
-            if (err) return res.status(500).json({ error: err });
-            if (existing.length > 0) {
-                return res.status(409).json({
-                    error: "El médico ya tiene una cita programada en esa fecha y hora."
-                });
-            }
-            Cita.update(id, req.body, (err) => {
-                if (err) return res.status(500).json({ error: err });
-                res.json({ message: "Cita actualizada" });
-            });
+      } else {
+        dataHist.idPaciente     = idPaciente;
+        dataHist.fecha_apertura = new Date();
+        Perfil.createHistorial(dataHist, (err) => {
+          if (err) return res.status(500).json({ error: err });
+          res.json({ message: "Perfil actualizado correctamente" });
         });
-    } else {
-        Cita.update(id, req.body, (err) => {
-            if (err) return res.status(500).json({ error: err });
-            res.json({ message: "Cita actualizada" });
-        });
-    }
-};
-
-exports.deleteCita = (req, res) => {
-    Cita.delete(req.params.id, (err) => {
-        if (err) return res.status(500).json({ error: err });
-        res.json({ message: "Cita eliminada" });
+      }
     });
-};
+  };
 
-exports.completarCita = (req, res) => {
-    Cita.completar(req.params.id, (err) => {
-        if (err) return res.status(500).json({ error: err });
-        res.json({ message: "Cita completada" });
+  const actualizarPaciente = () => {
+    if (!idPaciente) return actualizarHistorial();
+
+    const dataPac = {};
+    if (tipo_sangre           !== undefined) dataPac.tipo_sangre           = tipo_sangre           || null;
+    if (contacto_emergencia   !== undefined) dataPac.contacto_emergencia   = contacto_emergencia   || null;
+    if (parentesco_emergencia !== undefined) dataPac.parentesco_emergencia = parentesco_emergencia || null;
+    if (telefono_emergencia   !== undefined) dataPac.telefono_emergencia   = telefono_emergencia   || null;
+
+    if (Object.keys(dataPac).length === 0) return actualizarHistorial();
+
+    Perfil.updatePaciente(idPaciente, dataPac, (err) => {
+      if (err) return res.status(500).json({ error: err });
+      actualizarHistorial();
     });
+  };
+
+  if (Object.keys(dataUsuario).length > 0) {
+    Perfil.updateUsuario(idUsuario, dataUsuario, (err) => {
+      if (err) return res.status(500).json({ error: err });
+      actualizarPaciente();
+    });
+  } else {
+    actualizarPaciente();
+  }
 };
