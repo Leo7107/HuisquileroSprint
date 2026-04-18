@@ -3,6 +3,7 @@ const router = express.Router();
 const citasController = require("../controllers/citas.controller");
 
 router.get("/", citasController.getCitas);
+router.get("/paciente/:idUsuario", citasController.getCitasByPaciente);
 router.get("/:id", citasController.getCitaById);
 router.post("/", citasController.createCita);
 router.put("/:id", citasController.updateCita);
