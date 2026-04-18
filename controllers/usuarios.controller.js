@@ -65,11 +65,17 @@ exports.deleteUsuario = (req, res) => {
 exports.login = (req, res) => {
     const { Email, Password_hash } = req.body;
     Usuario.getByEmail(Email, (err, results) => {
-        if (err) return res.status(500).json({ error: err });
+        if (err) {
+            console.error("Error login BD:", err);
+            return res.status(500).json({ error: err });
+        }
         if (results.length === 0) return res.status(401).json({ message: "Usuario no encontrado" });
         const usuario = results[0];
         bcrypt.compare(Password_hash, usuario.Password_hash, (err, coincide) => {
-            if (err) return res.status(500).json({ error: err });
+            if (err) {
+                console.error("Error bcrypt:", err);
+                return res.status(500).json({ error: err });
+            }
             if (!coincide) return res.status(401).json({ message: "Contraseña incorrecta" });
             const token = jwt.sign(
                 { id: usuario.idUsuario, rol: usuario.idRol },
@@ -83,24 +89,25 @@ exports.login = (req, res) => {
 
 exports.forgotPassword = (req, res) => {
     const { Email } = req.body;
+
     if (!Email || !/\S+@\S+\.\S+/.test(Email)) {
-        return res.status(400).json({ message: "Correo inválido." });
+        return res.status(400).json({ message: "Correo invalido." });
     }
     Usuario.getByEmail(Email, (err, results) => {
         if (err) return res.status(500).json({ error: err });
         if (results.length === 0) {
-            return res.status(200).json({ message: "Si el correo existe, recibirás un enlace." });
+            return res.status(200).json({ message: "Si el correo existe, recibiras un enlace." });
         }
         const usuario = results[0];
         const token = crypto.randomBytes(32).toString('hex');
-        const expiry = new Date(Date.now() + 15 * 60 * 1000);
+        const expiry = new Date(Date.now() + 15 * 60 * 1000).toISOString().slice(0, 19).replace("T", " ");
         Usuario.saveResetToken(Email, token, expiry, (err) => {
             if (err) return res.status(500).json({ error: err });
-            const resetLink = `${BASE_URL}/forgot-password.html?token=${token}`;
+            const resetLink = `${BASE_URL}/html/forgot-password.html?token=${token}`;
             let rolTexto = "";
             if (usuario.idRol === ROLES.DOCTOR) rolTexto = "Dr(a).";
             const mailOptions = {
-                from: `"Clínica" <${process.env.SMTP_USER}>`,
+                from: `"Cli­nica" <${process.env.SMTP_USER}>`,
                 to: usuario.Email,
                 subject: 'Restablecer tu contraseña',
                 html: `
@@ -120,7 +127,7 @@ exports.forgotPassword = (req, res) => {
                             Restablecer contraseña
                         </a>
                         <p style="color: #9ca3af; font-size: 13px;">
-                            Si no solicitaste esto, puedes ignorar este correo. Tu contraseña no cambiará.
+                            Si no solicitaste esto, puedes ignorar este correo. Tu contraseña no cambiara¡.
                         </p>
                         <p style="color: #d1d5db; font-size: 12px; margin-top: 24px; border-top: 1px solid #e5e7eb; padding-top: 16px;">
                             O copia este enlace en tu navegador:<br/>
@@ -131,10 +138,10 @@ exports.forgotPassword = (req, res) => {
             };
             transporter.sendMail(mailOptions, (err) => {
                 if (err) {
-                    console.error("[forgot-password] Error enviando email:", err);
+                    console.error("[forgot-password] Error enviando email:", err.message);
                     return res.status(500).json({ message: "No se pudo enviar el correo." });
                 }
-                res.status(200).json({ message: "Si el correo existe, recibirás un enlace." });
+                res.status(200).json({ message: "Si el correo existe, recibiras un enlace." });
             });
         });
     });
@@ -151,7 +158,7 @@ exports.resetPassword = (req, res) => {
     Usuario.getByResetToken(token, (err, results) => {
         if (err) return res.status(500).json({ error: err });
         if (results.length === 0) {
-            return res.status(400).json({ message: "El enlace no es válido o ya expiró. Solicita uno nuevo." });
+            return res.status(400).json({ message: "El enlace no es valido o ya expiro. Solicita uno nuevo." });
         }
         const usuario = results[0];
         bcrypt.hash(password, 10, (err, hash) => {
@@ -163,3 +170,4 @@ exports.resetPassword = (req, res) => {
         });
     });
 };
+

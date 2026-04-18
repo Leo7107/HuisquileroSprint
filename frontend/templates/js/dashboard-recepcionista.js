@@ -165,34 +165,30 @@ function cerrarModalCita() {
 }
 
 async function guardarCita() {
-  const id         = document.getElementById('cita-id').value;
-  const idPaciente = parseInt(document.getElementById('cita-paciente').value);
-  const idDoctor   = parseInt(document.getElementById('cita-doctor').value);
-
-  if (!idPaciente || !idDoctor) {
-    alert('Debes seleccionar un paciente y un doctor.');
-    return;
-  }
-
+  const id = document.getElementById('cita-id').value;
   const payload = {
     fecha:      document.getElementById('cita-fecha').value,
     hora:       document.getElementById('cita-hora').value,
-    idPaciente,
-    idDoctor,
+    idPaciente: parseInt(document.getElementById('cita-paciente').value),
+    idDoctor:   parseInt(document.getElementById('cita-doctor').value),
     estado:     document.getElementById('cita-estado').value,
     motivo:     document.getElementById('cita-motivo').value,
   };
-
   const url    = id ? `/api/citas/${id}` : '/api/citas';
   const method = id ? 'PUT' : 'POST';
   const res    = await fetch(url, { method, headers: H, body: JSON.stringify(payload) });
   const data   = await res.json();
 
+  if (res.status === 409) {
+    alert('⚠️ ' + data.error);
+    return;
+  }
+
   if (data.id || data.message) {
     cerrarModalCita();
     cargarCitas();
   } else {
-    alert('Error al guardar cita: ' + (data.error?.sqlMessage || 'Revisa los datos'));
+    alert('Error al guardar cita: ' + (data.error?.sqlMessage || data.error || 'Revisa los datos'));
   }
 }
 
@@ -240,28 +236,6 @@ async function registrarPaciente() {
   } else {
     alert('Error: ' + (data.message || data.error?.sqlMessage || 'No se pudo registrar'));
   }
-}
-
-// ── SALA DE ESPERA ────────────────────────────
-function mover(btn, colDestino) {
-  const card = btn.closest('.pac-card');
-  const col  = document.getElementById(colDestino);
-
-  if (colDestino === 'col-fin') {
-    card.style.opacity = '0.65';
-    card.querySelector('.pac-card-actions').innerHTML =
-      '<span class="badge-fin">✓ Completado</span>';
-    document.getElementById('s-atendidos').textContent =
-      parseInt(document.getElementById('s-atendidos').textContent || 0) + 1;
-  } else {
-    card.querySelector('.pac-card-actions').innerHTML = `
-      <button class="btn-mover btn-mover--fin" onclick="mover(this,'col-fin')">✓ Finalizar</button>`;
-  }
-
-  col.appendChild(card);
-  document.getElementById('s-espera').textContent =
-    document.getElementById('col-llego').children.length +
-    document.getElementById('col-consulta').children.length;
 }
 
 // ── BUSCADOR GLOBAL ───────────────────────────
