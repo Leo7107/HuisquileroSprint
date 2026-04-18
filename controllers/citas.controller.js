@@ -14,6 +14,13 @@ exports.getCitaById = (req, res) => {
     });
 };
 
+exports.getCitasByPaciente = (req, res) => {
+    Cita.getByUsuarioPaciente(req.params.idUsuario, (err, results) => {
+        if (err) return res.status(500).json({ error: err });
+        res.json(results);
+    });
+};
+
 exports.createCita = (req, res) => {
     const { idDoctor, fecha, hora } = req.body;
     if (!idDoctor || !fecha || !hora) {
