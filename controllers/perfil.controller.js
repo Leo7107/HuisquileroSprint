@@ -12,18 +12,50 @@ exports.updatePerfil = (req, res) => {
   const idUsuario = req.params.idUsuario;
   const {
     Telefono, Direccion,
-    idPaciente, tipo_sangre, contacto_emergencia, parentesco_emergencia, telefono_emergencia,
+    tipo_sangre, contacto_emergencia, parentesco_emergencia, telefono_emergencia,
     antecedentes_familiares, antecedentes_personales, alergias,
     padecimientos_cronicos, cirugias_previas, observaciones_generales
   } = req.body;
 
+  // 1. Actualizar tbl_usuarios (Telefono, Direccion)
   const dataUsuario = {};
   if (Telefono  !== undefined) dataUsuario.Telefono  = Telefono;
   if (Direccion !== undefined) dataUsuario.Direccion = Direccion;
 
-  const actualizarHistorial = () => {
-    if (!idPaciente) return res.json({ message: "Perfil actualizado" });
+  const procesarPaciente = () => {
+    // 2. Ver si el usuario ya tiene registro de paciente
+    Perfil.getPacienteByUsuario(idUsuario, (err, rows) => {
+      if (err) return res.status(500).json({ error: err });
 
+      const dataPac = {
+        tipo_sangre:           tipo_sangre           || null,
+        contacto_emergencia:   contacto_emergencia   || null,
+        parentesco_emergencia: parentesco_emergencia || null,
+        telefono_emergencia:   telefono_emergencia   || null
+      };
+
+      if (rows.length > 0) {
+        // Ya existe → actualizar
+        const idPaciente = rows[0].idPaciente;
+        Perfil.updatePaciente(idPaciente, dataPac, (err) => {
+          if (err) return res.status(500).json({ error: err });
+          procesarHistorial(idPaciente);
+        });
+      } else {
+        // No existe → crear registro nuevo
+        dataPac.idUsuario        = idUsuario;
+        dataPac.numero_expediente = 'EXP-' + Date.now();
+        dataPac.fecha_registro    = new Date();
+        dataPac.estado_paciente   = 'ACTIVO';
+        Perfil.createPaciente(dataPac, (err, result) => {
+          if (err) return res.status(500).json({ error: err });
+          procesarHistorial(result.insertId);
+        });
+      }
+    });
+  };
+
+  const procesarHistorial = (idPaciente) => {
     Perfil.getHistorialByPaciente(idPaciente, (err, rows) => {
       if (err) return res.status(500).json({ error: err });
 
@@ -52,29 +84,12 @@ exports.updatePerfil = (req, res) => {
     });
   };
 
-  const actualizarPaciente = () => {
-    if (!idPaciente) return actualizarHistorial();
-
-    const dataPac = {};
-    if (tipo_sangre           !== undefined) dataPac.tipo_sangre           = tipo_sangre           || null;
-    if (contacto_emergencia   !== undefined) dataPac.contacto_emergencia   = contacto_emergencia   || null;
-    if (parentesco_emergencia !== undefined) dataPac.parentesco_emergencia = parentesco_emergencia || null;
-    if (telefono_emergencia   !== undefined) dataPac.telefono_emergencia   = telefono_emergencia   || null;
-
-    if (Object.keys(dataPac).length === 0) return actualizarHistorial();
-
-    Perfil.updatePaciente(idPaciente, dataPac, (err) => {
-      if (err) return res.status(500).json({ error: err });
-      actualizarHistorial();
-    });
-  };
-
   if (Object.keys(dataUsuario).length > 0) {
     Perfil.updateUsuario(idUsuario, dataUsuario, (err) => {
       if (err) return res.status(500).json({ error: err });
-      actualizarPaciente();
+      procesarPaciente();
     });
   } else {
-    actualizarPaciente();
+    procesarPaciente();
   }
 };
