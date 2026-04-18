@@ -238,28 +238,6 @@ async function registrarPaciente() {
   }
 }
 
-// ── SALA DE ESPERA ────────────────────────────
-function mover(btn, colDestino) {
-  const card = btn.closest('.pac-card');
-  const col  = document.getElementById(colDestino);
-
-  if (colDestino === 'col-fin') {
-    card.style.opacity = '0.65';
-    card.querySelector('.pac-card-actions').innerHTML =
-      '<span class="badge-fin">✓ Completado</span>';
-    document.getElementById('s-atendidos').textContent =
-      parseInt(document.getElementById('s-atendidos').textContent || 0) + 1;
-  } else {
-    card.querySelector('.pac-card-actions').innerHTML = `
-      <button class="btn-mover btn-mover--fin" onclick="mover(this,'col-fin')">✓ Finalizar</button>`;
-  }
-
-  col.appendChild(card);
-  document.getElementById('s-espera').textContent =
-    document.getElementById('col-llego').children.length +
-    document.getElementById('col-consulta').children.length;
-}
-
 // ── BUSCADOR GLOBAL ───────────────────────────
 let todosPacientes = [];
 

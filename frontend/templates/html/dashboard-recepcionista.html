@@ -20,7 +20,6 @@
       <a href="#" class="nav-item active" onclick="nav('inicio',this);return false;"><span class="nav-icon">⊞</span> Mi Panel</a>
       <a href="#" class="nav-item" onclick="nav('citas',this);return false;"><span class="nav-icon">📅</span> Gestión de Citas</a>
       <a href="#" class="nav-item" onclick="nav('pacientes',this);return false;"><span class="nav-icon">👤</span> Registro de Pacientes</a>
-      <a href="#" class="nav-item" onclick="nav('espera',this);return false;"><span class="nav-icon">🏥</span> Sala de Espera</a>
       <a href="#" class="nav-item" onclick="nav('buscar',this);return false;"><span class="nav-icon">🔍</span> Buscar Expediente</a>
       <a href="#" class="nav-item" onclick="nav('medicos',this);return false;"><span class="nav-icon">🩺</span> Gestión de Médicos</a>
     </nav>
@@ -159,59 +158,6 @@
           <div>
             <h3>Pacientes Recientes</h3>
             <div id="lista-recientes"><p style="color:var(--text-soft);font-size:13px;">Cargando...</p></div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ══ SALA DE ESPERA ══ -->
-    <div id="sec-espera" style="display:none;">
-      <div class="panel">
-        <div class="panel__header">
-          <h2>Sala de Espera</h2>
-          <span style="font-size:11.5px;color:var(--text-soft);">Actualiza el estado de cada paciente</span>
-        </div>
-        <div class="espera-grid">
-          <div class="espera-col">
-            <div class="espera-col-title"><span class="dot dot--llego"></span> Llegó</div>
-            <div id="col-llego">
-              <div class="pac-card">
-                <strong>María García</strong>
-                <span>08:00 · Dr. Hernández</span>
-                <div class="pac-card-actions">
-                  <button class="btn-mover btn-mover--consulta" onclick="mover(this,'col-consulta')">→ En Consulta</button>
-                </div>
-              </div>
-              <div class="pac-card">
-                <strong>José Ramos</strong>
-                <span>08:30 · Dr. Flores</span>
-                <div class="pac-card-actions">
-                  <button class="btn-mover btn-mover--consulta" onclick="mover(this,'col-consulta')">→ En Consulta</button>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="espera-col">
-            <div class="espera-col-title"><span class="dot dot--consulta"></span> En Consulta</div>
-            <div id="col-consulta">
-              <div class="pac-card">
-                <strong>Ana López</strong>
-                <span>07:30 · Dra. Martínez</span>
-                <div class="pac-card-actions">
-                  <button class="btn-mover btn-mover--fin" onclick="mover(this,'col-fin')">✓ Finalizar</button>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="espera-col">
-            <div class="espera-col-title"><span class="dot dot--fin"></span> Finalizado</div>
-            <div id="col-fin">
-              <div class="pac-card" style="opacity:0.65;">
-                <strong>Carlos Pérez</strong>
-                <span>07:00 · Dr. Hernández</span>
-                <span class="badge-fin">✓ Completado</span>
-              </div>
-            </div>
           </div>
         </div>
       </div>
