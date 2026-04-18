@@ -27,7 +27,7 @@ function nav(seccion, linkEl) {
   if (seccion === 'citas')     cargarCitas();
   if (seccion === 'consultas') cargarConsultas();
   if (seccion === 'recetas')   cargarRecetas();
-  if (seccion === 'historial') cargarHistorial();
+  if (seccion === 'perfil')    cargarPerfil();
 }
 
 // ── CITAS ─────────────────────────────────────
@@ -52,21 +52,22 @@ async function cargarCitas() {
   }
 }
 
-// ── CONSULTAS ─────────────────────────────────
+// ── CONSULTAS (solo citas COMPLETADAS) ────────
 async function cargarConsultas() {
   try {
-    const res  = await fetch('/api/consultas', { headers: H });
+    const res  = await fetch('/api/citas', { headers: H });
     const data = await res.json();
-    document.getElementById('tbody-consultas').innerHTML = Array.isArray(data) && data.length
-      ? data.map(c => `
+    const completadas = Array.isArray(data) ? data.filter(c => c.estado === 'COMPLETADA') : [];
+    document.getElementById('tbody-consultas').innerHTML = completadas.length
+      ? completadas.map(c => `
           <tr>
-            <td>${c.fecha_consulta    || '—'}</td>
-            <td>${c.peso             || '—'} kg</td>
-            <td>${c.presion_arterial || '—'}</td>
-            <td>${c.temperatura      || '—'} °C</td>
-            <td>${c.observaciones    || '—'}</td>
+            <td>${c.fecha ? c.fecha.split('T')[0] : '—'}</td>
+            <td>${c.NombreDoctor ? `${c.NombreDoctor} ${c.ApellidosDoctor}` : `#${c.idDoctor}`}</td>
+            <td>${c.motivo || '—'}</td>
+            <td>${c.hora ? c.hora.substring(0,5) : '—'}</td>
+            <td><span class="badge badge--activo">Completada</span></td>
           </tr>`).join('')
-      : '<tr><td colspan="5" style="text-align:center;color:var(--text-soft);padding:20px;">No tienes consultas registradas</td></tr>';
+      : '<tr><td colspan="5" style="text-align:center;color:var(--text-soft);padding:20px;">No tienes consultas anteriores</td></tr>';
   } catch {
     document.getElementById('tbody-consultas').innerHTML =
       '<tr><td colspan="5" style="text-align:center;color:#c03030;padding:20px;">Error al cargar consultas</td></tr>';
@@ -94,33 +95,9 @@ async function cargarRecetas() {
   }
 }
 
-// ── HISTORIAL ─────────────────────────────────
-async function cargarHistorial() {
-  try {
-    const res  = await fetch('/api/historial', { headers: H });
-    const data = await res.json();
-    const h    = Array.isArray(data) ? data[0] : data;
-    document.getElementById('contenido-historial').innerHTML = h
-      ? `<table class="tabla">
-          <tr><th>Fecha apertura</th><td>${h.fecha_apertura || '—'}</td></tr>
-          <tr><th>Antecedentes familiares</th><td>${h.antecedentes_familiares || '—'}</td></tr>
-          <tr><th>Antecedentes personales</th><td>${h.antecedentes_personales || '—'}</td></tr>
-          <tr><th>Alergias</th><td>${h.alergias || '—'}</td></tr>
-          <tr><th>Padecimientos crónicos</th><td>${h.padecimientos_cronicos || '—'}</td></tr>
-          <tr><th>Cirugías previas</th><td>${h.cirugias_previas || '—'}</td></tr>
-          <tr><th>Observaciones</th><td>${h.observaciones_generales || '—'}</td></tr>
-        </table>`
-      : '<p style="color:var(--text-soft);font-size:13px;">No tienes historial clínico registrado</p>';
-  } catch {
-    document.getElementById('contenido-historial').innerHTML =
-      '<p style="color:#c03030;font-size:13px;">Error al cargar historial</p>';
-  }
-}
-
 // ── NUEVA CITA ────────────────────────────────
 let listaDoctores = [];
 
-// Carga doctores activos al iniciar
 async function cargarDoctores() {
   try {
     const res = await fetch('/api/doctores/activos', { headers: H });
@@ -148,7 +125,6 @@ function buscarDoctor() {
   const sugerencias = document.getElementById('sugerencias-doctor');
   const q = input.value.toLowerCase().trim();
 
-  // Limpiar selección y ocultar horario si se borra el texto
   document.getElementById('cita-doctor').value = '';
   document.getElementById('horario-info').style.display = 'none';
 
@@ -177,7 +153,6 @@ function seleccionarDoctor(id, nombre, horaInicio, horaFin) {
   document.getElementById('cita-doctor').value        = id;
   document.getElementById('sugerencias-doctor').style.display = 'none';
 
-  // Mostrar horario disponible del doctor
   const horarioInfo = document.getElementById('horario-info');
   if (horaInicio && horaFin) {
     document.getElementById('horario-texto').textContent =
@@ -194,20 +169,10 @@ async function solicitarCita() {
   const hora     = document.getElementById('cita-hora').value;
   const motivo   = document.getElementById('cita-motivo').value;
 
-  if (!idDoctor) {
-    alert('Debes seleccionar un doctor.');
-    return;
-  }
-  if (!fecha || !hora) {
-    alert('Debes seleccionar fecha y hora.');
-    return;
-  }
-  if (!motivo.trim()) {
-    alert('Debes escribir el motivo de la cita.');
-    return;
-  }
+  if (!idDoctor) { alert('Debes seleccionar un doctor.'); return; }
+  if (!fecha || !hora) { alert('Debes seleccionar fecha y hora.'); return; }
+  if (!motivo.trim()) { alert('Debes escribir el motivo de la cita.'); return; }
 
-  // Obtener el idPaciente del paciente vinculado al usuario actual
   try {
     const pRes = await fetch('/api/pacientes', { headers: H });
     const pacientes = await pRes.json();
@@ -220,22 +185,11 @@ async function solicitarCita() {
       return;
     }
 
-    const payload = {
-      fecha,
-      hora,
-      idPaciente: miPaciente.idPaciente,
-      idDoctor,
-      estado: 'PENDIENTE',
-      motivo,
-    };
-
+    const payload = { fecha, hora, idPaciente: miPaciente.idPaciente, idDoctor, estado: 'PENDIENTE', motivo };
     const res  = await fetch('/api/citas', { method: 'POST', headers: H, body: JSON.stringify(payload) });
     const data = await res.json();
 
-    if (res.status === 409) {
-      alert('⚠️ ' + data.error);
-      return;
-    }
+    if (res.status === 409) { alert('⚠️ ' + data.error); return; }
 
     if (data.id || data.message) {
       alert('✅ Cita solicitada correctamente. Estado: Pendiente de confirmación.');
@@ -249,7 +203,6 @@ async function solicitarCita() {
   }
 }
 
-// Cierra sugerencias al hacer clic fuera
 document.addEventListener('click', (e) => {
   const input = document.getElementById('cita-doctor-nombre');
   const sug   = document.getElementById('sugerencias-doctor');
@@ -257,6 +210,76 @@ document.addEventListener('click', (e) => {
     sug.style.display = 'none';
   }
 });
+
+// ── MI PERFIL ─────────────────────────────────
+let miPerfilData = null;
+
+async function cargarPerfil() {
+  try {
+    const res  = await fetch(`/api/perfil/${usuario.id}`, { headers: H });
+    const data = await res.json();
+    if (data.error) { alert('Error al cargar perfil'); return; }
+    miPerfilData = data;
+
+    document.getElementById('perf-nombres').value    = data.Nombres           || '';
+    document.getElementById('perf-apellidos').value  = data.Apellidos         || '';
+    document.getElementById('perf-email').value      = data.Email             || '';
+    document.getElementById('perf-fecha-nac').value  = data.Fecha_nacimiento ? data.Fecha_nacimiento.split('T')[0] : '';
+    document.getElementById('perf-sexo').value       = data.Sexo              || '';
+    document.getElementById('perf-expediente').value = data.numero_expediente || '';
+    document.getElementById('perf-telefono').value   = data.Telefono          || '';
+    document.getElementById('perf-direccion').value  = data.Direccion         || '';
+
+    document.getElementById('perf-tipo-sangre').value  = data.tipo_sangre           || '';
+    document.getElementById('perf-contacto-emg').value = data.contacto_emergencia   || '';
+    document.getElementById('perf-parentesco').value   = data.parentesco_emergencia || '';
+    document.getElementById('perf-tel-emg').value      = data.telefono_emergencia   || '';
+
+    document.getElementById('perf-alergias').value      = data.alergias                || '';
+    document.getElementById('perf-ant-fam').value       = data.antecedentes_familiares || '';
+    document.getElementById('perf-ant-per').value       = data.antecedentes_personales || '';
+    document.getElementById('perf-cronicos').value      = data.padecimientos_cronicos  || '';
+    document.getElementById('perf-cirugias').value      = data.cirugias_previas        || '';
+    document.getElementById('perf-observaciones').value = data.obs_historial           || '';
+  } catch {
+    alert('Error de conexión al cargar perfil');
+  }
+}
+
+async function guardarPerfil() {
+  if (!miPerfilData) { alert('Primero debes cargar el perfil'); return; }
+
+  const payload = {
+    Telefono:              document.getElementById('perf-telefono').value,
+    Direccion:             document.getElementById('perf-direccion').value,
+    idPaciente:            miPerfilData.idPaciente,
+    tipo_sangre:           document.getElementById('perf-tipo-sangre').value,
+    contacto_emergencia:   document.getElementById('perf-contacto-emg').value,
+    parentesco_emergencia: document.getElementById('perf-parentesco').value,
+    telefono_emergencia:   document.getElementById('perf-tel-emg').value,
+    antecedentes_familiares: document.getElementById('perf-ant-fam').value,
+    antecedentes_personales: document.getElementById('perf-ant-per').value,
+    alergias:                document.getElementById('perf-alergias').value,
+    padecimientos_cronicos:  document.getElementById('perf-cronicos').value,
+    cirugias_previas:        document.getElementById('perf-cirugias').value,
+    observaciones_generales: document.getElementById('perf-observaciones').value
+  };
+
+  try {
+    const res  = await fetch(`/api/perfil/${usuario.id}`, {
+      method: 'PUT', headers: H, body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if (data.message) {
+      alert('✅ Perfil actualizado correctamente');
+      cargarPerfil();
+    } else {
+      alert('Error: ' + (data.error?.sqlMessage || data.error || 'No se pudo actualizar'));
+    }
+  } catch {
+    alert('Error de conexión');
+  }
+}
 
 // ── CERRAR SESIÓN ─────────────────────────────
 function cerrarSesion() {
