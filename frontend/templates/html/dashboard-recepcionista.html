@@ -19,7 +19,7 @@
     <nav class="sidebar__nav">
       <a href="#" class="nav-item active" onclick="nav('inicio',this);return false;"><span class="nav-icon">⊞</span> Mi Panel</a>
       <a href="#" class="nav-item" onclick="nav('citas',this);return false;"><span class="nav-icon">📅</span> Gestión de Citas</a>
-      <a href="#" class="nav-item" onclick="nav('pacientes',this);return false;"><span class="nav-icon">👤</span> Registro de Pacientes</a>
+      <a href="#" class="nav-item" onclick="nav('pacientes',this);return false;"><span class="nav-icon">👤</span> Registro de Expediente</a>
       <a href="#" class="nav-item" onclick="nav('buscar',this);return false;"><span class="nav-icon">🔍</span> Buscar Expediente</a>
       <a href="#" class="nav-item" onclick="nav('medicos',this);return false;"><span class="nav-icon">🩺</span> Gestión de Médicos</a>
     </nav>
@@ -114,10 +114,9 @@
     <!-- ══ PACIENTES ══ -->
     <div id="sec-pacientes" style="display:none;">
       <div class="panel">
-        <div class="panel__header"><h2>Registro de Pacientes</h2></div>
+        <div class="panel__header"><h2>Registro de Expediente</h2></div>
         <div class="pac-form-wrap">
           <div>
-            <h3>Nuevo Paciente</h3>
             <div class="form-group"><label>Número de Expediente</label><input type="text" id="pac-exp" placeholder="EXP-001"/></div>
             <div class="form-row">
               <div class="form-group"><label>Fecha de Registro</label><input type="date" id="pac-fecha"/></div>
