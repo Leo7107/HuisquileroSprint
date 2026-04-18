@@ -21,6 +21,10 @@ const Perfil = {
   },
   updateUsuario: (idUsuario, data, cb) =>
     db.query("UPDATE tbl_usuarios SET ? WHERE idUsuario = ?", [data, idUsuario], cb),
+  getPacienteByUsuario: (idUsuario, cb) =>
+    db.query("SELECT idPaciente FROM tbl_paciente WHERE idUsuario = ?", [idUsuario], cb),
+  createPaciente: (data, cb) =>
+    db.query("INSERT INTO tbl_paciente SET ?", data, cb),
   updatePaciente: (idPaciente, data, cb) =>
     db.query("UPDATE tbl_paciente SET ? WHERE idPaciente = ?", [data, idPaciente], cb),
   getHistorialByPaciente: (idPaciente, cb) =>
