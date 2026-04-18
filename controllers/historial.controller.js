@@ -34,3 +34,11 @@ exports.deleteHistorial = (req, res) => {
         res.json({ message: "Historial clínico eliminado" });
     });
 };
+
+exports.getHistorialByPaciente = (req, res) => {
+    const Historial = require('../models/historial.model');
+    Historial.getByPaciente(req.query.idPaciente, (err, result) => {
+        if (err) return res.status(500).json({ error: err });
+        res.json(result);
+    });
+};
