@@ -33,7 +33,7 @@ function nav(seccion, linkEl) {
 // ── CITAS ─────────────────────────────────────
 async function cargarCitas() {
   try {
-    const res  = await fetch('/api/citas', { headers: H });
+    const res  = await fetch(`/api/citas/paciente/${usuario.id}`, { headers: H });
     const data = await res.json();
     document.getElementById('tbody-citas').innerHTML = Array.isArray(data) && data.length
       ? data.map(c => `
@@ -55,7 +55,7 @@ async function cargarCitas() {
 // ── CONSULTAS (solo citas COMPLETADAS) ────────
 async function cargarConsultas() {
   try {
-    const res  = await fetch('/api/citas', { headers: H });
+    const res  = await fetch(`/api/citas/paciente/${usuario.id}`, { headers: H });
     const data = await res.json();
     const completadas = Array.isArray(data) ? data.filter(c => c.estado === 'COMPLETADA') : [];
     document.getElementById('tbody-consultas').innerHTML = completadas.length
