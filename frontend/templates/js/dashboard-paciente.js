@@ -38,16 +38,17 @@ async function cargarCitas() {
     document.getElementById('tbody-citas').innerHTML = Array.isArray(data) && data.length
       ? data.map(c => `
           <tr>
-            <td>${c.fecha  || '—'}</td>
+            <td>#${c.idCita}</td>
+            <td>${c.fecha ? c.fecha.split('T')[0] : '—'}</td>
             <td>${c.hora   || '—'}</td>
-            <td>#${c.idDoctor}</td>
+            <td>${c.NombreDoctor ? `${c.NombreDoctor} ${c.ApellidosDoctor}` : `#${c.idDoctor}`}</td>
             <td>${c.motivo || '—'}</td>
             <td><span class="badge badge--${c.estado === 'CONFIRMADA' ? 'activo' : 'pendiente'}">${c.estado}</span></td>
           </tr>`).join('')
-      : '<tr><td colspan="5" style="text-align:center;color:var(--text-soft);padding:20px;">No tienes citas registradas</td></tr>';
+      : '<tr><td colspan="6" style="text-align:center;color:var(--text-soft);padding:20px;">No tienes citas registradas</td></tr>';
   } catch {
     document.getElementById('tbody-citas').innerHTML =
-      '<tr><td colspan="5" style="text-align:center;color:#c03030;padding:20px;">Error al cargar citas</td></tr>';
+      '<tr><td colspan="6" style="text-align:center;color:#c03030;padding:20px;">Error al cargar citas</td></tr>';
   }
 }
 
