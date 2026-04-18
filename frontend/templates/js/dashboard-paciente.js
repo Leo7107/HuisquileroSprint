@@ -77,7 +77,19 @@ async function cargarConsultas() {
 // ── RECETAS ───────────────────────────────────
 async function cargarRecetas() {
   try {
-    const res  = await fetch('/api/recetas', { headers: H });
+    const pRes = await fetch('/api/pacientes', { headers: H });
+    const pacientes = await pRes.json();
+    const miPaciente = Array.isArray(pacientes)
+      ? pacientes.find(p => p.idUsuario === usuario.id)
+      : null;
+
+    if (!miPaciente) {
+      document.getElementById('tbody-recetas').innerHTML =
+        '<tr><td colspan="5" style="text-align:center;color:var(--text-soft);padding:20px;">No se encontró tu registro de paciente</td></tr>';
+      return;
+    }
+
+    const res  = await fetch(`/api/recetas/paciente/${miPaciente.idPaciente}`, { headers: H });
     const data = await res.json();
     document.getElementById('tbody-recetas').innerHTML = Array.isArray(data) && data.length
       ? data.map(r => `
