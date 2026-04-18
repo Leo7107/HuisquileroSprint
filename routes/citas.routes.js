@@ -7,5 +7,6 @@ router.get("/:id", citasController.getCitaById);
 router.post("/", citasController.createCita);
 router.put("/:id", citasController.updateCita);
 router.delete("/:id", citasController.deleteCita);
+router.patch("/:id/completar", citasController.completarCita);
 
 module.exports = router;
