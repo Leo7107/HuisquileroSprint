@@ -34,3 +34,10 @@ exports.deleteReceta = (req, res) => {
         res.json({ message: "Receta eliminada" });
     });
 };
+
+exports.getRecetasByPaciente = (req, res) => {
+    Receta.getByPaciente(req.params.idPaciente, (err, results) => {
+        if (err) return res.status(500).json({ error: err });
+        res.json(results);
+    });
+};
