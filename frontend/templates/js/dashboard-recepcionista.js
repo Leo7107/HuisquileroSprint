@@ -197,19 +197,23 @@ async function cargarPacientesRecientes() {
   try {
     const res   = await fetch('/api/pacientes', { headers: H });
     const lista = await res.json();
+    // Filtro de seguridad: Solo los que tienen expediente y usuario asociado
     const recientes = Array.isArray(lista) ? lista.slice(-6).reverse() : [];
+    
     document.getElementById('lista-recientes').innerHTML = recientes.length
       ? recientes.map(p => `
           <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid rgba(42,107,94,0.07);">
-            <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--teal),var(--teal-light));color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex-shrink:0;">
-              ${(p.numero_expediente || 'P')[0]}
+            <div style="width:36px;height:36px;border-radius:10px;background:var(--teal);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;">
+              ${(p.Nombres || 'P')[0]}
             </div>
             <div>
-              <strong style="display:block;font-size:13px;color:var(--deep);">${p.numero_expediente}</strong>
-              <span style="font-size:11.5px;color:var(--text-soft);">${p.estado_paciente} · ${p.tipo_sangre || 'Sin tipo'}</span>
+              <strong style="display:block;font-size:13px;color:var(--deep);">${p.Nombres} ${p.Apellidos}</strong>
+              <span style="font-size:11.5px;color:var(--text-soft);">
+                Contacto: ${p.contacto_emergencia || 'N/A'} (${p.telefono_emergencia || '—'})
+              </span>
             </div>
           </div>`).join('')
-      : '<p style="color:var(--text-soft);font-size:13px;">Sin pacientes registrados aún.</p>';
+      : '<p>Sin pacientes registrados.</p>';
   } catch { /* sin datos */ }
 }
 
