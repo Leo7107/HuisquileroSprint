@@ -6,43 +6,98 @@
   <title>Medisync – Paciente</title>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="/css/dashboard.css"/>
+  <style>
+    .modal-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(26,46,42,0.55); z-index: 1000;
+      align-items: center; justify-content: center;
+    }
+    .modal-overlay.active { display: flex; }
+    .modal {
+      background: #fff; border-radius: 20px; padding: 32px;
+      width: min(560px, 92vw); max-height: 90vh; overflow-y: auto;
+      box-shadow: 0 24px 64px rgba(26,46,42,0.22); animation: fadeDown 0.25s ease;
+    }
+    .modal h3 {
+      font-family: 'Playfair Display', serif; font-size: 1.25rem;
+      color: var(--deep); margin-bottom: 22px;
+    }
+    .form-group { margin-bottom: 14px; }
+    .form-group label {
+      display: block; font-size: 11.5px; font-weight: 600;
+      color: var(--text-soft); margin-bottom: 5px; letter-spacing: 0.04em;
+    }
+    .form-group input, .form-group select, .form-group textarea {
+      width: 100%; padding: 10px 14px; border: 1.5px solid var(--border);
+      border-radius: 11px; font-size: 13.5px; color: var(--text);
+      background: var(--cream); font-family: 'DM Sans', sans-serif;
+      box-sizing: border-box; transition: border 0.2s, background 0.2s;
+    }
+    .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+      outline: none; border-color: var(--teal); background: #fff;
+    }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 22px; }
+    .btn-cancelar {
+      padding: 10px 20px; border: 1.5px solid var(--border); border-radius: 11px;
+      background: #fff; cursor: pointer; font-weight: 600; font-size: 13px;
+      color: var(--text-soft); font-family: 'DM Sans', sans-serif; transition: background 0.2s;
+    }
+    .btn-cancelar:hover { background: var(--cream); }
+    .btn-primary {
+      padding: 10px 22px; border: none; border-radius: 11px;
+      background: linear-gradient(135deg, var(--teal), var(--teal-light));
+      color: #fff; cursor: pointer; font-weight: 700; font-size: 13px;
+      font-family: 'DM Sans', sans-serif; transition: opacity 0.2s, transform 0.15s;
+    }
+    .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
+    .header-btn {
+      padding: 8px 18px; border: none; border-radius: 10px;
+      background: linear-gradient(135deg, var(--teal), var(--teal-light));
+      color: #fff; cursor: pointer; font-weight: 700; font-size: 12.5px;
+      font-family: 'DM Sans', sans-serif; transition: opacity 0.2s;
+    }
+    .header-btn:hover { opacity: 0.88; }
+    .autocomplete-wrap { position: relative; }
+    .autocomplete-lista {
+      display: none; position: absolute; top: 100%; left: 0; right: 0;
+      background: #fff; border: 1.5px solid var(--border); border-radius: 11px;
+      box-shadow: 0 8px 24px rgba(26,46,42,0.12); z-index: 100; max-height: 200px; overflow-y: auto;
+    }
+    .autocomplete-item {
+      padding: 10px 14px; cursor: pointer; transition: background 0.15s; border-bottom: 1px solid var(--border);
+    }
+    .autocomplete-item:last-child { border-bottom: none; }
+    .autocomplete-item:hover { background: var(--cream); }
+    .autocomplete-item strong { display: block; font-size: 13px; color: var(--deep); }
+    .autocomplete-item span { font-size: 11.5px; color: var(--text-soft); }
+    .horario-info {
+      background: rgba(42,107,94,0.07); border: 1.5px solid rgba(42,107,94,0.2);
+      border-radius: 11px; padding: 10px 14px; font-size: 12.5px; color: var(--teal);
+      font-weight: 600; margin-bottom: 14px; display: none;
+    }
+  </style>
 </head>
 <body>
 
 <div class="layout rol-paciente">
 
-  <!-- SIDEBAR -->
   <aside class="sidebar">
     <div class="sidebar__brand">
       <span class="brand-icon">✦</span>
       <span class="brand-name">Medisync</span>
     </div>
     <div class="sidebar__rol sidebar__rol--paciente">Paciente</div>
-
     <nav class="sidebar__nav">
-      <a href="#" class="nav-item active" onclick="nav('inicio',this);return false;">
-        <span class="nav-icon">⊞</span> Mi Panel
-      </a>
-      <a href="#" class="nav-item" onclick="nav('citas',this);return false;">
-        <span class="nav-icon">📅</span> Mis Citas
-      </a>
-      <a href="#" class="nav-item" onclick="nav('consultas',this);return false;">
-        <span class="nav-icon">🩺</span> Mis Consultas
-      </a>
-      <a href="#" class="nav-item" onclick="nav('historial',this);return false;">
-        <span class="nav-icon">📋</span> Mi Historial
-      </a>
-      <a href="#" class="nav-item" onclick="nav('recetas',this);return false;">
-        <span class="nav-icon">💊</span> Mis Recetas
-      </a>
+      <a href="#" class="nav-item active" onclick="nav('inicio',this);return false;"><span class="nav-icon">⊞</span> Mi Panel</a>
+      <a href="#" class="nav-item" onclick="nav('citas',this);return false;"><span class="nav-icon">📅</span> Mis Citas</a>
+      <a href="#" class="nav-item" onclick="nav('consultas',this);return false;"><span class="nav-icon">🩺</span> Mis Consultas</a>
+      <a href="#" class="nav-item" onclick="nav('historial',this);return false;"><span class="nav-icon">📋</span> Mi Historial</a>
+      <a href="#" class="nav-item" onclick="nav('recetas',this);return false;"><span class="nav-icon">💊</span> Mis Recetas</a>
     </nav>
-
-    <button class="sidebar__logout" onclick="cerrarSesion()">
-      <span>⏻</span> Cerrar sesión
-    </button>
+    <button class="sidebar__logout" onclick="cerrarSesion()"><span>⏻</span> Cerrar sesión</button>
   </aside>
 
-  <!-- CONTENIDO -->
   <main class="main">
 
     <header class="topbar">
@@ -59,119 +114,63 @@
       </div>
     </header>
 
-    <!-- ══ SECCIÓN INICIO ══ -->
+    <!-- ══ INICIO ══ -->
     <div id="sec-inicio">
-
       <section class="stats-grid">
         <div class="stat-card stat-card--teal">
           <div class="stat-icon">📅</div>
-          <div class="stat-info">
-            <div class="stat-num">1</div>
-            <div class="stat-label">Próxima Cita</div>
-          </div>
+          <div class="stat-info"><div class="stat-num">1</div><div class="stat-label">Próxima Cita</div></div>
         </div>
         <div class="stat-card stat-card--gold">
           <div class="stat-icon">🩺</div>
-          <div class="stat-info">
-            <div class="stat-num">5</div>
-            <div class="stat-label">Consultas Previas</div>
-          </div>
+          <div class="stat-info"><div class="stat-num">5</div><div class="stat-label">Consultas Previas</div></div>
         </div>
         <div class="stat-card stat-card--soft">
           <div class="stat-icon">💊</div>
-          <div class="stat-info">
-            <div class="stat-num">2</div>
-            <div class="stat-label">Recetas Activas</div>
-          </div>
+          <div class="stat-info"><div class="stat-num">2</div><div class="stat-label">Recetas Activas</div></div>
         </div>
         <div class="stat-card stat-card--dark">
           <div class="stat-icon">💰</div>
-          <div class="stat-info">
-            <div class="stat-num">3</div>
-            <div class="stat-label">Facturas Emitidas</div>
-          </div>
+          <div class="stat-info"><div class="stat-num">3</div><div class="stat-label">Facturas Emitidas</div></div>
         </div>
       </section>
-
       <div class="panels-row">
-
-        <!-- Próximas citas -->
         <div class="panel">
           <div class="panel__header">
             <h2>Mis Próximas Citas</h2>
             <a href="#" class="panel__link" onclick="nav('citas',null);return false;">Ver todas →</a>
           </div>
           <table class="tabla">
-            <thead>
-              <tr><th>Fecha</th><th>Hora</th><th>Doctor</th><th>Estado</th></tr>
-            </thead>
+            <thead><tr><th>Fecha</th><th>Hora</th><th>Doctor</th><th>Estado</th></tr></thead>
             <tbody>
-              <tr>
-                <td>10/03/2026</td><td>09:00</td><td>Dr. Carlos Hernández</td>
-                <td><span class="badge badge--activo">Confirmada</span></td>
-              </tr>
-              <tr>
-                <td>18/03/2026</td><td>11:30</td><td>Dra. Ana Martínez</td>
-                <td><span class="badge badge--pendiente">Pendiente</span></td>
-              </tr>
+              <tr><td>10/03/2026</td><td>09:00</td><td>Dr. Carlos Hernández</td><td><span class="badge badge--activo">Confirmada</span></td></tr>
+              <tr><td>18/03/2026</td><td>11:30</td><td>Dra. Ana Martínez</td><td><span class="badge badge--pendiente">Pendiente</span></td></tr>
             </tbody>
           </table>
         </div>
-
-        <!-- Acciones rápidas -->
         <div class="panel">
-          <div class="panel__header">
-            <h2>Acciones Rápidas</h2>
-          </div>
+          <div class="panel__header"><h2>Acciones Rápidas</h2></div>
           <div class="acciones-grid">
-            <button class="accion-btn" onclick="nav('citas', this)">
-              <span>📅</span>
-              <span>Ver mis Citas</span>
-            </button>
-            <button class="accion-btn" onclick="nav('consultas', this)">
-              <span>🩺</span>
-              <span>Mis Consultas</span>
-            </button>
-            <button class="accion-btn" onclick="nav('recetas', this)">
-              <span>💊</span>
-              <span>Mis Recetas</span>
-            </button>
-            <button class="accion-btn" onclick="nav('historial', this)">
-              <span>📋</span>
-              <span>Mi Historial</span>
-            </button>
+            <button class="accion-btn" onclick="abrirModalCita()"><span>📅</span><span>Nueva Cita</span></button>
+            <button class="accion-btn" onclick="nav('citas',this)"><span>📋</span><span>Mis Citas</span></button>
+            <button class="accion-btn" onclick="nav('consultas',this)"><span>🩺</span><span>Mis Consultas</span></button>
+            <button class="accion-btn" onclick="nav('recetas',this)"><span>💊</span><span>Mis Recetas</span></button>
           </div>
         </div>
-
       </div>
-
-      <!-- Últimas consultas -->
       <div class="panel">
         <div class="panel__header">
           <h2>Mis Últimas Consultas</h2>
           <a href="#" class="panel__link" onclick="nav('consultas',null);return false;">Ver historial →</a>
         </div>
         <table class="tabla">
-          <thead>
-            <tr><th>Fecha</th><th>Doctor</th><th>Diagnóstico</th><th>Acción</th></tr>
-          </thead>
+          <thead><tr><th>Fecha</th><th>Doctor</th><th>Diagnóstico</th><th>Acción</th></tr></thead>
           <tbody>
-            <tr>
-              <td>01/03/2026</td><td>Dr. Hernández</td><td>Chequeo general</td>
-              <td><button class="btn-tabla">Ver detalle</button></td>
-            </tr>
-            <tr>
-              <td>10/02/2026</td><td>Dra. Martínez</td><td>Gripe estacional</td>
-              <td><button class="btn-tabla">Ver detalle</button></td>
-            </tr>
-            <tr>
-              <td>15/01/2026</td><td>Dr. Flores</td><td>Control anual</td>
-              <td><button class="btn-tabla">Ver detalle</button></td>
-            </tr>
+            <tr><td>01/03/2026</td><td>Dr. Hernández</td><td>Chequeo general</td><td><button class="btn-tabla">Ver detalle</button></td></tr>
+            <tr><td>10/02/2026</td><td>Dra. Martínez</td><td>Gripe estacional</td><td><button class="btn-tabla">Ver detalle</button></td></tr>
           </tbody>
         </table>
       </div>
-
     </div>
 
    <!-- ══ SECCIÓN CITAS ══ -->
@@ -189,14 +188,12 @@
   </div>
 </div>
 
-    <!-- ══ SECCIÓN CONSULTAS ══ -->
+    <!-- ══ CONSULTAS ══ -->
     <div id="sec-consultas" style="display:none;">
       <div class="panel">
         <div class="panel__header"><h2>Mis Consultas</h2></div>
         <table class="tabla">
-          <thead>
-            <tr><th>Fecha</th><th>Peso</th><th>Presión</th><th>Temperatura</th><th>Observaciones</th></tr>
-          </thead>
+          <thead><tr><th>Fecha</th><th>Peso</th><th>Presión</th><th>Temperatura</th><th>Observaciones</th></tr></thead>
           <tbody id="tbody-consultas">
             <tr><td colspan="5" style="text-align:center;color:var(--text-soft);padding:20px;">Cargando...</td></tr>
           </tbody>
@@ -204,14 +201,12 @@
       </div>
     </div>
 
-    <!-- ══ SECCIÓN RECETAS ══ -->
+    <!-- ══ RECETAS ══ -->
     <div id="sec-recetas" style="display:none;">
       <div class="panel">
         <div class="panel__header"><h2>Mis Recetas</h2></div>
         <table class="tabla">
-          <thead>
-            <tr><th>Medicamento</th><th>Dosis</th><th>Frecuencia</th><th>Duración</th><th>Indicaciones</th></tr>
-          </thead>
+          <thead><tr><th>Medicamento</th><th>Dosis</th><th>Frecuencia</th><th>Duración</th><th>Indicaciones</th></tr></thead>
           <tbody id="tbody-recetas">
             <tr><td colspan="5" style="text-align:center;color:var(--text-soft);padding:20px;">Cargando...</td></tr>
           </tbody>
@@ -219,7 +214,7 @@
       </div>
     </div>
 
-    <!-- ══ SECCIÓN HISTORIAL ══ -->
+    <!-- ══ HISTORIAL ══ -->
     <div id="sec-historial" style="display:none;">
       <div class="panel">
         <div class="panel__header"><h2>Mi Historial Clínico</h2></div>
@@ -228,6 +223,39 @@
     </div>
 
   </main>
+</div>
+
+<!-- MODAL NUEVA CITA -->
+<div class="modal-overlay" id="modal-cita">
+  <div class="modal">
+    <h3>Solicitar Nueva Cita</h3>
+
+    <div class="form-row">
+      <div class="form-group"><label>Fecha</label><input type="date" id="cita-fecha"/></div>
+      <div class="form-group"><label>Hora</label><input type="time" id="cita-hora"/></div>
+    </div>
+
+    <div class="form-group autocomplete-wrap">
+      <label>Doctor</label>
+      <input type="text" id="cita-doctor-nombre" placeholder="Buscar doctor..."
+        oninput="buscarDoctor()" autocomplete="off"/>
+      <input type="hidden" id="cita-doctor"/>
+      <div id="sugerencias-doctor" class="autocomplete-lista"></div>
+    </div>
+
+    <!-- Muestra el horario del doctor seleccionado -->
+    <div class="horario-info" id="horario-info">🕐 Horario disponible: <span id="horario-texto"></span></div>
+
+    <div class="form-group">
+      <label>Motivo</label>
+      <textarea id="cita-motivo" rows="3" placeholder="Describe el motivo de tu cita..."></textarea>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-cancelar" onclick="cerrarModalCita()">Cancelar</button>
+      <button class="btn-primary" onclick="solicitarCita()">Guardar</button>
+    </div>
+  </div>
 </div>
 
 <script src="/js/dashboard-paciente.js"></script>

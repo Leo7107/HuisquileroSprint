@@ -213,6 +213,53 @@ async function cargarPacientesRecientes() {
   } catch { /* sin datos */ }
 }
 
+async function buscarUsuarioPaciente() {
+  const input = document.getElementById('pac-usuario-nombre');
+  const sugerencias = document.getElementById('sugerencias-usuario-paciente');
+  const q = input.value.toLowerCase().trim();
+
+  if (!q) { 
+    sugerencias.style.display = 'none'; 
+    return; 
+  }
+
+  try {
+    const res = await fetch('/api/usuarios', { headers: H });
+    const usuarios = await res.json();
+
+    // Filtramos correctamente por rol 30001 y por nombre/email
+    const filtrados = usuarios.filter(u => {
+      const coincideRol = u.idRol === 30001;
+      const coincideBusqueda = `${u.Nombres} ${u.Apellidos}`.toLowerCase().includes(q) || 
+                               (u.Email && u.Email.toLowerCase().includes(q));
+
+      return coincideRol && coincideBusqueda;
+    });
+
+    if (filtrados.length > 0) {
+      sugerencias.innerHTML = filtrados.map(u => `
+        <div class="autocomplete-item" 
+             onclick="seleccionarUsuarioParaPaciente(${u.idUsuario}, '${u.Nombres} ${u.Apellidos}')">
+          <strong>${u.Nombres} ${u.Apellidos}</strong>
+          <span>${u.Email || 'Sin correo'}</span>
+        </div>
+      `).join('');
+      sugerencias.style.display = 'block';
+    } else {
+      sugerencias.innerHTML = '<div class="autocomplete-item">No se encontraron pacientes disponibles</div>';
+      sugerencias.style.display = 'block';
+    }
+  } catch (error) {
+    console.error("Error buscando usuarios:", error);
+  }
+}
+
+function seleccionarUsuarioParaPaciente(id, nombreCompleto) {
+  document.getElementById('pac-usuario-nombre').value = nombreCompleto;
+  document.getElementById('pac-usuario').value = id;
+  document.getElementById('sugerencias-usuario-paciente').style.display = 'none';
+}
+
 async function registrarPaciente() {
   const payload = {
     numero_expediente:       document.getElementById('pac-exp').value,
@@ -401,6 +448,12 @@ document.addEventListener('click', (e) => {
   const sugMd   = document.getElementById('sugerencias-usuario-doctor');
   if (inputMd && sugMd && !inputMd.contains(e.target) && !sugMd.contains(e.target)) {
     sugMd.style.display = 'none';
+  }
+
+  const inputPac = document.getElementById('pac-usuario-nombre');
+  const sugPac = document.getElementById('sugerencias-usuario-paciente');
+  if (inputPac && sugPac && !inputPac.contains(e.target) && !sugPac.contains(e.target)) {
+    sugPac.style.display = 'none';
   }
 });
 
