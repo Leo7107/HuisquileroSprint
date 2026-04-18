@@ -53,7 +53,7 @@ async function cargarStats() {
     document.getElementById('s-citas-hoy').textContent = citasHoy.length;
     document.getElementById('s-pacientes').textContent = Array.isArray(pacientes) ? pacientes.length : '—';
 
-   document.getElementById('citas-preview').innerHTML = citasHoy.length
+    document.getElementById('citas-preview').innerHTML = citasHoy.length
       ? citasHoy.slice(0,4).map(c => {
           const paciente = c.NombrePaciente
             ? `${c.NombrePaciente} ${c.ApellidosPaciente}`
@@ -70,7 +70,7 @@ async function cargarStats() {
             </tr>`;
         }).join('')
       : '<tr><td colspan="4" style="text-align:center;color:var(--text-soft);padding:16px;">Sin citas para hoy</td></tr>';
-  } catch { /* sin datos */ }
+  } catch { }
 }
 
 // ── CITAS ─────────────────────────────────────
@@ -195,32 +195,33 @@ async function guardarCita() {
 // ── PACIENTES ─────────────────────────────────
 async function cargarPacientesRecientes() {
   try {
-    const res   = await fetch('/api/pacientes', { headers: H });
+    const res = await fetch('/api/pacientes', { headers: H });
     const lista = await res.json();
-    // Filtro de seguridad: Solo los que tienen expediente y usuario asociado
+
     const recientes = Array.isArray(lista) ? lista.slice(-6).reverse() : [];
-    
+
     document.getElementById('lista-recientes').innerHTML = recientes.length
       ? recientes.map(p => `
-          <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid rgba(42,107,94,0.07);">
-            <div style="width:36px;height:36px;border-radius:10px;background:var(--teal);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;">
-              ${(p.Nombres || 'P')[0]}
-            </div>
-            <div>
-              <strong style="display:block;font-size:13px;color:var(--deep);">${p.Nombres} ${p.Apellidos}</strong>
-              <span style="font-size:11.5px;color:var(--text-soft);">
-                Contacto: ${p.contacto_emergencia || 'N/A'} (${p.telefono_emergencia || '—'})
-              </span>
-            </div>
-          </div>`).join('')
+        <div style="padding:10px 0;border-bottom:1px solid rgba(0,0,0,0.05);">
+          <strong>${p.Nombres || ''} ${p.Apellidos || ''}</strong><br>
+          <span style="font-size:12px;color:#666;">
+            Expediente: ${p.numero_expediente} | ID: ${p.idPaciente}
+          </span>
+        </div>
+      `).join('')
       : '<p>Sin pacientes registrados.</p>';
-  } catch { /* sin datos */ }
+
+  } catch (e) {
+    console.error(e);
+  }
 }
 
 async function buscarUsuarioPaciente() {
   const input = document.getElementById('pac-usuario-nombre');
   const sugerencias = document.getElementById('sugerencias-usuario-paciente');
   const q = input.value.toLowerCase().trim();
+
+  document.getElementById('pac-usuario').value = '';
 
   if (!q) { 
     sugerencias.style.display = 'none'; 
@@ -231,30 +232,35 @@ async function buscarUsuarioPaciente() {
     const res = await fetch('/api/usuarios', { headers: H });
     const usuarios = await res.json();
 
-    // Filtramos correctamente por rol 30001 y por nombre/email
-    const filtrados = usuarios.filter(u => {
-      const coincideRol = u.idRol === 30001;
-      const coincideBusqueda = `${u.Nombres} ${u.Apellidos}`.toLowerCase().includes(q) || 
-                               (u.Email && u.Email.toLowerCase().includes(q));
+    // 👇 SOLO pacientes (rol)
+    const soloPacientes = usuarios.filter(u => u.idRol === 30001);
 
-      return coincideRol && coincideBusqueda;
-    });
+    // 👇 FILTRAR LOS QUE NO TIENEN EXPEDIENTE
+    const resPac = await fetch('/api/pacientes', { headers: H });
+    const pacientesConExp = await resPac.json();
 
-    if (filtrados.length > 0) {
-      sugerencias.innerHTML = filtrados.map(u => `
-        <div class="autocomplete-item" 
-             onclick="seleccionarUsuarioParaPaciente(${u.idUsuario}, '${u.Nombres} ${u.Apellidos}')">
-          <strong>${u.Nombres} ${u.Apellidos}</strong>
-          <span>${u.Email || 'Sin correo'}</span>
-        </div>
-      `).join('');
-      sugerencias.style.display = 'block';
-    } else {
-      sugerencias.innerHTML = '<div class="autocomplete-item">No se encontraron pacientes disponibles</div>';
-      sugerencias.style.display = 'block';
-    }
-  } catch (error) {
-    console.error("Error buscando usuarios:", error);
+    const idsConExp = pacientesConExp.map(p => p.idUsuario);
+
+    const disponibles = soloPacientes.filter(u => !idsConExp.includes(u.idUsuario));
+
+    const filtrados = disponibles.filter(u =>
+      (`${u.Nombres || ''} ${u.Apellidos || ''}`).toLowerCase().includes(q)
+    );
+
+    sugerencias.innerHTML = filtrados.length
+      ? filtrados.map(u => `
+          <div class="autocomplete-item"
+            onclick="seleccionarUsuarioParaPaciente(${u.idUsuario}, '${(u.Nombres + ' ' + u.Apellidos).replace(/'/g, "\\'")}')">
+            <strong>${u.Nombres} ${u.Apellidos}</strong>
+            <span>Sin expediente</span>
+          </div>
+        `).join('')
+      : '<div class="autocomplete-item">Sin resultados</div>';
+
+    sugerencias.style.display = 'block';
+
+  } catch (e) {
+    console.error(e);
   }
 }
 
@@ -280,10 +286,12 @@ async function registrarPaciente() {
   const data = await res.json();
   if (data.id) {
     alert('✅ Paciente registrado correctamente');
-    ['exp','contacto','parentesco','obs','usuario'].forEach(f =>
+    ['exp','contacto','parentesco','obs','usuario', 'usuario-nombre'].forEach(f =>
       document.getElementById('pac-' + f).value = '');
     document.getElementById('pac-sangre').value = '';
     cargarPacientesRecientes();
+    iniciarBuscador();
+    cargarListasAutocompletado();
   } else {
     alert('Error: ' + (data.message || data.error?.sqlMessage || 'No se pudo registrar'));
   }
@@ -293,54 +301,50 @@ async function registrarPaciente() {
 let todosPacientes = [];
 
 async function iniciarBuscador() {
-  if (todosPacientes.length) return;
   try {
     const res = await fetch('/api/pacientes', { headers: H });
     todosPacientes = await res.json();
-  } catch { /* sin datos */ }
+  } catch { }
 }
 
 function buscarPaciente() {
-  const q    = document.getElementById('q-global').value.toLowerCase().trim();
+  const q = document.getElementById('q-global').value.toLowerCase().trim();
   const cont = document.getElementById('resultados-busqueda');
 
   if (!q) {
-    cont.innerHTML = '<p style="text-align:center;color:var(--text-soft);padding:24px;font-size:13px;">Escribe para buscar un paciente...</p>';
+    cont.innerHTML = '<p style="text-align:center;color:gray;">Escribe para buscar...</p>';
     return;
   }
 
-  const res = Array.isArray(todosPacientes)
-    ? todosPacientes.filter(p =>
-        (p.numero_expediente || '').toLowerCase().includes(q) ||
-        String(p.idPaciente).includes(q))
-    : [];
+  const resultados = todosPacientes.filter(p =>
+    (`${p.Nombres || ''} ${p.Apellidos || ''}`).toLowerCase().includes(q) ||
+    (p.numero_expediente || '').toLowerCase().includes(q) ||
+    String(p.idPaciente).includes(q)
+  );
 
-  cont.innerHTML = res.length
-    ? res.map(p => `
-        <div class="resultado-item">
-          <div class="resultado-avatar">${(p.numero_expediente || 'P')[0]}</div>
-          <div class="resultado-info">
-            <strong>Expediente: ${p.numero_expediente}</strong>
-            <span>ID ${p.idPaciente} · ${p.estado_paciente} · Sangre: ${p.tipo_sangre || 'N/A'} · Contacto: ${p.contacto_emergencia || '—'}</span>
-          </div>
-        </div>`).join('')
-    : `<p style="text-align:center;color:var(--text-soft);padding:24px;font-size:13px;">No se encontraron resultados para "<strong>${q}</strong>".</p>`;
+  cont.innerHTML = resultados.length
+    ? resultados.map(p => `
+      <div class="resultado-item">
+        <strong>${p.Nombres} ${p.Apellidos}</strong><br>
+        <span>Exp: ${p.numero_expediente} | ID: ${p.idPaciente}</span>
+      </div>
+    `).join('')
+    : `<p style="text-align:center;color:gray;">No se encontró "${q}"</p>`;
 }
 
 // ── AUTOCOMPLETADO CITAS ──────────────────────
 let listaPacientes = [];
 let listaDoctores  = [];
 
-// Carga pacientes y doctores ACTIVOS para el autocompletado del modal de citas
 async function cargarListasAutocompletado() {
   try {
     const [pRes, dRes] = await Promise.all([
-      fetch('/api/pacientes',        { headers: H }),
+      fetch('/api/pacientes',         { headers: H }),
       fetch('/api/doctores/activos', { headers: H }),
     ]);
     listaPacientes = await pRes.json();
     listaDoctores  = await dRes.json();
-  } catch { /* sin datos */ }
+  } catch { }
 }
 
 function buscarAutocompletado(tipo) {
@@ -353,33 +357,33 @@ function buscarAutocompletado(tipo) {
   let lista = [];
 
   if (tipo === 'paciente') {
-  lista = Array.isArray(listaPacientes)
-    ? listaPacientes.filter(p =>
-        (p.numero_expediente || '').toLowerCase().includes(q) ||
-        (`${p.Nombres || ''} ${p.Apellidos || ''}`).toLowerCase().includes(q) ||
-        String(p.idPaciente).includes(q))
-    : [];
-  sugerencias.innerHTML = lista.length
-    ? lista.map(p => `
-        <div class="autocomplete-item"
-          onclick="seleccionar('paciente', ${p.idPaciente}, '${p.Nombres || ''} ${p.Apellidos || ''}')">
-          <strong>${p.Nombres || ''} ${p.Apellidos || ''}</strong>
-          <span>Exp: ${p.numero_expediente} · ${p.estado_paciente}</span>
-        </div>`).join('')
-    : '<div class="autocomplete-item">Sin resultados</div>';
-}
+    lista = Array.isArray(listaPacientes)
+      ? listaPacientes.filter(p =>
+          (p.numero_expediente || '').toLowerCase().includes(q) ||
+          (`${p.Nombres || ''} ${p.Apellidos || ''}`).toLowerCase().includes(q) ||
+          String(p.idPaciente).includes(q))
+      : [];
+    sugerencias.innerHTML = lista.length
+      ? lista.map(p => `
+          <div class="autocomplete-item"
+            onclick="seleccionar('paciente', ${p.idPaciente}, '${p.Nombres || ''} ${p.Apellidos || ''}')">
+            <strong>${p.Nombres || ''} ${p.Apellidos || ''}</strong>
+            <span>Exp: ${p.numero_expediente} · ${p.estado_paciente}</span>
+          </div>`).join('')
+      : '<div class="autocomplete-item">Sin resultados</div>';
+  }
 
   if (tipo === 'doctor') {
     lista = Array.isArray(listaDoctores)
       ? listaDoctores.filter(d =>
-          (d.Nombres + ' ' + d.Apellidos).toLowerCase().includes(q) ||
+          (`${d.Nombres || ''} ${d.Apellidos || ''}`).toLowerCase().includes(q) ||
           (d.Especialidad || '').toLowerCase().includes(q))
       : [];
     sugerencias.innerHTML = lista.length
       ? lista.map(d => `
           <div class="autocomplete-item"
-            onclick="seleccionar('doctor', ${d.idDoctor}, '${d.Nombres} ${d.Apellidos}')">
-            <strong>${d.Nombres} ${d.Apellidos}</strong>
+            onclick="seleccionar('doctor', ${d.idDoctor}, '${d.Nombres || ''} ${d.Apellidos || ''}')">
+            <strong>${d.Nombres || ''} ${d.Apellidos || ''}</strong>
             <span>${d.Especialidad}</span>
           </div>`).join('')
       : '<div class="autocomplete-item">Sin resultados</div>';
@@ -389,7 +393,7 @@ function buscarAutocompletado(tipo) {
 }
 
 function seleccionar(tipo, id, nombre) {
-  document.getElementById(`cita-${tipo}-nombre`).value = nombre;
+  document.getElementById(`cita-${tipo}-nombre`).value = nombre.trim();
   document.getElementById(`cita-${tipo}`).value        = id;
   document.getElementById(`sugerencias-${tipo}`).style.display = 'none';
 }
@@ -397,7 +401,6 @@ function seleccionar(tipo, id, nombre) {
 // ── AUTOCOMPLETADO USUARIO DOCTOR ─────────────
 let listaUsuariosDoctores = [];
 
-// Carga usuarios con rol Doctor (30002) para vincular al registrar un médico
 async function cargarUsuariosDoctores() {
   try {
     const res   = await fetch('/api/usuarios', { headers: H });
@@ -405,7 +408,7 @@ async function cargarUsuariosDoctores() {
     listaUsuariosDoctores = Array.isArray(todos)
       ? todos.filter(u => u.idRol === 30002)
       : [];
-  } catch { /* sin datos */ }
+  } catch { }
 }
 
 function buscarUsuarioDoctor() {
@@ -416,15 +419,15 @@ function buscarUsuarioDoctor() {
   if (!q) { sugerencias.style.display = 'none'; return; }
 
   const lista = listaUsuariosDoctores.filter(u =>
-    `${u.Nombres} ${u.Apellidos}`.toLowerCase().includes(q) ||
+    (`${u.Nombres || ''} ${u.Apellidos || ''}`).toLowerCase().includes(q) ||
     (u.Email || '').toLowerCase().includes(q)
   );
 
   sugerencias.innerHTML = lista.length
     ? lista.map(u => `
         <div class="autocomplete-item"
-          onclick="seleccionarUsuarioDoctor(${u.idUsuario}, '${u.Nombres} ${u.Apellidos}')">
-          <strong>${u.Nombres} ${u.Apellidos}</strong>
+          onclick="seleccionarUsuarioDoctor(${u.idUsuario}, '${u.Nombres || ''} ${u.Apellidos || ''}')">
+          <strong>${u.Nombres || ''} ${u.Apellidos || ''}</strong>
           <span>${u.Email}</span>
         </div>`).join('')
     : '<div class="autocomplete-item">Sin resultados</div>';
@@ -433,12 +436,11 @@ function buscarUsuarioDoctor() {
 }
 
 function seleccionarUsuarioDoctor(id, nombre) {
-  document.getElementById('md-usuario-nombre').value = nombre;
+  document.getElementById('md-usuario-nombre').value = nombre.trim();
   document.getElementById('md-usuario').value        = id;
   document.getElementById('sugerencias-usuario-doctor').style.display = 'none';
 }
 
-// Cierra todas las listas de sugerencias al hacer clic fuera
 document.addEventListener('click', (e) => {
   ['paciente','doctor'].forEach(tipo => {
     const input = document.getElementById(`cita-${tipo}-nombre`);
@@ -484,7 +486,6 @@ function renderMedicos(lista) {
   }
   document.getElementById('tbody-medicos').innerHTML = lista.map(d => {
     const esActivo = d.Estado === 'ACTIVO';
-    // Criterio 2: muestra hora_inicio y hora_fin si existen
     const horario = (d.hora_inicio && d.hora_fin)
       ? `<span class="horario-chip">🕐 ${d.hora_inicio.substring(0,5)} – ${d.hora_fin.substring(0,5)}</span>`
       : (d.Horario || '<span style="color:var(--text-soft);font-size:12px;">Sin horario</span>');
@@ -525,7 +526,7 @@ function filtrarMedicos() {
   const base = tabMedicActual === 'todos' ? todosMedicos
     : todosMedicos.filter(d => d.Estado === tabMedicActual);
   renderMedicos(base.filter(d =>
-    `${d.Nombres || ''} ${d.Apellidos || ''}`.toLowerCase().includes(q) ||
+    (`${d.Nombres || ''} ${d.Apellidos || ''}`).toLowerCase().includes(q) ||
     (d.Especialidad        || '').toLowerCase().includes(q) ||
     (d.numero_junta_medica || '').toLowerCase().includes(q)
   ));
@@ -570,13 +571,11 @@ async function guardarMedico() {
   const horaInicio = document.getElementById('md-hora-inicio').value;
   const horaFin    = document.getElementById('md-hora-fin').value;
 
-  // Criterio 1: especialidad obligatoria
   if (!document.getElementById('md-especialidad').value) {
     alert('La especialidad es obligatoria.');
     return;
   }
 
-  // Criterio 2: hora_fin debe ser posterior a hora_inicio
   if (horaInicio && horaFin && horaInicio >= horaFin) {
     alert('La hora de fin debe ser posterior a la hora de inicio.');
     return;
@@ -598,7 +597,6 @@ async function guardarMedico() {
   const res    = await fetch(url, { method, headers: H, body: JSON.stringify(payload) });
   const data   = await res.json();
 
-  // Criterio 3: backend devuelve 409 si número de junta ya existe
   if (res.status === 409) {
     alert('⚠️ ' + data.error);
     return;
@@ -607,13 +605,12 @@ async function guardarMedico() {
   if (data.message || data.id) {
     cerrarModalMedico();
     cargarMedicos();
-    cargarListasAutocompletado(); // refresca doctores activos en modal de citas
+    cargarListasAutocompletado();
   } else {
     alert('Error: ' + (data.error?.sqlMessage || data.error || 'Revisa los datos'));
   }
 }
 
-// Criterio 1 y 4: activa o desactiva un médico
 async function toggleMedico(id, estaActivo) {
   const accion  = estaActivo ? 'desactivar' : 'activar';
   const mensaje = estaActivo
@@ -626,7 +623,7 @@ async function toggleMedico(id, estaActivo) {
 
   if (data.message) {
     cargarMedicos();
-    cargarListasAutocompletado(); // refresca el autocompletado de citas
+    cargarListasAutocompletado();
   } else {
     alert('Error: ' + (data.error || ''));
   }
@@ -641,5 +638,6 @@ function cerrarSesion() {
 
 // ── INIT ──────────────────────────────────────
 cargarStats();
+iniciarBuscador();
 cargarListasAutocompletado();
 cargarUsuariosDoctores();
