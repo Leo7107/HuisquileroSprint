@@ -80,6 +80,7 @@ async function cargarStats() {
 
   } catch { /* sin datos */ }
 }
+
 // ── CITAS ─────────────────────────────────────
 async function cargarCitas() {
   try {
@@ -93,14 +94,37 @@ async function cargarCitas() {
             <td>${c.hora ? c.hora.substring(0,5) : '—'}</td>
             <td>${c.NombrePaciente ? `${c.NombrePaciente} ${c.ApellidosPaciente}` : `#${c.idPaciente}`}</td>
             <td>${c.motivo || '—'}</td>
-            <td><span class="badge badge--${c.estado === 'CONFIRMADA' ? 'activo' : 'pendiente'}">${c.estado}</span></td>
+            <td><span class="badge badge--${c.estado === 'CONFIRMADA' || c.estado === 'COMPLETADA' ? 'activo' : 'pendiente'}">${c.estado}</span></td>
+            <td>
+              ${c.estado === 'CONFIRMADA'
+                ? `<button class="btn-tabla" onclick="completarCita(${c.idCita})">✅ Completar</button>`
+                : '—'}
+            </td>
           </tr>`).join('')
-      : '<tr><td colspan="6" style="text-align:center;color:var(--text-soft);padding:20px;">Sin citas</td></tr>';
+      : '<tr><td colspan="7" style="text-align:center;color:var(--text-soft);padding:20px;">Sin citas</td></tr>';
   } catch {
     document.getElementById('tbody-citas').innerHTML =
-      '<tr><td colspan="6" style="text-align:center;color:#c03030;padding:20px;">Error al cargar</td></tr>';
+      '<tr><td colspan="7" style="text-align:center;color:#c03030;padding:20px;">Error al cargar</td></tr>';
   }
 }
+
+async function completarCita(id) {
+  if (!confirm('¿Marcar esta cita como completada?')) return;
+  try {
+    const res  = await fetch(`/api/citas/${id}/completar`, { method: 'PATCH', headers: H });
+    const data = await res.json();
+    if (data.message) {
+      alert('✅ Cita marcada como completada');
+      cargarCitas();
+      cargarStats();
+    } else {
+      alert('Error: ' + (data.error || 'No se pudo completar'));
+    }
+  } catch {
+    alert('Error de conexión');
+  }
+}
+
 // ── CONSULTAS ─────────────────────────────────
 async function cargarConsultasRecientes() {
   try {
