@@ -17,21 +17,21 @@ exports.getHistorialById = (req, res) => {
 exports.createHistorial = (req, res) => {
     Historial.create(req.body, (err, result) => {
         if (err) return res.status(500).json({ error: err });
-        res.json({ message: "Historial clínico creado", id: result.insertId });
+        res.json({ message: "Historial clÃ­nico creado", id: result.insertId });
     });
 };
 
 exports.updateHistorial = (req, res) => {
     Historial.update(req.params.id, req.body, (err) => {
         if (err) return res.status(500).json({ error: err });
-        res.json({ message: "Historial clínico actualizado" });
+        res.json({ message: "Historial clÃ­nico actualizado" });
     });
 };
 
 exports.deleteHistorial = (req, res) => {
     Historial.delete(req.params.id, (err) => {
         if (err) return res.status(500).json({ error: err });
-        res.json({ message: "Historial clínico eliminado" });
+        res.json({ message: "Historial clÃ­nico eliminado" });
     });
 };
 
@@ -42,3 +42,5 @@ exports.getHistorialByPaciente = (req, res) => {
         res.json(result);
     });
 };
+
+
