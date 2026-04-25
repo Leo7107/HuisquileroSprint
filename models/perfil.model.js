@@ -1,9 +1,8 @@
 const db = require("../config/db");
-
 const Perfil = {
   getPerfil: (idUsuario, cb) => {
     const sql = `
-      SELECT 
+      SELECT
         u.idUsuario, u.Nombres, u.Apellidos, u.Sexo, u.Fecha_nacimiento,
         u.Telefono, u.Direccion, u.Email,
         p.idPaciente, p.numero_expediente, p.fecha_registro, p.tipo_sangre,
@@ -34,5 +33,4 @@ const Perfil = {
   updateHistorial: (idHistorial, data, cb) =>
     db.query("UPDATE tbl_historial_clinico SET ? WHERE idHistorial = ?", [data, idHistorial], cb)
 };
-
 module.exports = Perfil;
