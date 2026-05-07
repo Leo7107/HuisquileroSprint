@@ -67,19 +67,24 @@
       </section>
 
       <div class="panels-row">
+
+        <!-- AGENDA DIARIA — HU09 criterio 1 -->
         <div class="panel">
           <div class="panel__header">
-            <h2>Citas de Hoy</h2>
+            <h2>Agenda de Hoy</h2>
             <a href="#" class="panel__link" onclick="nav('citas',null);return false;">Ver todas →</a>
           </div>
           <table class="tabla">
-            <thead><tr><th>Hora</th><th>Paciente</th><th>Motivo</th><th>Estado</th></tr></thead>
+            <thead>
+              <tr><th>Hora</th><th>Paciente</th><th>Motivo</th><th>Estado</th><th>Acción</th></tr>
+            </thead>
             <tbody id="citas-preview">
-              <tr><td colspan="4" style="text-align:center;color:var(--text-soft);padding:16px;">Cargando...</td></tr>
+              <tr><td colspan="5" style="text-align:center;color:var(--text-soft);padding:16px;">Cargando...</td></tr>
             </tbody>
           </table>
         </div>
 
+        <!-- ACCIONES RÁPIDAS — HU09 criterio 3 -->
         <div class="panel">
           <div class="panel__header"><h2>Acciones Rápidas</h2></div>
           <div class="acciones-grid">
@@ -91,32 +96,45 @@
         </div>
       </div>
 
-      <div class="panel">
-        <div class="panel__header">
-          <h2>Últimas Consultas Registradas</h2>
-          <a href="#" class="panel__link" onclick="nav('consulta',null);return false;">Ver historial →</a>
+      <!-- HISTORIAL RECIENTE DE PACIENTES — HU09 criterio 2 -->
+      <div class="panels-row">
+        <div class="panel">
+          <div class="panel__header">
+            <h2>Pacientes Recientes</h2>
+            <a href="#" class="panel__link" onclick="nav('expediente',null);return false;">Ver expedientes →</a>
+          </div>
+          <div id="historial-pacientes-preview">
+            <p style="text-align:center;color:var(--text-soft);padding:16px;font-size:13px;">Cargando...</p>
+          </div>
         </div>
+
+        <div class="panel">
+          <div class="panel__header">
+            <h2>Últimas Consultas</h2>
+            <a href="#" class="panel__link" onclick="nav('historial-consultas',null);return false;">Ver historial →</a>
+          </div>
+          <table class="tabla">
+            <thead><tr><th>Fecha</th><th>Historial</th><th>Observaciones</th><th>Acción</th></tr></thead>
+            <tbody id="consultas-preview">
+              <tr><td colspan="4" style="text-align:center;color:var(--text-soft);padding:16px;">Cargando...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ CITAS ══ -->
+    <div id="sec-citas" style="display:none;">
+      <div class="panel">
+        <div class="panel__header"><h2>Mis Citas</h2></div>
         <table class="tabla">
-          <thead><tr><th>Fecha</th><th>Paciente</th><th>Diagnóstico</th><th>Acción</th></tr></thead>
-          <tbody id="consultas-preview">
-            <tr><td colspan="4" style="text-align:center;color:var(--text-soft);padding:16px;">Cargando...</td></tr>
+          <thead><tr><th>ID</th><th>Fecha</th><th>Hora</th><th>Paciente</th><th>Motivo</th><th>Estado</th><th>Acción</th></tr></thead>
+          <tbody id="tbody-citas">
+            <tr><td colspan="7" style="text-align:center;color:var(--text-soft);padding:20px;">Cargando...</td></tr>
           </tbody>
         </table>
       </div>
     </div>
-
-<!-- ══ CITAS ══ -->
-<div id="sec-citas" style="display:none;">
-  <div class="panel">
-    <div class="panel__header"><h2>Mis Citas</h2></div>
-    <table class="tabla">
-      <thead><tr><th>ID</th><th>Fecha</th><th>Hora</th><th>Paciente</th><th>Motivo</th><th>Estado</th></tr></thead>
-      <tbody id="tbody-citas">
-        <tr><td colspan="6" style="text-align:center;color:var(--text-soft);padding:20px;">Cargando...</td></tr>
-      </tbody>
-    </table>
-  </div>
-</div>
 
     <!-- ══ NUEVA CONSULTA ══ -->
     <div id="sec-consulta" style="display:none;">
@@ -240,13 +258,31 @@
       </div>
     </div>
 
+    <!-- ══ HISTORIAL CONSULTAS ══ -->
+    <div id="sec-historial-consultas" style="display:none;">
+      <div class="panel">
+        <div class="panel__header">
+          <h2>Historial de Consultas</h2>
+          <button onclick="nav('consulta',null)" style="padding:8px 18px;border:none;border-radius:10px;background:linear-gradient(135deg,var(--teal),var(--teal-light));color:#fff;font-weight:700;font-size:12.5px;font-family:'DM Sans',sans-serif;cursor:pointer;">+ Nueva Consulta</button>
+        </div>
+        <table class="tabla">
+          <thead>
+            <tr><th>ID</th><th>Fecha</th><th>Cita</th><th>Peso</th><th>Presión</th><th>Temperatura</th><th>Observaciones</th></tr>
+          </thead>
+          <tbody id="tbody-historial-consultas">
+            <tr><td colspan="7" style="text-align:center;color:var(--text-soft);padding:20px;">Cargando...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
     <!-- ══ VER EXPEDIENTE ══ -->
     <div id="sec-expediente" style="display:none;">
       <div class="panel">
         <div class="panel__header"><h2>Buscar Expediente</h2></div>
         <div style="display:flex;align-items:center;gap:10px;background:var(--cream);border:1.5px solid var(--border);border-radius:14px;padding:12px 18px;margin-bottom:16px;">
           <span style="color:var(--text-soft);font-size:16px;">🔍</span>
-          <input type="text" id="q-expediente" placeholder="Buscar por número de expediente o ID..." oninput="buscarExpediente()" style="border:none;background:transparent;flex:1;font-size:14px;color:var(--text);font-family:'DM Sans',sans-serif;"/>
+          <input type="text" id="q-expediente" placeholder="Buscar por nombre, expediente o ID..." oninput="buscarExpediente()" style="border:none;background:transparent;flex:1;font-size:14px;color:var(--text);font-family:'DM Sans',sans-serif;"/>
         </div>
         <div id="resultados-expediente">
           <p style="text-align:center;color:var(--text-soft);padding:24px;font-size:13px;">Escribe para buscar un expediente...</p>
@@ -254,16 +290,13 @@
       </div>
     </div>
 
-    <!-- ══ MI HORARIO ══ -->
+    <!-- ══ MI HORARIO — HU09 ══ -->
     <div id="sec-horario" style="display:none;">
       <div class="panel">
         <div class="panel__header"><h2>Mi Horario</h2></div>
-        <table class="tabla">
-          <thead><tr><th>Día</th><th>Hora Inicio</th><th>Hora Fin</th><th>Consultorio</th></tr></thead>
-          <tbody id="tbody-horario">
-            <tr><td colspan="4" style="text-align:center;color:var(--text-soft);padding:20px;">Cargando...</td></tr>
-          </tbody>
-        </table>
+        <div id="horario-info">
+          <p style="text-align:center;color:var(--text-soft);padding:24px;font-size:13px;">Cargando...</p>
+        </div>
       </div>
     </div>
 

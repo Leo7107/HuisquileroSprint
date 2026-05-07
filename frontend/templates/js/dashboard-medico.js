@@ -1,7 +1,3 @@
-// ══════════════════════════════════════════════
-//  DASHBOARD MÉDICO – dashboard-medico.js
-// ══════════════════════════════════════════════
-
 const usuario = JSON.parse(localStorage.getItem('usuario') || 'null');
 if (!usuario || usuario.rol !== 30002) {
   alert('Acceso denegado.');
@@ -28,11 +24,13 @@ function nav(seccion, linkEl) {
   document.querySelectorAll('.nav-item').forEach(a => a.classList.remove('active'));
   if (linkEl) linkEl.classList.add('active');
 
-  if (seccion === 'citas')       cargarCitas();
-  if (seccion === 'consulta')    cargarConsultasRecientes();
-  if (seccion === 'receta')      cargarRecetasRecientes();
-  if (seccion === 'diagnostico') cargarDiagnosticosRecientes();
-  if (seccion === 'expediente')  iniciarBuscador();
+  if (seccion === 'citas')                cargarCitas();
+  if (seccion === 'consulta')             cargarConsultasRecientes();
+  if (seccion === 'historial-consultas')  cargarHistorialConsultas();
+  if (seccion === 'receta')               cargarRecetasRecientes();
+  if (seccion === 'diagnostico')          cargarDiagnosticosRecientes();
+  if (seccion === 'expediente')           iniciarBuscador();
+  if (seccion === 'horario')              cargarHorario();
 }
 
 // ── STATS ─────────────────────────────────────
@@ -58,16 +56,55 @@ async function cargarStats() {
     document.getElementById('s-consultas').textContent = Array.isArray(consultas) ? consultas.length : '–';
     document.getElementById('s-recetas').textContent   = Array.isArray(recetas)   ? recetas.length   : '–';
 
+    // ── AGENDA DIARIA — HU09 criterio 1
+    // Muestra citas de hoy con nombre del paciente y acceso rápido a consulta
     document.getElementById('citas-preview').innerHTML = citasHoy.length
-      ? citasHoy.slice(0,4).map(c => `
-          <tr>
-            <td>${c.hora || '–'}</td>
-            <td>#${c.idPaciente}</td>
-            <td>${c.motivo || '–'}</td>
-            <td><span class="badge badge--${c.estado === 'CONFIRMADA' ? 'activo' : 'pendiente'}">${c.estado}</span></td>
-          </tr>`).join('')
-      : '<tr><td colspan="4" style="text-align:center;color:var(--text-soft);padding:16px;">Sin citas para hoy</td></tr>';
+      ? citasHoy.slice(0,4).map(c => {
+          const paciente = c.NombrePaciente
+            ? `${c.NombrePaciente} ${c.ApellidosPaciente}`
+            : `#${c.idPaciente}`;
+          const hora = c.hora ? c.hora.substring(0,5) : '–';
+          return `
+            <tr>
+              <td>${hora}</td>
+              <td><strong>${paciente}</strong></td>
+              <td>${c.motivo || '–'}</td>
+              <td><span class="badge badge--${c.estado === 'CONFIRMADA' ? 'activo' : 'pendiente'}">${c.estado}</span></td>
+              <td>
+                ${c.estado === 'CONFIRMADA'
+                  ? `<button class="btn-tabla" onclick="accesoCitaRapido(${c.idCita}, ${c.idPaciente})">🩺 Atender</button>`
+                  : '–'}
+              </td>
+            </tr>`;
+        }).join('')
+      : '<tr><td colspan="5" style="text-align:center;color:var(--text-soft);padding:16px;">Sin citas para hoy</td></tr>';
 
+    // ── HISTORIAL RECIENTE DE PACIENTES — HU09 criterio 2
+    // Muestra los últimos pacientes con citas registradas
+    const pacientesRecientes = Array.isArray(citas)
+      ? [...new Map(
+          citas
+            .filter(c => c.NombrePaciente)
+            .sort((a, b) => new Date(b.fecha) - new Date(a.fecha))
+            .map(c => [c.idPaciente, c])
+        ).values()].slice(0, 4)
+      : [];
+
+    document.getElementById('historial-pacientes-preview').innerHTML = pacientesRecientes.length
+      ? pacientesRecientes.map(c => `
+          <div class="resultado-item" onclick="irExpediente(${c.idPaciente})" style="cursor:pointer;">
+            <div style="width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,var(--teal),var(--teal-light));color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex-shrink:0;">
+              ${(c.NombrePaciente || 'P')[0]}
+            </div>
+            <div style="flex:1;">
+              <strong style="display:block;font-size:13px;color:var(--deep);">${c.NombrePaciente} ${c.ApellidosPaciente || ''}</strong>
+              <span style="font-size:11.5px;color:var(--text-soft);">Última cita: ${c.fecha ? c.fecha.split('T')[0] : '–'} · ${c.estado}</span>
+            </div>
+            <span style="font-size:11.5px;color:var(--teal);font-weight:600;">Ver →</span>
+          </div>`).join('')
+      : '<p style="color:var(--text-soft);font-size:13px;padding:12px 0;">Sin pacientes recientes</p>';
+
+    // ── CONSULTAS RECIENTES
     document.getElementById('consultas-preview').innerHTML = Array.isArray(consultas) && consultas.length
       ? consultas.slice(0,3).map(c => `
           <tr>
@@ -81,26 +118,61 @@ async function cargarStats() {
   } catch { /* sin datos */ }
 }
 
+// ── ACCESO RÁPIDO A CONSULTA — HU09 criterio 3
+// Al hacer clic en "Atender" desde la agenda, navega a consulta con ID prellenado
+function accesoCitaRapido(idCita, idPaciente) {
+  nav('consulta', document.querySelector('[onclick*="consulta"]'));
+  setTimeout(() => {
+    document.getElementById('con-cita').value = idCita;
+    // Intentar autocompletar el historial del paciente
+    fetch(`/api/historial?idPaciente=${idPaciente}`, { headers: H })
+      .then(r => r.json())
+      .then(data => {
+        const h = Array.isArray(data) ? data[0] : data;
+        if (h?.idHistorial) {
+          document.getElementById('con-historial').value = h.idHistorial;
+        }
+      })
+      .catch(() => {});
+  }, 100);
+}
+
+// Ir al expediente desde historial reciente
+function irExpediente(idPaciente) {
+  nav('expediente', document.querySelector('[onclick*="expediente"]'));
+  setTimeout(() => {
+    iniciarBuscador().then(() => {
+      document.getElementById('q-expediente').value = String(idPaciente);
+      buscarExpediente();
+    });
+  }, 100);
+}
+
 // ── CITAS ─────────────────────────────────────
 async function cargarCitas() {
   try {
     const res  = await fetch('/api/citas', { headers: H });
     const data = await res.json();
     document.getElementById('tbody-citas').innerHTML = Array.isArray(data) && data.length
-      ? data.map(c => `
-          <tr>
-            <td>#${c.idCita}</td>
-            <td>${c.fecha ? c.fecha.split('T')[0] : '–'}</td>
-            <td>${c.hora ? c.hora.substring(0,5) : '–'}</td>
-            <td>${c.NombrePaciente ? `${c.NombrePaciente} ${c.ApellidosPaciente}` : `#${c.idPaciente}`}</td>
-            <td>${c.motivo || '–'}</td>
-            <td><span class="badge badge--${c.estado === 'CONFIRMADA' || c.estado === 'COMPLETADA' ? 'activo' : 'pendiente'}">${c.estado}</span></td>
-            <td>
-              ${c.estado === 'CONFIRMADA'
-                ? `<button class="btn-tabla" onclick="completarCita(${c.idCita})">✅ Completar</button>`
-                : '–'}
-            </td>
-          </tr>`).join('')
+      ? data.map(c => {
+          const paciente = c.NombrePaciente
+            ? `${c.NombrePaciente} ${c.ApellidosPaciente}`
+            : `#${c.idPaciente}`;
+          return `
+            <tr>
+              <td>#${c.idCita}</td>
+              <td>${c.fecha ? c.fecha.split('T')[0] : '–'}</td>
+              <td>${c.hora ? c.hora.substring(0,5) : '–'}</td>
+              <td>${paciente}</td>
+              <td>${c.motivo || '–'}</td>
+              <td><span class="badge badge--${['CONFIRMADA','FINALIZADA'].includes(c.estado) ? 'activo' : 'pendiente'}">${c.estado}</span></td>
+              <td>
+                ${c.estado === 'CONFIRMADA'
+                  ? `<button class="btn-tabla" onclick="accesoCitaRapido(${c.idCita}, ${c.idPaciente})">🩺 Atender</button>`
+                  : '–'}
+              </td>
+            </tr>`;
+        }).join('')
       : '<tr><td colspan="7" style="text-align:center;color:var(--text-soft);padding:20px;">Sin citas</td></tr>';
   } catch {
     document.getElementById('tbody-citas').innerHTML =
@@ -108,19 +180,62 @@ async function cargarCitas() {
   }
 }
 
-async function completarCita(id) {
-  if (!confirm('¿Marcar esta cita como completada?')) return;
+// ── HORARIO — HU09 criterio adicional
+async function cargarHorario() {
   try {
-    const res  = await fetch(`/api/citas/${id}/completar`, { method: 'PATCH', headers: H });
+    const res  = await fetch('/api/doctores', { headers: H });
     const data = await res.json();
-    if (data.message) {
-      alert('✅ Cita marcada como completada');
-      cargarCitas();
-      cargarStats();
-    } else {
-      alert('Error: ' + (data.error || 'No se pudo completar'));
+    const doctores = Array.isArray(data) ? data : [];
+
+    // Buscar el doctor vinculado al usuario actual
+    const miDoctor = doctores.find(d => d.idUsuario === usuario.id);
+
+    if (!miDoctor) {
+      document.getElementById('horario-info').innerHTML =
+        '<p style="color:var(--text-soft);font-size:13px;padding:12px 0;">No se encontró tu registro de médico.</p>';
+      return;
     }
-  } catch { alert('Error de conexión'); }
+
+    const horaInicio = miDoctor.hora_inicio ? miDoctor.hora_inicio.substring(0,5) : '–';
+    const horaFin    = miDoctor.hora_fin    ? miDoctor.hora_fin.substring(0,5)    : '–';
+
+    document.getElementById('horario-info').innerHTML = `
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;">
+        <div style="background:var(--cream);border:1.5px solid var(--border);border-radius:14px;padding:20px;text-align:center;">
+          <div style="font-size:2rem;margin-bottom:8px;">🕐</div>
+          <p style="font-size:11.5px;color:var(--text-soft);font-weight:600;margin-bottom:4px;">HORA DE ENTRADA</p>
+          <p style="font-size:1.8rem;font-family:'Playfair Display',serif;font-weight:700;color:var(--teal);">${horaInicio}</p>
+        </div>
+        <div style="background:var(--cream);border:1.5px solid var(--border);border-radius:14px;padding:20px;text-align:center;">
+          <div style="font-size:2rem;margin-bottom:8px;">🕔</div>
+          <p style="font-size:11.5px;color:var(--text-soft);font-weight:600;margin-bottom:4px;">HORA DE SALIDA</p>
+          <p style="font-size:1.8rem;font-family:'Playfair Display',serif;font-weight:700;color:var(--teal);">${horaFin}</p>
+        </div>
+        <div style="background:var(--cream);border:1.5px solid var(--border);border-radius:14px;padding:20px;text-align:center;">
+          <div style="font-size:2rem;margin-bottom:8px;">🏥</div>
+          <p style="font-size:11.5px;color:var(--text-soft);font-weight:600;margin-bottom:4px;">CONSULTORIO</p>
+          <p style="font-size:1.2rem;font-family:'Playfair Display',serif;font-weight:700;color:var(--deep);">${miDoctor.Consultorio || '–'}</p>
+        </div>
+        <div style="background:var(--cream);border:1.5px solid var(--border);border-radius:14px;padding:20px;text-align:center;">
+          <div style="font-size:2rem;margin-bottom:8px;">🩺</div>
+          <p style="font-size:11.5px;color:var(--text-soft);font-weight:600;margin-bottom:4px;">ESPECIALIDAD</p>
+          <p style="font-size:1rem;font-family:'Playfair Display',serif;font-weight:700;color:var(--deep);">${miDoctor.Especialidad || '–'}</p>
+        </div>
+      </div>
+      <div style="margin-top:16px;background:rgba(42,107,94,0.06);border:1.5px solid rgba(42,107,94,0.15);border-radius:12px;padding:16px;display:flex;align-items:center;gap:12px;">
+        <span style="font-size:1.2rem;">🪪</span>
+        <div>
+          <p style="font-size:11.5px;color:var(--text-soft);font-weight:600;">N° JUNTA MÉDICA</p>
+          <p style="font-size:14px;font-weight:700;color:var(--deep);font-family:monospace;">${miDoctor.numero_junta_medica || 'No registrado'}</p>
+        </div>
+        <div style="margin-left:auto;">
+          <span class="badge-estado--${miDoctor.Estado === 'ACTIVO' ? 'activo' : 'inactivo'}">${miDoctor.Estado}</span>
+        </div>
+      </div>`;
+  } catch {
+    document.getElementById('horario-info').innerHTML =
+      '<p style="color:#c03030;font-size:13px;">Error al cargar horario</p>';
+  }
 }
 
 // ── CONSULTAS ─────────────────────────────────
@@ -156,6 +271,7 @@ async function guardarConsulta() {
     ['con-peso','con-altura','con-presion','con-temp','con-obs','con-historial','con-cita']
       .forEach(id => document.getElementById(id).value = '');
     cargarConsultasRecientes();
+    cargarStats();
   } else {
     alert('Error: ' + (data.error?.sqlMessage || 'No se pudo registrar'));
   }
@@ -234,7 +350,6 @@ async function guardarDiagnostico() {
 let todosPacientes = [];
 
 async function iniciarBuscador() {
-  if (todosPacientes.length) return;
   try {
     const res = await fetch('/api/pacientes', { headers: H });
     todosPacientes = await res.json();
@@ -273,7 +388,6 @@ function buscarExpediente() {
 async function abrirExpediente(idPaciente) {
   const cont = document.getElementById('resultados-expediente');
   cont.innerHTML = '<p style="text-align:center;color:var(--text-soft);padding:24px;">Cargando expediente...</p>';
-
   try {
     const [pRes, hRes, cRes, recRes] = await Promise.all([
       fetch(`/api/pacientes/${idPaciente}`, { headers: H }),
@@ -281,7 +395,6 @@ async function abrirExpediente(idPaciente) {
       fetch(`/api/citas?idPaciente=${idPaciente}`, { headers: H }),
       fetch('/api/recetas', { headers: H }),
     ]);
-
     const paciente  = await pRes.json();
     const historial = await hRes.json();
     const citas     = await cRes.json();
@@ -289,20 +402,18 @@ async function abrirExpediente(idPaciente) {
 
     const p = Array.isArray(paciente) ? paciente[0] : paciente;
     const h = Array.isArray(historial) ? historial[0] : historial;
-    const citasPaciente = Array.isArray(citas) ? citas.filter(c => c.idPaciente === idPaciente) : [];
+    const citasPaciente   = Array.isArray(citas)   ? citas.filter(c => c.idPaciente === idPaciente)   : [];
     const recetasPaciente = Array.isArray(recetas) ? recetas.filter(r => r.idPaciente === idPaciente) : [];
 
     cont.innerHTML = `
-      <!-- BOTÓN VOLVER -->
       <button onclick="volverBuscador()" style="margin-bottom:16px;padding:8px 16px;border:1.5px solid var(--border);border-radius:10px;background:transparent;color:var(--text-soft);cursor:pointer;font-size:13px;">← Volver</button>
 
-      <!-- PERFIL DEL PACIENTE -->
       <div style="background:var(--cream);border:1.5px solid var(--border);border-radius:16px;padding:24px;margin-bottom:16px;">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
           <h3 style="font-size:15px;font-weight:700;color:var(--deep);">👤 Datos del Paciente</h3>
           <button onclick="editarPaciente(${p.idPaciente})" style="padding:7px 14px;border:none;border-radius:9px;background:linear-gradient(135deg,var(--teal),var(--teal-light));color:#fff;font-size:12px;font-weight:600;cursor:pointer;">✏️ Editar</button>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:13px;" id="datos-paciente-${p.idPaciente}">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:13px;">
           <div><span style="color:var(--text-soft);">Nombre:</span> <strong>${p.Nombres || '–'} ${p.Apellidos || ''}</strong></div>
           <div><span style="color:var(--text-soft);">Expediente:</span> <strong>${p.numero_expediente || '–'}</strong></div>
           <div><span style="color:var(--text-soft);">Email:</span> <strong>${p.Email || '–'}</strong></div>
@@ -314,7 +425,6 @@ async function abrirExpediente(idPaciente) {
         </div>
       </div>
 
-      <!-- HISTORIAL CLÍNICO -->
       <div style="background:var(--cream);border:1.5px solid var(--border);border-radius:16px;padding:24px;margin-bottom:16px;">
         <h3 style="font-size:15px;font-weight:700;color:var(--deep);margin-bottom:14px;">🏥 Historial Clínico</h3>
         ${h ? `
@@ -328,7 +438,6 @@ async function abrirExpediente(idPaciente) {
           </div>` : '<p style="color:var(--text-soft);font-size:13px;">Sin historial registrado</p>'}
       </div>
 
-      <!-- CITAS -->
       <div style="background:var(--cream);border:1.5px solid var(--border);border-radius:16px;padding:24px;margin-bottom:16px;">
         <h3 style="font-size:15px;font-weight:700;color:var(--deep);margin-bottom:14px;">📅 Registro de Citas</h3>
         ${citasPaciente.length ? `
@@ -345,13 +454,12 @@ async function abrirExpediente(idPaciente) {
                   <td style="padding:8px 0;">${c.fecha ? c.fecha.split('T')[0] : '–'}</td>
                   <td style="padding:8px 0;">${c.hora ? c.hora.substring(0,5) : '–'}</td>
                   <td style="padding:8px 0;">${c.motivo || '–'}</td>
-                  <td style="padding:8px 0;"><span class="badge badge--${c.estado === 'CONFIRMADA' || c.estado === 'COMPLETADA' ? 'activo' : 'pendiente'}">${c.estado}</span></td>
+                  <td style="padding:8px 0;"><span class="badge badge--${['CONFIRMADA','FINALIZADA'].includes(c.estado) ? 'activo' : 'pendiente'}">${c.estado}</span></td>
                 </tr>`).join('')}
             </tbody>
           </table>` : '<p style="color:var(--text-soft);font-size:13px;">Sin citas registradas</p>'}
       </div>
 
-      <!-- RECETAS -->
       <div style="background:var(--cream);border:1.5px solid var(--border);border-radius:16px;padding:24px;margin-bottom:16px;">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
           <h3 style="font-size:15px;font-weight:700;color:var(--deep);">💊 Recetas</h3>
@@ -369,9 +477,9 @@ async function abrirExpediente(idPaciente) {
             <input type="number" id="nr-diagnostico-${p.idPaciente}" placeholder="ID Diagnóstico" style="padding:9px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:13px;background:white;"/>
             <input type="number" id="nr-factura-${p.idPaciente}" placeholder="ID Factura" style="padding:9px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:13px;background:white;"/>
             <input type="text" id="nr-medicamento-${p.idPaciente}" placeholder="Medicamento" style="padding:9px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:13px;background:white;"/>
-            <input type="text" id="nr-dosis-${p.idPaciente}" placeholder="Dosis (ej: 500mg)" style="padding:9px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:13px;background:white;"/>
-            <input type="text" id="nr-frecuencia-${p.idPaciente}" placeholder="Frecuencia (ej: cada 8h)" style="padding:9px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:13px;background:white;"/>
-            <input type="text" id="nr-duracion-${p.idPaciente}" placeholder="Duración (ej: 7 días)" style="padding:9px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:13px;background:white;"/>
+            <input type="text" id="nr-dosis-${p.idPaciente}" placeholder="Dosis" style="padding:9px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:13px;background:white;"/>
+            <input type="text" id="nr-frecuencia-${p.idPaciente}" placeholder="Frecuencia" style="padding:9px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:13px;background:white;"/>
+            <input type="text" id="nr-duracion-${p.idPaciente}" placeholder="Duración" style="padding:9px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:13px;background:white;"/>
             <textarea id="nr-indicaciones-${p.idPaciente}" placeholder="Indicaciones..." style="padding:9px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:13px;background:white;grid-column:span 2;"></textarea>
           </div>
           <button onclick="guardarRecetaExpediente(${p.idPaciente})" style="margin-top:10px;padding:10px 20px;border:none;border-radius:10px;background:linear-gradient(135deg,var(--teal),var(--teal-light));color:#fff;font-weight:600;font-size:13px;cursor:pointer;">Guardar Receta</button>
@@ -379,14 +487,12 @@ async function abrirExpediente(idPaciente) {
         </div>
       </div>
 
-      <!-- FORMULARIO EDITAR PACIENTE (oculto) -->
       <div id="form-editar-${p.idPaciente}" style="display:none;background:var(--cream);border:1.5px solid var(--border);border-radius:16px;padding:24px;margin-bottom:16px;">
         <h3 style="font-size:15px;font-weight:700;color:var(--deep);margin-bottom:14px;">✏️ Editar Paciente</h3>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
           <div>
             <label style="font-size:11.5px;color:var(--text-soft);font-weight:600;">Tipo de Sangre</label>
             <select id="ep-sangre-${p.idPaciente}" style="width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:13px;background:white;margin-top:4px;">
-              <option value="">Seleccionar</option>
               ${['A+','A-','B+','B-','AB+','AB-','O+','O-'].map(s => `<option value="${s}" ${p.tipo_sangre === s ? 'selected' : ''}>${s}</option>`).join('')}
             </select>
           </div>
@@ -395,7 +501,6 @@ async function abrirExpediente(idPaciente) {
             <select id="ep-estado-${p.idPaciente}" style="width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:13px;background:white;margin-top:4px;">
               <option value="ACTIVO" ${p.estado_paciente === 'ACTIVO' ? 'selected' : ''}>ACTIVO</option>
               <option value="INACTIVO" ${p.estado_paciente === 'INACTIVO' ? 'selected' : ''}>INACTIVO</option>
-              <option value="FALLECIDO" ${p.estado_paciente === 'FALLECIDO' ? 'selected' : ''}>FALLECIDO</option>
             </select>
           </div>
           <div>
@@ -415,9 +520,8 @@ async function abrirExpediente(idPaciente) {
           <button onclick="guardarEdicionPaciente(${p.idPaciente})" style="padding:10px 20px;border:none;border-radius:10px;background:linear-gradient(135deg,var(--teal),var(--teal-light));color:#fff;font-weight:600;font-size:13px;cursor:pointer;">Guardar Cambios</button>
           <button onclick="document.getElementById('form-editar-${p.idPaciente}').style.display='none'" style="margin-left:8px;padding:10px 20px;border:1.5px solid var(--border);border-radius:10px;background:transparent;color:var(--text-soft);font-size:13px;cursor:pointer;">Cancelar</button>
         </div>
-      </div>
-    `;
-  } catch(e) {
+      </div>`;
+  } catch {
     cont.innerHTML = '<p style="text-align:center;color:#c03030;padding:24px;">Error al cargar el expediente</p>';
   }
 }
@@ -440,10 +544,10 @@ function mostrarFormReceta(idPaciente) {
 
 async function guardarEdicionPaciente(idPaciente) {
   const payload = {
-    tipo_sangre:           document.getElementById(`ep-sangre-${idPaciente}`).value,
-    estado_paciente:       document.getElementById(`ep-estado-${idPaciente}`).value,
-    contacto_emergencia:   document.getElementById(`ep-contacto-${idPaciente}`).value,
-    telefono_emergencia:   document.getElementById(`ep-telefono-${idPaciente}`).value,
+    tipo_sangre:             document.getElementById(`ep-sangre-${idPaciente}`).value,
+    estado_paciente:         document.getElementById(`ep-estado-${idPaciente}`).value,
+    contacto_emergencia:     document.getElementById(`ep-contacto-${idPaciente}`).value,
+    telefono_emergencia:     document.getElementById(`ep-telefono-${idPaciente}`).value,
     observaciones_generales: document.getElementById(`ep-observaciones-${idPaciente}`).value,
   };
   const res  = await fetch(`/api/pacientes/${idPaciente}`, { method:'PUT', headers: H, body: JSON.stringify(payload) });
@@ -474,6 +578,29 @@ async function guardarRecetaExpediente(idPaciente) {
     abrirExpediente(idPaciente);
   } else {
     alert('Error: ' + (data.error?.sqlMessage || 'No se pudo agregar'));
+  }
+}
+
+// ── HISTORIAL CONSULTAS ───────────────────────
+async function cargarHistorialConsultas() {
+  try {
+    const res  = await fetch('/api/consultas', { headers: H });
+    const data = await res.json();
+    document.getElementById('tbody-historial-consultas').innerHTML = Array.isArray(data) && data.length
+      ? data.map(c => `
+          <tr>
+            <td>#${c.idConsulta}</td>
+            <td>${c.fecha_consulta || '–'}</td>
+            <td>#${c.idCita || '–'}</td>
+            <td>${c.peso ? c.peso + ' kg' : '–'}</td>
+            <td>${c.presion_arterial || '–'}</td>
+            <td>${c.temperatura ? c.temperatura + ' °C' : '–'}</td>
+            <td>${c.observaciones || '–'}</td>
+          </tr>`).join('')
+      : '<tr><td colspan="7" style="text-align:center;color:var(--text-soft);padding:20px;">Sin consultas registradas</td></tr>';
+  } catch {
+    document.getElementById('tbody-historial-consultas').innerHTML =
+      '<tr><td colspan="7" style="text-align:center;color:#c03030;padding:20px;">Error al cargar</td></tr>';
   }
 }
 
