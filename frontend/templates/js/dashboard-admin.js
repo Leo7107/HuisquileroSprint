@@ -524,30 +524,40 @@ async function cargarTablaInventario() {
 function renderTablaInventario(lista) {
   document.getElementById('tbody-inventario').innerHTML = Array.isArray(lista) && lista.length
     ? lista.map(m => {
-        const bajo = m.stock_actual <= m.stock_minimo;
+        const bajo = m.stock_actual === 0;
         const estadoBadge = m.estado === 'ACTIVO'
           ? '<span class="badge badge--activo">ACTIVO</span>'
           : '<span class="badge badge--inactivo">INACTIVO</span>';
         const stockColor = bajo
           ? 'color:#c03030;font-weight:700;'
           : 'color:var(--teal);font-weight:700;';
+        const stockTexto = bajo
+          ? `<span style="${stockColor}" title="Sin stock disponible">${m.stock_actual} ${m.unidad_medida}</span>`
+          : `<span style="${stockColor}">${m.stock_actual} ${m.unidad_medida}</span>`;
+        const esActivo = m.estado === 'ACTIVO';
         return `
           <tr>
             <td>#${m.idMedicamento}</td>
             <td><strong>${m.nombre}</strong><br/><span style="font-size:11px;color:var(--text-soft);">${m.descripcion || ''}</span></td>
-            <td style="${stockColor}">${m.stock_actual} ${m.unidad_medida}${bajo ? ' ⚠️' : ''}</td>
+            <td>${stockTexto}</td>
             <td>${m.stock_minimo}</td>
             <td>${m.unidad_medida}</td>
             <td>$${parseFloat(m.precio_unitario || 0).toFixed(2)}</td>
             <td>${estadoBadge}</td>
             <td>
               <div class="action-icons">
-                <button class="icon-btn icon-btn--edit" title="Editar" onclick='abrirModalEditarMed(${JSON.stringify(m)})'>✏️</button>
-                <button class="icon-btn icon-btn--edit" title="Entrada stock" onclick="abrirModalEntrada(${m.idMedicamento}, '${m.nombre}')">📦</button>
-                <button class="icon-btn icon-btn--toggle" title="Ajustar stock" onclick="abrirModalAjuste(${m.idMedicamento}, '${m.nombre}', ${m.stock_actual})">🔧</button>
-                <button class="icon-btn icon-btn--${m.estado === 'ACTIVO' ? 'cancel' : 'edit'}" title="${m.estado === 'ACTIVO' ? 'Desactivar' : 'Activar'}"
-                  onclick="toggleMedicamento(${m.idMedicamento}, '${m.estado === 'ACTIVO' ? 'INACTIVO' : 'ACTIVO'}')">
-                  ${m.estado === 'ACTIVO' ? '🔴' : '🟢'}
+                <button class="icon-btn icon-btn--edit" title="Editar medicamento"
+                  onclick='abrirModalEditarMed(${JSON.stringify(m)})'>✏️</button>
+                <button class="icon-btn icon-btn--edit" title="Agregar unidades al inventario"
+                  onclick="abrirModalEntrada(${m.idMedicamento}, '${m.nombre}')">➕</button>
+                <button class="icon-btn icon-btn--toggle" title="Corregir cantidad en inventario"
+                  onclick="abrirModalAjuste(${m.idMedicamento}, '${m.nombre}', ${m.stock_actual})">📝</button>
+                <button
+                  class="icon-btn"
+                  style="background:${esActivo ? 'rgba(200,50,50,0.15)' : 'rgba(42,107,94,0.15)'};"
+                  title="${esActivo ? 'Desactivar medicamento' : 'Activar medicamento'}"
+                  onclick="toggleMedicamento(${m.idMedicamento}, '${esActivo ? 'INACTIVO' : 'ACTIVO'}')">
+                  ${esActivo ? '🟢' : '🔴'}
                 </button>
               </div>
             </td>
