@@ -214,49 +214,81 @@
 
     <!-- ══ EMITIR RECETA ══ -->
     <div id="sec-receta" style="display:none;">
-      <div class="panel">
-        <div class="panel__header"><h2>Emitir Receta</h2></div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+  <div class="panel">
+    <div class="panel__header"><h2>Emitir Receta</h2></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+      <div>
+ 
+        <!-- Medicamento con autocompletado — criterio 2 -->
+        <div style="margin-bottom:14px;" class="autocomplete-wrap">
+          <label style="display:block;font-size:11.5px;font-weight:600;color:var(--text-soft);margin-bottom:5px;">
+            Medicamento *
+          </label>
+          <input type="text" id="rec-medicamento-nombre"
+            placeholder="Buscar medicamento con stock disponible..."
+            oninput="buscarMedicamentoReceta()" autocomplete="off"
+            style="width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:11px;font-size:13.5px;background:var(--cream);box-sizing:border-box;"/>
+          <input type="hidden" id="rec-medicamento-id"/>
+          <div id="sug-medicamento" class="autocomplete-lista"></div>
+          <!-- Info de stock disponible -->
+          <div id="rec-stock-info" style="display:none;font-size:11.5px;color:var(--teal);font-weight:600;margin-top:5px;padding:5px 10px;background:rgba(42,107,94,0.07);border-radius:8px;"></div>
+        </div>
+ 
+        <!-- Cantidad a prescribir — criterio 4 -->
+        <div style="margin-bottom:14px;">
+          <label style="display:block;font-size:11.5px;font-weight:600;color:var(--text-soft);margin-bottom:5px;">
+            Cantidad a prescribir
+          </label>
+          <input type="number" id="rec-cantidad" placeholder="1" min="1" value="1"
+            style="width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:11px;font-size:13.5px;background:var(--cream);box-sizing:border-box;"/>
+        </div>
+ 
+        <div style="margin-bottom:14px;">
+          <label style="display:block;font-size:11.5px;font-weight:600;color:var(--text-soft);margin-bottom:5px;">ID de Diagnóstico</label>
+          <input type="number" id="rec-diagnostico" placeholder="ID del diagnóstico"
+            style="width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:11px;font-size:13.5px;background:var(--cream);box-sizing:border-box;"/>
+        </div>
+        <div style="margin-bottom:14px;">
+          <label style="display:block;font-size:11.5px;font-weight:600;color:var(--text-soft);margin-bottom:5px;">ID de Factura</label>
+          <input type="number" id="rec-factura" placeholder="ID de la factura"
+            style="width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:11px;font-size:13.5px;background:var(--cream);box-sizing:border-box;"/>
+        </div>
+ 
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
           <div>
-            <div style="margin-bottom:14px;">
-              <label style="display:block;font-size:11.5px;font-weight:600;color:var(--text-soft);margin-bottom:5px;">ID de Diagnóstico</label>
-              <input type="number" id="rec-diagnostico" placeholder="ID del diagnóstico" style="width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:11px;font-size:13.5px;background:var(--cream);box-sizing:border-box;"/>
-            </div>
-            <div style="margin-bottom:14px;">
-              <label style="display:block;font-size:11.5px;font-weight:600;color:var(--text-soft);margin-bottom:5px;">ID de Factura</label>
-              <input type="number" id="rec-factura" placeholder="ID de la factura" style="width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:11px;font-size:13.5px;background:var(--cream);box-sizing:border-box;"/>
-            </div>
-            <div style="margin-bottom:14px;">
-              <label style="display:block;font-size:11.5px;font-weight:600;color:var(--text-soft);margin-bottom:5px;">Medicamento</label>
-              <input type="text" id="rec-medicamento" placeholder="Nombre del medicamento" style="width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:11px;font-size:13.5px;background:var(--cream);box-sizing:border-box;"/>
-            </div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
-              <div>
-                <label style="display:block;font-size:11.5px;font-weight:600;color:var(--text-soft);margin-bottom:5px;">Dosis</label>
-                <input type="text" id="rec-dosis" placeholder="500mg" style="width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:11px;font-size:13.5px;background:var(--cream);box-sizing:border-box;"/>
-              </div>
-              <div>
-                <label style="display:block;font-size:11.5px;font-weight:600;color:var(--text-soft);margin-bottom:5px;">Frecuencia</label>
-                <input type="text" id="rec-frecuencia" placeholder="Cada 8 horas" style="width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:11px;font-size:13.5px;background:var(--cream);box-sizing:border-box;"/>
-              </div>
-            </div>
-            <div style="margin-bottom:14px;">
-              <label style="display:block;font-size:11.5px;font-weight:600;color:var(--text-soft);margin-bottom:5px;">Duración</label>
-              <input type="text" id="rec-duracion" placeholder="7 días" style="width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:11px;font-size:13.5px;background:var(--cream);box-sizing:border-box;"/>
-            </div>
-            <div style="margin-bottom:14px;">
-              <label style="display:block;font-size:11.5px;font-weight:600;color:var(--text-soft);margin-bottom:5px;">Indicaciones</label>
-              <textarea id="rec-indicaciones" rows="3" placeholder="Tomar con alimentos..." style="width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:11px;font-size:13.5px;background:var(--cream);box-sizing:border-box;font-family:'DM Sans',sans-serif;"></textarea>
-            </div>
-            <button onclick="guardarReceta()" style="width:100%;padding:12px;border:none;border-radius:12px;background:linear-gradient(135deg,var(--teal),var(--teal-light));color:#fff;font-weight:700;font-size:13.5px;font-family:'DM Sans',sans-serif;cursor:pointer;">Emitir Receta</button>
+            <label style="display:block;font-size:11.5px;font-weight:600;color:var(--text-soft);margin-bottom:5px;">Dosis</label>
+            <input type="text" id="rec-dosis" placeholder="500mg"
+              style="width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:11px;font-size:13.5px;background:var(--cream);box-sizing:border-box;"/>
           </div>
           <div>
-            <h3 style="font-size:14px;font-weight:700;color:var(--deep);margin-bottom:16px;">Recetas Recientes</h3>
-            <div id="recetas-recientes"><p style="color:var(--text-soft);font-size:13px;">Cargando...</p></div>
+            <label style="display:block;font-size:11.5px;font-weight:600;color:var(--text-soft);margin-bottom:5px;">Frecuencia</label>
+            <input type="text" id="rec-frecuencia" placeholder="Cada 8 horas"
+              style="width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:11px;font-size:13.5px;background:var(--cream);box-sizing:border-box;"/>
           </div>
         </div>
+        <div style="margin-bottom:14px;">
+          <label style="display:block;font-size:11.5px;font-weight:600;color:var(--text-soft);margin-bottom:5px;">Duración</label>
+          <input type="text" id="rec-duracion" placeholder="7 días"
+            style="width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:11px;font-size:13.5px;background:var(--cream);box-sizing:border-box;"/>
+        </div>
+        <div style="margin-bottom:14px;">
+          <label style="display:block;font-size:11.5px;font-weight:600;color:var(--text-soft);margin-bottom:5px;">Indicaciones</label>
+          <textarea id="rec-indicaciones" rows="3" placeholder="Tomar con alimentos..."
+            style="width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:11px;font-size:13.5px;background:var(--cream);box-sizing:border-box;font-family:'DM Sans',sans-serif;"></textarea>
+        </div>
+        <button onclick="guardarReceta()"
+          style="width:100%;padding:12px;border:none;border-radius:12px;background:linear-gradient(135deg,var(--teal),var(--teal-light));color:#fff;font-weight:700;font-size:13.5px;font-family:'DM Sans',sans-serif;cursor:pointer;">
+          Emitir Receta
+        </button>
+      </div>
+ 
+      <div>
+        <h3 style="font-size:14px;font-weight:700;color:var(--deep);margin-bottom:16px;">Recetas Recientes</h3>
+        <div id="recetas-recientes"><p style="color:var(--text-soft);font-size:13px;">Cargando...</p></div>
       </div>
     </div>
+  </div>
+</div>
 
     <!-- ══ NUEVO DIAGNÓSTICO ══ -->
     <div id="sec-diagnostico" style="display:none;">

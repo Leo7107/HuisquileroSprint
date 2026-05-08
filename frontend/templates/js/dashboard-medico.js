@@ -574,27 +574,108 @@ async function cargarRecetasRecientes() {
   } catch { /* sin datos */ }
 }
 
+let listaMedsActivos = [];
+
+// Cargar al inicio
+async function cargarMedicamentosActivos() {
+  try {
+    const res = await fetch('/api/medicamentos/activos', { headers: H });
+    listaMedsActivos = await res.json();
+  } catch { /* sin datos */ }
+}
+
+// ── AUTOCOMPLETADO MEDICAMENTOS EN RECETA — criterio 2
+function buscarMedicamentoReceta() {
+  const input = document.getElementById('rec-medicamento-nombre');
+  const sug   = document.getElementById('sug-medicamento');
+  const q     = input.value.toLowerCase().trim();
+
+  document.getElementById('rec-medicamento-id').value = '';
+
+  if (!q) { sug.style.display = 'none'; return; }
+
+  const lista = Array.isArray(listaMedsActivos)
+    ? listaMedsActivos.filter(m => m.nombre.toLowerCase().includes(q))
+    : [];
+
+  sug.innerHTML = lista.length
+    ? lista.map(m => `
+        <div class="autocomplete-item" onclick="seleccionarMedicamento(${m.idMedicamento}, '${m.nombre.replace(/'/g,"\\'")}', '${m.unidad_medida}', ${m.stock_actual})">
+          <strong>${m.nombre}</strong>
+          <span>Stock: ${m.stock_actual} ${m.unidad_medida} · $${parseFloat(m.precio_unitario || 0).toFixed(2)}</span>
+        </div>`).join('')
+    : '<div class="autocomplete-item">Sin resultados con stock disponible</div>';
+
+  sug.style.display = 'block';
+}
+
+function seleccionarMedicamento(id, nombre, unidad, stock) {
+  document.getElementById('rec-medicamento-nombre').value = nombre;
+  document.getElementById('rec-medicamento-id').value     = id;
+  document.getElementById('sug-medicamento').style.display = 'none';
+  // Mostrar stock disponible
+  const infoStock = document.getElementById('rec-stock-info');
+  if (infoStock) {
+    infoStock.textContent = `Stock disponible: ${stock} ${unidad}`;
+    infoStock.style.display = 'block';
+  }
+}
+
+// ── GUARDAR RECETA — criterio 4 (descuenta stock automáticamente)
 async function guardarReceta() {
+  const idMedicamento = parseInt(document.getElementById('rec-medicamento-id').value);
+  const cantidad      = parseInt(document.getElementById('rec-cantidad').value) || 1;
+
+  if (!idMedicamento) {
+    alert('⚠️ Selecciona un medicamento del inventario');
+    return;
+  }
+
   const payload = {
-    medicamento:   document.getElementById('rec-medicamento').value,
+    medicamento:   document.getElementById('rec-medicamento-nombre').value,
     dosis:         document.getElementById('rec-dosis').value,
     frecuencia:    document.getElementById('rec-frecuencia').value,
     duracion:      document.getElementById('rec-duracion').value,
     indicaciones:  document.getElementById('rec-indicaciones').value,
-    idDiagnostico: parseInt(document.getElementById('rec-diagnostico').value),
-    idFactura:     parseInt(document.getElementById('rec-factura').value),
+    idDiagnostico: parseInt(document.getElementById('rec-diagnostico').value) || null,
+    idFactura:     parseInt(document.getElementById('rec-factura').value)     || null,
+    idMedicamento,
+    cantidad,
   };
+
   const res  = await fetch('/api/recetas', { method:'POST', headers: H, body: JSON.stringify(payload) });
   const data = await res.json();
-  if (data.id) {
-    alert('✅ Receta emitida correctamente');
-    ['rec-medicamento','rec-dosis','rec-frecuencia','rec-duracion','rec-indicaciones','rec-diagnostico','rec-factura']
-      .forEach(id => document.getElementById(id).value = '');
+
+  if (data.id || data.message) {
+    // Descontar stock automáticamente — criterio 4
+    await fetch(`/api/medicamentos/${idMedicamento}/descontar`, {
+      method: 'POST', headers: H,
+      body: JSON.stringify({ cantidad, idReceta: data.id })
+    });
+
+    alert('✅ Receta emitida y stock descontado correctamente');
+    ['rec-medicamento-nombre','rec-dosis','rec-frecuencia','rec-duracion',
+     'rec-indicaciones','rec-diagnostico','rec-factura','rec-cantidad']
+      .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+    document.getElementById('rec-medicamento-id').value = '';
+    const infoStock = document.getElementById('rec-stock-info');
+    if (infoStock) infoStock.style.display = 'none';
     cargarRecetasRecientes();
+    // Recargar lista de medicamentos para reflejar nuevo stock
+    cargarMedicamentosActivos();
   } else {
-    alert('Error: ' + (data.error?.sqlMessage || 'No se pudo emitir'));
+    alert('Error: ' + (data.error?.sqlMessage || 'No se pudo emitir la receta'));
   }
 }
+
+// Cerrar sugerencias al hacer clic fuera
+document.addEventListener('click', (e) => {
+  const input = document.getElementById('rec-medicamento-nombre');
+  const sug   = document.getElementById('sug-medicamento');
+  if (input && sug && !input.contains(e.target) && !sug.contains(e.target)) {
+    sug.style.display = 'none';
+  }
+});
 
 // ── DIAGNÓSTICOS ──────────────────────────────
 async function cargarDiagnosticosRecientes() {
@@ -852,3 +933,4 @@ function cerrarSesion() {
 
 // ── INIT ──────────────────────────────────────
 cargarStats();
+cargarMedicamentosActivos();

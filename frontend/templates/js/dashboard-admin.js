@@ -34,6 +34,7 @@ function nav(seccion, linkEl) {
   if (seccion === 'medicos')  cargarMedicos();
   if (seccion === 'roles')    cargarRoles();
   if (seccion === 'logs')     cargarLogs();
+  if (seccion === 'inventario') cargarInventario();
 }
 
 // ── STATS ─────────────────────────────────────
@@ -498,3 +499,262 @@ function cerrarSesion() {
 // ── INIT ──────────────────────────────────────
 cargarStats();
 cargarUsuariosDoctores();
+
+// ── ESTADO ────────────────────────────────────
+let listaMedicamentos = [];
+
+// ── CARGAR INVENTARIO ─────────────────────────
+async function cargarInventario() {
+  await cargarAlertasStock();
+  await cargarTablaInventario();
+  await cargarMovimientos();
+}
+
+async function cargarTablaInventario() {
+  try {
+    const res  = await fetch('/api/medicamentos', { headers: H });
+    listaMedicamentos = await res.json();
+    renderTablaInventario(listaMedicamentos);
+  } catch {
+    document.getElementById('tbody-inventario').innerHTML =
+      '<tr><td colspan="8" style="text-align:center;color:#c03030;padding:20px;">Error al cargar</td></tr>';
+  }
+}
+
+function renderTablaInventario(lista) {
+  document.getElementById('tbody-inventario').innerHTML = Array.isArray(lista) && lista.length
+    ? lista.map(m => {
+        const bajo = m.stock_actual <= m.stock_minimo;
+        const estadoBadge = m.estado === 'ACTIVO'
+          ? '<span class="badge badge--activo">ACTIVO</span>'
+          : '<span class="badge badge--inactivo">INACTIVO</span>';
+        const stockColor = bajo
+          ? 'color:#c03030;font-weight:700;'
+          : 'color:var(--teal);font-weight:700;';
+        return `
+          <tr>
+            <td>#${m.idMedicamento}</td>
+            <td><strong>${m.nombre}</strong><br/><span style="font-size:11px;color:var(--text-soft);">${m.descripcion || ''}</span></td>
+            <td style="${stockColor}">${m.stock_actual} ${m.unidad_medida}${bajo ? ' ⚠️' : ''}</td>
+            <td>${m.stock_minimo}</td>
+            <td>${m.unidad_medida}</td>
+            <td>$${parseFloat(m.precio_unitario || 0).toFixed(2)}</td>
+            <td>${estadoBadge}</td>
+            <td>
+              <div class="action-icons">
+                <button class="icon-btn icon-btn--edit" title="Editar" onclick='abrirModalEditarMed(${JSON.stringify(m)})'>✏️</button>
+                <button class="icon-btn icon-btn--edit" title="Entrada stock" onclick="abrirModalEntrada(${m.idMedicamento}, '${m.nombre}')">📦</button>
+                <button class="icon-btn icon-btn--toggle" title="Ajustar stock" onclick="abrirModalAjuste(${m.idMedicamento}, '${m.nombre}', ${m.stock_actual})">🔧</button>
+                <button class="icon-btn icon-btn--${m.estado === 'ACTIVO' ? 'cancel' : 'edit'}" title="${m.estado === 'ACTIVO' ? 'Desactivar' : 'Activar'}"
+                  onclick="toggleMedicamento(${m.idMedicamento}, '${m.estado === 'ACTIVO' ? 'INACTIVO' : 'ACTIVO'}')">
+                  ${m.estado === 'ACTIVO' ? '🔴' : '🟢'}
+                </button>
+              </div>
+            </td>
+          </tr>`;
+      }).join('')
+    : '<tr><td colspan="8" style="text-align:center;color:var(--text-soft);padding:20px;">Sin medicamentos registrados</td></tr>';
+}
+
+// ── ALERTAS STOCK MÍNIMO — criterio 3 ─────────
+async function cargarAlertasStock() {
+  try {
+    const res  = await fetch('/api/medicamentos/bajo-stock', { headers: H });
+    const data = await res.json();
+    const cont = document.getElementById('alertas-stock');
+    if (!cont) return;
+
+    if (Array.isArray(data) && data.length) {
+      cont.style.display = 'block';
+      cont.innerHTML = `
+        <div style="background:rgba(200,50,50,0.07);border:1.5px solid rgba(200,50,50,0.2);border-radius:14px;padding:16px 20px;margin-bottom:16px;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+            <span style="font-size:18px;">⚠️</span>
+            <strong style="color:#c03030;font-size:13.5px;">Stock bajo en ${data.length} medicamento(s)</strong>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;">
+            ${data.map(m => `
+              <div style="background:white;border:1px solid rgba(200,50,50,0.2);border-radius:10px;padding:8px 14px;font-size:12.5px;">
+                <strong style="color:var(--deep);">${m.nombre}</strong>
+                <span style="color:#c03030;margin-left:6px;">Stock: ${m.stock_actual} / Mín: ${m.stock_minimo}</span>
+              </div>`).join('')}
+          </div>
+        </div>`;
+    } else {
+      cont.style.display = 'none';
+    }
+  } catch { /* sin datos */ }
+}
+
+// ── HISTORIAL MOVIMIENTOS — criterio 5 ────────
+async function cargarMovimientos() {
+  try {
+    const res  = await fetch('/api/medicamentos/movimientos', { headers: H });
+    const data = await res.json();
+    document.getElementById('tbody-movimientos').innerHTML = Array.isArray(data) && data.length
+      ? data.map(m => {
+          const colorTipo = m.tipo_movimiento === 'ENTRADA'
+            ? 'color:var(--teal);'
+            : m.tipo_movimiento === 'SALIDA'
+              ? 'color:#c03030;'
+              : 'color:var(--gold);';
+          return `
+            <tr>
+              <td>${m.fecha_movimiento ? m.fecha_movimiento.split('T')[0] : '–'}</td>
+              <td><strong>${m.nombreMedicamento || '–'}</strong></td>
+              <td style="${colorTipo}font-weight:700;">${m.tipo_movimiento}</td>
+              <td>${m.tipo_movimiento === 'ENTRADA' ? '+' : m.tipo_movimiento === 'SALIDA' ? '-' : '±'}${m.cantidad}</td>
+              <td>${m.stock_anterior} → ${m.stock_nuevo}</td>
+              <td>${m.motivo || '–'}</td>
+              <td>${m.proveedor || '–'}</td>
+              <td>${m.nombreUsuario ? `${m.nombreUsuario} ${m.apellidosUsuario || ''}` : '–'}</td>
+            </tr>`;
+        }).join('')
+      : '<tr><td colspan="8" style="text-align:center;color:var(--text-soft);padding:20px;">Sin movimientos registrados</td></tr>';
+  } catch { /* sin datos */ }
+}
+
+// ── BUSCAR EN INVENTARIO ──────────────────────
+function buscarInventario() {
+  const q = document.getElementById('q-inventario').value.toLowerCase().trim();
+  if (!q) return renderTablaInventario(listaMedicamentos);
+  const filtro = listaMedicamentos.filter(m =>
+    m.nombre.toLowerCase().includes(q) ||
+    (m.descripcion || '').toLowerCase().includes(q)
+  );
+  renderTablaInventario(filtro);
+}
+
+// ── MODAL NUEVO MEDICAMENTO ───────────────────
+function abrirModalNuevoMed() {
+  document.getElementById('med-id').value          = '';
+  document.getElementById('med-nombre').value      = '';
+  document.getElementById('med-descripcion').value = '';
+  document.getElementById('med-stock').value       = '';
+  document.getElementById('med-stock-min').value   = '5';
+  document.getElementById('med-unidad').value      = 'tableta';
+  document.getElementById('med-precio').value      = '';
+  document.getElementById('modal-med-titulo').textContent = 'Nuevo Medicamento';
+  document.getElementById('modal-medicamento').classList.add('active');
+}
+
+function abrirModalEditarMed(m) {
+  document.getElementById('med-id').value          = m.idMedicamento;
+  document.getElementById('med-nombre').value      = m.nombre;
+  document.getElementById('med-descripcion').value = m.descripcion || '';
+  document.getElementById('med-stock').value       = m.stock_actual;
+  document.getElementById('med-stock-min').value   = m.stock_minimo;
+  document.getElementById('med-unidad').value      = m.unidad_medida;
+  document.getElementById('med-precio').value      = m.precio_unitario || '';
+  document.getElementById('modal-med-titulo').textContent = 'Editar Medicamento';
+  document.getElementById('modal-medicamento').classList.add('active');
+}
+
+function cerrarModalMed() {
+  document.getElementById('modal-medicamento').classList.remove('active');
+}
+
+async function guardarMedicamento() {
+  const id = document.getElementById('med-id').value;
+  const payload = {
+    nombre:          document.getElementById('med-nombre').value.trim(),
+    descripcion:     document.getElementById('med-descripcion').value.trim(),
+    stock_actual:    parseInt(document.getElementById('med-stock').value) || 0,
+    stock_minimo:    parseInt(document.getElementById('med-stock-min').value) || 5,
+    unidad_medida:   document.getElementById('med-unidad').value,
+    precio_unitario: parseFloat(document.getElementById('med-precio').value) || 0,
+  };
+  if (!payload.nombre) return alert('El nombre es requerido');
+
+  const url    = id ? `/api/medicamentos/${id}` : '/api/medicamentos';
+  const method = id ? 'PUT' : 'POST';
+  const res    = await fetch(url, { method, headers: H, body: JSON.stringify(payload) });
+  const data   = await res.json();
+
+  if (data.message || data.id) {
+    cerrarModalMed();
+    cargarInventario();
+  } else {
+    alert('Error: ' + (data.error?.sqlMessage || JSON.stringify(data.error)));
+  }
+}
+
+// ── MODAL ENTRADA DE STOCK — criterio 6 ───────
+function abrirModalEntrada(idMedicamento, nombre) {
+  document.getElementById('entrada-id-med').value  = idMedicamento;
+  document.getElementById('entrada-nombre').textContent = nombre;
+  document.getElementById('entrada-cantidad').value = '';
+  document.getElementById('entrada-proveedor').value = '';
+  document.getElementById('modal-entrada').classList.add('active');
+}
+
+function cerrarModalEntrada() {
+  document.getElementById('modal-entrada').classList.remove('active');
+}
+
+async function guardarEntrada() {
+  const id       = document.getElementById('entrada-id-med').value;
+  const cantidad = parseInt(document.getElementById('entrada-cantidad').value);
+  const proveedor= document.getElementById('entrada-proveedor').value.trim();
+
+  if (!cantidad || cantidad <= 0) return alert('Ingresa una cantidad válida');
+
+  const res  = await fetch(`/api/medicamentos/${id}/entrada`, {
+    method: 'POST', headers: H,
+    body: JSON.stringify({ cantidad, proveedor })
+  });
+  const data = await res.json();
+  if (data.message) {
+    cerrarModalEntrada();
+    cargarInventario();
+  } else {
+    alert('Error: ' + (data.error?.sqlMessage || JSON.stringify(data.error)));
+  }
+}
+
+// ── MODAL AJUSTE MANUAL ───────────────────────
+function abrirModalAjuste(idMedicamento, nombre, stockActual) {
+  document.getElementById('ajuste-id-med').value    = idMedicamento;
+  document.getElementById('ajuste-nombre').textContent = nombre;
+  document.getElementById('ajuste-stock-actual').textContent = stockActual;
+  document.getElementById('ajuste-cantidad').value  = stockActual;
+  document.getElementById('ajuste-motivo').value    = '';
+  document.getElementById('modal-ajuste').classList.add('active');
+}
+
+function cerrarModalAjuste() {
+  document.getElementById('modal-ajuste').classList.remove('active');
+}
+
+async function guardarAjuste() {
+  const id             = document.getElementById('ajuste-id-med').value;
+  const cantidad_nueva = parseInt(document.getElementById('ajuste-cantidad').value);
+  const motivo         = document.getElementById('ajuste-motivo').value.trim();
+
+  if (cantidad_nueva === undefined || isNaN(cantidad_nueva)) return alert('Ingresa una cantidad válida');
+
+  const res  = await fetch(`/api/medicamentos/${id}/ajuste`, {
+    method: 'POST', headers: H,
+    body: JSON.stringify({ cantidad_nueva, motivo: motivo || 'Ajuste manual' })
+  });
+  const data = await res.json();
+  if (data.message) {
+    cerrarModalAjuste();
+    cargarInventario();
+  } else {
+    alert('Error: ' + (data.error?.sqlMessage || JSON.stringify(data.error)));
+  }
+}
+
+// ── TOGGLE ESTADO ─────────────────────────────
+async function toggleMedicamento(id, nuevoEstado) {
+  const accion = nuevoEstado === 'ACTIVO' ? 'activar' : 'desactivar';
+  if (!confirm(`¿Deseas ${accion} este medicamento?`)) return;
+  const res  = await fetch(`/api/medicamentos/${id}/toggle`, {
+    method: 'PATCH', headers: H,
+    body: JSON.stringify({ estado: nuevoEstado })
+  });
+  const data = await res.json();
+  if (data.message) cargarInventario();
+  else alert('Error: ' + (data.error?.sqlMessage || JSON.stringify(data.error)));
+}
