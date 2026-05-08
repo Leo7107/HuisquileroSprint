@@ -17,6 +17,12 @@ document.getElementById('fecha-actual').textContent =
 const token = localStorage.getItem('token');
 const H = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
 
+// ── ESTADO GLOBAL ─────────────────────────────
+let todasLasCitas   = [];
+let fechaDia        = new Date();    // día actual en vista diaria
+let fechaSemana     = new Date();    // semana actual en vista semanal
+let diaSeleccionado = null;          // día seleccionado en vista semanal
+
 // ── NAVEGACIÓN ────────────────────────────────
 function nav(seccion, linkEl) {
   document.querySelectorAll('[id^="sec-"]').forEach(s => s.style.display = 'none');
@@ -30,7 +36,20 @@ function nav(seccion, linkEl) {
   if (seccion === 'receta')               cargarRecetasRecientes();
   if (seccion === 'diagnostico')          cargarDiagnosticosRecientes();
   if (seccion === 'expediente')           iniciarBuscador();
-  if (seccion === 'horario')              cargarHorario();
+  if (seccion === 'horario')              iniciarHorario();
+}
+
+// ── HELPERS ───────────────────────────────────
+function estadoDot(estado) {
+  const mapa = {
+    'CONFIRMADA':  'confirmada',
+    'PENDIENTE':   'pendiente',
+    'EN ATENCION': 'en-atencion',
+    'FINALIZADA':  'finalizada',
+    'CANCELADA':   'cancelada',
+  };
+  const clave = mapa[estado] || 'pendiente';
+  return `<span class="estado-dot estado-dot--${clave}">${estado}</span>`;
 }
 
 // ── STATS ─────────────────────────────────────
@@ -47,17 +66,17 @@ async function cargarStats() {
     const consultas = await conRes.json();
     const recetas   = await rRes.json();
 
+    todasLasCitas = Array.isArray(citas) ? citas : [];
+
     const hoy = new Date().toISOString().split('T')[0];
-    const citasHoy = Array.isArray(citas)
-      ? citas.filter(c => c.fecha && String(c.fecha).startsWith(hoy)) : [];
+    const citasHoy = todasLasCitas.filter(c => c.fecha && String(c.fecha).startsWith(hoy));
 
     document.getElementById('s-citas').textContent     = citasHoy.length;
     document.getElementById('s-pacientes').textContent = Array.isArray(pacientes) ? pacientes.length : '–';
     document.getElementById('s-consultas').textContent = Array.isArray(consultas) ? consultas.length : '–';
     document.getElementById('s-recetas').textContent   = Array.isArray(recetas)   ? recetas.length   : '–';
 
-    // ── AGENDA DIARIA — HU09 criterio 1
-    // Muestra citas de hoy con nombre del paciente y acceso rápido a consulta
+    // ── AGENDA DIARIA — criterio 1 y 4
     document.getElementById('citas-preview').innerHTML = citasHoy.length
       ? citasHoy.slice(0,4).map(c => {
           const paciente = c.NombrePaciente
@@ -66,29 +85,26 @@ async function cargarStats() {
           const hora = c.hora ? c.hora.substring(0,5) : '–';
           return `
             <tr>
-              <td>${hora}</td>
-              <td><strong>${paciente}</strong></td>
+              <td><strong>${hora}</strong></td>
+              <td>${paciente}</td>
               <td>${c.motivo || '–'}</td>
-              <td><span class="badge badge--${c.estado === 'CONFIRMADA' ? 'activo' : 'pendiente'}">${c.estado}</span></td>
+              <td>${estadoDot(c.estado)}</td>
               <td>
-                ${c.estado === 'CONFIRMADA'
-                  ? `<button class="btn-tabla" onclick="accesoCitaRapido(${c.idCita}, ${c.idPaciente})">🩺 Atender</button>`
+                ${c.estado === 'CONFIRMADA' || c.estado === 'PENDIENTE'
+                  ? `<button class="btn-tabla" onclick="abrirHistorialPaciente(${c.idCita}, ${c.idPaciente})">📋 Ver</button>`
                   : '–'}
               </td>
             </tr>`;
         }).join('')
       : '<tr><td colspan="5" style="text-align:center;color:var(--text-soft);padding:16px;">Sin citas para hoy</td></tr>';
 
-    // ── HISTORIAL RECIENTE DE PACIENTES — HU09 criterio 2
-    // Muestra los últimos pacientes con citas registradas
-    const pacientesRecientes = Array.isArray(citas)
-      ? [...new Map(
-          citas
-            .filter(c => c.NombrePaciente)
-            .sort((a, b) => new Date(b.fecha) - new Date(a.fecha))
-            .map(c => [c.idPaciente, c])
-        ).values()].slice(0, 4)
-      : [];
+    // ── HISTORIAL RECIENTE DE PACIENTES — criterio 2
+    const pacientesRecientes = [...new Map(
+      todasLasCitas
+        .filter(c => c.NombrePaciente)
+        .sort((a, b) => new Date(b.fecha) - new Date(a.fecha))
+        .map(c => [c.idPaciente, c])
+    ).values()].slice(0, 4);
 
     document.getElementById('historial-pacientes-preview').innerHTML = pacientesRecientes.length
       ? pacientesRecientes.map(c => `
@@ -118,23 +134,160 @@ async function cargarStats() {
   } catch { /* sin datos */ }
 }
 
-// ── ACCESO RÁPIDO A CONSULTA — HU09 criterio 3
-// Al hacer clic en "Atender" desde la agenda, navega a consulta con ID prellenado
+// ── MODAL HISTORIAL PACIENTE — criterio 2 ─────
+async function abrirHistorialPaciente(idCita, idPaciente) {
+  document.getElementById('modal-historial-paciente').classList.add('active');
+  document.getElementById('modal-historial-contenido').innerHTML =
+    '<p style="text-align:center;color:var(--text-soft);padding:30px;">Cargando historial...</p>';
+
+  // Botón Atender prellenado con la cita
+  document.getElementById('btn-atender-modal').onclick = () => {
+    cerrarModalHistorial();
+    accesoCitaRapido(idCita, idPaciente);
+  };
+
+  try {
+    const [pRes, conRes, diagRes, recRes] = await Promise.all([
+      fetch(`/api/pacientes/${idPaciente}`, { headers: H }),
+      fetch('/api/consultas', { headers: H }),
+      fetch('/api/diagnosticos', { headers: H }),
+      fetch('/api/recetas', { headers: H }),
+    ]);
+
+    const paciente    = await pRes.json();
+    const consultas   = await conRes.json();
+    const diagnosticos= await diagRes.json();
+    const recetas     = await recRes.json();
+
+    const p = Array.isArray(paciente) ? paciente[0] : paciente;
+    const ultimasConsultas   = Array.isArray(consultas)    ? consultas.slice(0,3)    : [];
+    const ultimosDiag        = Array.isArray(diagnosticos) ? diagnosticos.slice(0,3) : [];
+    const ultimasRecetas     = Array.isArray(recetas)      ? recetas.slice(0,3)      : [];
+
+    document.getElementById('modal-historial-contenido').innerHTML = `
+      <!-- Datos básicos del paciente -->
+      <div style="display:flex;align-items:center;gap:14px;padding:14px;background:var(--cream);border-radius:14px;margin-bottom:18px;border:1px solid var(--border);">
+        <div style="width:46px;height:46px;border-radius:12px;background:linear-gradient(135deg,var(--teal),var(--teal-light));color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:18px;flex-shrink:0;">
+          ${(p?.Nombres || 'P')[0]}
+        </div>
+        <div>
+          <strong style="display:block;font-size:14px;color:var(--deep);">${p?.Nombres || '–'} ${p?.Apellidos || ''}</strong>
+          <span style="font-size:12px;color:var(--text-soft);">Exp: ${p?.numero_expediente || '–'} · Sangre: ${p?.tipo_sangre || 'N/A'} · ${p?.estado_paciente || '–'}</span>
+        </div>
+        ${p?.alergias || p?.observaciones_generales ? `
+        <div style="margin-left:auto;background:rgba(200,50,50,0.07);border:1px solid rgba(200,50,50,0.15);border-radius:10px;padding:8px 12px;font-size:11.5px;color:#c03030;">
+          ⚠️ ${p?.alergias ? 'Alergia: ' + p.alergias : ''} ${p?.observaciones_generales ? '· ' + p.observaciones_generales : ''}
+        </div>` : ''}
+      </div>
+
+      <!-- Últimas 3 consultas -->
+      <h4 style="font-size:12.5px;font-weight:700;color:var(--deep);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.06em;">🩺 Últimas Consultas</h4>
+      <div class="historial-mini" style="margin-bottom:18px;">
+        ${ultimasConsultas.length
+          ? ultimasConsultas.map(c => `
+            <div class="historial-mini__item">
+              <h4>${c.fecha_consulta || '–'} · Cita #${c.idCita || '–'}</h4>
+              <p>Peso: ${c.peso || '–'} kg · Presión: ${c.presion_arterial || '–'} · Temp: ${c.temperatura || '–'}°C</p>
+              <p style="margin-top:4px;">${c.observaciones || 'Sin observaciones'}</p>
+            </div>`).join('')
+          : '<p style="color:var(--text-soft);font-size:12.5px;padding:8px 0;">Sin consultas registradas</p>'}
+      </div>
+
+      <!-- Últimos 3 diagnósticos -->
+      <h4 style="font-size:12.5px;font-weight:700;color:var(--deep);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.06em;">🔬 Diagnósticos Recientes</h4>
+      <div class="historial-mini" style="margin-bottom:18px;">
+        ${ultimosDiag.length
+          ? ultimosDiag.map(d => `
+            <div class="historial-mini__item">
+              <h4>Diagnóstico #${d.idDiagnostico} · ${d.fecha_diagnostico || '–'}</h4>
+              <p>${d.descripcion || 'Sin descripción'}</p>
+            </div>`).join('')
+          : '<p style="color:var(--text-soft);font-size:12.5px;padding:8px 0;">Sin diagnósticos registrados</p>'}
+      </div>
+
+      <!-- Últimas 3 recetas -->
+      <h4 style="font-size:12.5px;font-weight:700;color:var(--deep);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.06em;">💊 Recetas Recientes</h4>
+      <div class="historial-mini">
+        ${ultimasRecetas.length
+          ? ultimasRecetas.map(r => `
+            <div class="historial-mini__item">
+              <h4>${r.medicamento} — ${r.dosis}</h4>
+              <p>${r.frecuencia} · ${r.duracion || '–'} · ${r.indicaciones || ''}</p>
+            </div>`).join('')
+          : '<p style="color:var(--text-soft);font-size:12.5px;padding:8px 0;">Sin recetas registradas</p>'}
+      </div>`;
+  } catch {
+    document.getElementById('modal-historial-contenido').innerHTML =
+      '<p style="color:#c03030;text-align:center;padding:20px;">Error al cargar historial</p>';
+  }
+}
+
+function cerrarModalHistorial() {
+  document.getElementById('modal-historial-paciente').classList.remove('active');
+}
+
+// ── ACCESO RÁPIDO — criterio 3 ────────────────
 function accesoCitaRapido(idCita, idPaciente) {
   nav('consulta', document.querySelector('[onclick*="consulta"]'));
   setTimeout(() => {
     document.getElementById('con-cita').value = idCita;
-    // Intentar autocompletar el historial del paciente
     fetch(`/api/historial?idPaciente=${idPaciente}`, { headers: H })
       .then(r => r.json())
       .then(data => {
         const h = Array.isArray(data) ? data[0] : data;
-        if (h?.idHistorial) {
-          document.getElementById('con-historial').value = h.idHistorial;
-        }
-      })
-      .catch(() => {});
+        if (h?.idHistorial) document.getElementById('con-historial').value = h.idHistorial;
+      }).catch(() => {});
+    // Cargar preconsulta si existe
+    cargarPreconsulta(idCita);
   }, 100);
+}
+
+// ── PRECONSULTA — criterio 6 ──────────────────
+// Carga datos de preconsulta de una consulta previa vinculada a la cita
+async function cargarPreconsulta(idCita) {
+  if (!idCita) return;
+  const bloque = document.getElementById('bloque-preconsulta');
+  const datos  = document.getElementById('preconsulta-datos');
+  try {
+    const res  = await fetch('/api/consultas', { headers: H });
+    const list = await res.json();
+    // Busca si existe una consulta de preconsulta para esta cita
+    const pre  = Array.isArray(list)
+      ? list.find(c => String(c.idCita) === String(idCita))
+      : null;
+
+    if (pre) {
+      datos.innerHTML = `
+        <div class="preconsulta-item">
+          <div class="preconsulta-item__label">Peso</div>
+          <div class="preconsulta-item__value">${pre.peso ? pre.peso + ' kg' : '–'}</div>
+        </div>
+        <div class="preconsulta-item">
+          <div class="preconsulta-item__label">Presión Arterial</div>
+          <div class="preconsulta-item__value">${pre.presion_arterial || '–'}</div>
+        </div>
+        <div class="preconsulta-item">
+          <div class="preconsulta-item__label">Temperatura</div>
+          <div class="preconsulta-item__value">${pre.temperatura ? pre.temperatura + '°C' : '–'}</div>
+        </div>
+        <div class="preconsulta-item">
+          <div class="preconsulta-item__label">Altura</div>
+          <div class="preconsulta-item__value">${pre.altura ? pre.altura + ' cm' : '–'}</div>
+        </div>`;
+
+      // Prellenar campos del formulario con los datos de preconsulta
+      if (pre.peso)             document.getElementById('con-peso').value     = pre.peso;
+      if (pre.presion_arterial) document.getElementById('con-presion').value  = pre.presion_arterial;
+      if (pre.temperatura)      document.getElementById('con-temp').value     = pre.temperatura;
+      if (pre.altura)           document.getElementById('con-altura').value   = pre.altura;
+
+      bloque.style.display = 'block';
+    } else {
+      bloque.style.display = 'none';
+    }
+  } catch {
+    bloque.style.display = 'none';
+  }
 }
 
 // Ir al expediente desde historial reciente
@@ -153,8 +306,9 @@ async function cargarCitas() {
   try {
     const res  = await fetch('/api/citas', { headers: H });
     const data = await res.json();
-    document.getElementById('tbody-citas').innerHTML = Array.isArray(data) && data.length
-      ? data.map(c => {
+    todasLasCitas = Array.isArray(data) ? data : [];
+    document.getElementById('tbody-citas').innerHTML = todasLasCitas.length
+      ? todasLasCitas.map(c => {
           const paciente = c.NombrePaciente
             ? `${c.NombrePaciente} ${c.ApellidosPaciente}`
             : `#${c.idPaciente}`;
@@ -165,10 +319,10 @@ async function cargarCitas() {
               <td>${c.hora ? c.hora.substring(0,5) : '–'}</td>
               <td>${paciente}</td>
               <td>${c.motivo || '–'}</td>
-              <td><span class="badge badge--${['CONFIRMADA','FINALIZADA'].includes(c.estado) ? 'activo' : 'pendiente'}">${c.estado}</span></td>
+              <td>${estadoDot(c.estado)}</td>
               <td>
-                ${c.estado === 'CONFIRMADA'
-                  ? `<button class="btn-tabla" onclick="accesoCitaRapido(${c.idCita}, ${c.idPaciente})">🩺 Atender</button>`
+                ${c.estado === 'CONFIRMADA' || c.estado === 'PENDIENTE'
+                  ? `<button class="btn-tabla" onclick="abrirHistorialPaciente(${c.idCita}, ${c.idPaciente})">📋 Ver</button>`
                   : '–'}
               </td>
             </tr>`;
@@ -180,61 +334,188 @@ async function cargarCitas() {
   }
 }
 
-// ── HORARIO — HU09 criterio adicional
-async function cargarHorario() {
+// ── HORARIO — criterio 5 ──────────────────────
+async function iniciarHorario() {
   try {
     const res  = await fetch('/api/doctores', { headers: H });
     const data = await res.json();
-    const doctores = Array.isArray(data) ? data : [];
+    const doctores  = Array.isArray(data) ? data : [];
+    const miDoctor  = doctores.find(d => d.idUsuario === usuario.id);
 
-    // Buscar el doctor vinculado al usuario actual
-    const miDoctor = doctores.find(d => d.idUsuario === usuario.id);
-
-    if (!miDoctor) {
-      document.getElementById('horario-info').innerHTML =
-        '<p style="color:var(--text-soft);font-size:13px;padding:12px 0;">No se encontró tu registro de médico.</p>';
-      return;
+    if (miDoctor) {
+      const hi = miDoctor.hora_inicio ? miDoctor.hora_inicio.substring(0,5) : '–';
+      const hf = miDoctor.hora_fin    ? miDoctor.hora_fin.substring(0,5)    : '–';
+      document.getElementById('horario-info').innerHTML = `
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:20px;">
+          <div style="background:var(--cream);border:1.5px solid var(--border);border-radius:14px;padding:18px;text-align:center;">
+            <p style="font-size:10.5px;color:var(--text-soft);font-weight:600;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;">Horario</p>
+            <p style="font-family:'Playfair Display',serif;font-size:1.4rem;font-weight:700;color:var(--teal);">${hi} – ${hf}</p>
+          </div>
+          <div style="background:var(--cream);border:1.5px solid var(--border);border-radius:14px;padding:18px;text-align:center;">
+            <p style="font-size:10.5px;color:var(--text-soft);font-weight:600;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;">Consultorio</p>
+            <p style="font-family:'Playfair Display',serif;font-size:1.2rem;font-weight:700;color:var(--deep);">${miDoctor.Consultorio || '–'}</p>
+          </div>
+          <div style="background:var(--cream);border:1.5px solid var(--border);border-radius:14px;padding:18px;text-align:center;">
+            <p style="font-size:10.5px;color:var(--text-soft);font-weight:600;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;">Especialidad</p>
+            <p style="font-family:'Playfair Display',serif;font-size:1rem;font-weight:700;color:var(--deep);">${miDoctor.Especialidad || '–'}</p>
+          </div>
+          <div style="background:var(--cream);border:1.5px solid var(--border);border-radius:14px;padding:18px;text-align:center;">
+            <p style="font-size:10.5px;color:var(--text-soft);font-weight:600;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;">N° Junta Médica</p>
+            <p style="font-family:monospace;font-size:1rem;font-weight:700;color:var(--deep);">${miDoctor.numero_junta_medica || '–'}</p>
+          </div>
+        </div>`;
     }
+  } catch { /* sin datos */ }
 
-    const horaInicio = miDoctor.hora_inicio ? miDoctor.hora_inicio.substring(0,5) : '–';
-    const horaFin    = miDoctor.hora_fin    ? miDoctor.hora_fin.substring(0,5)    : '–';
+  // Iniciar vista diaria con hoy
+  fechaDia = new Date();
+  if (!todasLasCitas.length) {
+    const res = await fetch('/api/citas', { headers: H }).catch(() => null);
+    if (res) todasLasCitas = await res.json().catch(() => []);
+  }
+  renderVistaDia();
+  renderVistaSemanal();
+}
 
-    document.getElementById('horario-info').innerHTML = `
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;">
-        <div style="background:var(--cream);border:1.5px solid var(--border);border-radius:14px;padding:20px;text-align:center;">
-          <div style="font-size:2rem;margin-bottom:8px;">🕐</div>
-          <p style="font-size:11.5px;color:var(--text-soft);font-weight:600;margin-bottom:4px;">HORA DE ENTRADA</p>
-          <p style="font-size:1.8rem;font-family:'Playfair Display',serif;font-weight:700;color:var(--teal);">${horaInicio}</p>
-        </div>
-        <div style="background:var(--cream);border:1.5px solid var(--border);border-radius:14px;padding:20px;text-align:center;">
-          <div style="font-size:2rem;margin-bottom:8px;">🕔</div>
-          <p style="font-size:11.5px;color:var(--text-soft);font-weight:600;margin-bottom:4px;">HORA DE SALIDA</p>
-          <p style="font-size:1.8rem;font-family:'Playfair Display',serif;font-weight:700;color:var(--teal);">${horaFin}</p>
-        </div>
-        <div style="background:var(--cream);border:1.5px solid var(--border);border-radius:14px;padding:20px;text-align:center;">
-          <div style="font-size:2rem;margin-bottom:8px;">🏥</div>
-          <p style="font-size:11.5px;color:var(--text-soft);font-weight:600;margin-bottom:4px;">CONSULTORIO</p>
-          <p style="font-size:1.2rem;font-family:'Playfair Display',serif;font-weight:700;color:var(--deep);">${miDoctor.Consultorio || '–'}</p>
-        </div>
-        <div style="background:var(--cream);border:1.5px solid var(--border);border-radius:14px;padding:20px;text-align:center;">
-          <div style="font-size:2rem;margin-bottom:8px;">🩺</div>
-          <p style="font-size:11.5px;color:var(--text-soft);font-weight:600;margin-bottom:4px;">ESPECIALIDAD</p>
-          <p style="font-size:1rem;font-family:'Playfair Display',serif;font-weight:700;color:var(--deep);">${miDoctor.Especialidad || '–'}</p>
-        </div>
-      </div>
-      <div style="margin-top:16px;background:rgba(42,107,94,0.06);border:1.5px solid rgba(42,107,94,0.15);border-radius:12px;padding:16px;display:flex;align-items:center;gap:12px;">
-        <span style="font-size:1.2rem;">🪪</span>
-        <div>
-          <p style="font-size:11.5px;color:var(--text-soft);font-weight:600;">N° JUNTA MÉDICA</p>
-          <p style="font-size:14px;font-weight:700;color:var(--deep);font-family:monospace;">${miDoctor.numero_junta_medica || 'No registrado'}</p>
-        </div>
-        <div style="margin-left:auto;">
-          <span class="badge-estado--${miDoctor.Estado === 'ACTIVO' ? 'activo' : 'inactivo'}">${miDoctor.Estado}</span>
-        </div>
+function cambiarVistaHorario(vista) {
+  document.getElementById('vista-diaria').style.display  = vista === 'diaria'  ? 'block' : 'none';
+  document.getElementById('vista-semanal').style.display = vista === 'semanal' ? 'block' : 'none';
+  document.getElementById('tab-diaria').classList.toggle('active',  vista === 'diaria');
+  document.getElementById('tab-semanal').classList.toggle('active', vista === 'semanal');
+}
+
+// Vista diaria — navegar entre días
+function navegarDia(delta) {
+  fechaDia.setDate(fechaDia.getDate() + delta);
+  renderVistaDia();
+}
+
+function renderVistaDia() {
+  const fechaStr = fechaDia.toISOString().split('T')[0];
+  const hoy      = new Date().toISOString().split('T')[0];
+  const label    = fechaStr === hoy
+    ? 'Hoy — ' + fechaDia.toLocaleDateString('es-SV', { weekday:'long', day:'numeric', month:'long' })
+    : fechaDia.toLocaleDateString('es-SV', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+
+  document.getElementById('titulo-dia-actual').textContent = label;
+
+  const citasDia = todasLasCitas.filter(c => c.fecha && String(c.fecha).startsWith(fechaStr));
+
+  document.getElementById('tbody-citas-dia').innerHTML = citasDia.length
+    ? citasDia
+        .sort((a, b) => (a.hora || '').localeCompare(b.hora || ''))
+        .map(c => {
+          const paciente = c.NombrePaciente
+            ? `${c.NombrePaciente} ${c.ApellidosPaciente}`
+            : `#${c.idPaciente}`;
+          return `
+            <tr>
+              <td><strong>${c.hora ? c.hora.substring(0,5) : '–'}</strong></td>
+              <td>${paciente}</td>
+              <td>${c.motivo || '–'}</td>
+              <td>${estadoDot(c.estado)}</td>
+              <td>
+                ${c.estado === 'CONFIRMADA' || c.estado === 'PENDIENTE'
+                  ? `<button class="btn-tabla" onclick="abrirHistorialPaciente(${c.idCita}, ${c.idPaciente})">📋 Ver</button>`
+                  : '–'}
+              </td>
+            </tr>`;
+        }).join('')
+    : '<tr><td colspan="5" style="text-align:center;color:var(--text-soft);padding:20px;">Sin citas para este día</td></tr>';
+}
+
+// Vista semanal — navegar entre semanas
+function navegarSemana(delta) {
+  fechaSemana.setDate(fechaSemana.getDate() + delta * 7);
+  renderVistaSemanal();
+}
+
+function renderVistaSemanal() {
+  const hoy       = new Date();
+  const lunes     = new Date(fechaSemana);
+  lunes.setDate(lunes.getDate() - (lunes.getDay() === 0 ? 6 : lunes.getDay() - 1));
+
+  const dias = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
+  const domingo = new Date(lunes);
+  domingo.setDate(domingo.getDate() + 6);
+
+  document.getElementById('titulo-semana').textContent =
+    lunes.toLocaleDateString('es-SV', { day:'numeric', month:'short' }) + ' – ' +
+    domingo.toLocaleDateString('es-SV', { day:'numeric', month:'short', year:'numeric' });
+
+  const tabsHTML = dias.map((nombre, i) => {
+    const dia = new Date(lunes);
+    dia.setDate(dia.getDate() + i);
+    const fechaStr  = dia.toISOString().split('T')[0];
+    const esHoy     = fechaStr === hoy.toISOString().split('T')[0];
+    const seleccionado = diaSeleccionado === fechaStr;
+    const tieneCitas = todasLasCitas.some(c => c.fecha && String(c.fecha).startsWith(fechaStr));
+
+    return `
+      <div class="dia-tab ${esHoy ? 'hoy' : ''} ${seleccionado ? 'active' : ''}"
+           onclick="seleccionarDia('${fechaStr}')">
+        <span class="dia-nombre">${nombre}</span>
+        <span class="dia-num">${dia.getDate()}</span>
+        ${tieneCitas ? '<span class="dia-badge"></span>' : '<span style="width:6px;height:6px;"></span>'}
       </div>`;
+  }).join('');
+
+  document.getElementById('semana-tabs').innerHTML = tabsHTML;
+
+  if (diaSeleccionado) renderCitasSemana(diaSeleccionado);
+}
+
+function seleccionarDia(fechaStr) {
+  diaSeleccionado = fechaStr;
+  renderVistaSemanal();
+  renderCitasSemana(fechaStr);
+}
+
+function renderCitasSemana(fechaStr) {
+  const citasDia = todasLasCitas.filter(c => c.fecha && String(c.fecha).startsWith(fechaStr));
+  document.getElementById('tbody-citas-semana').innerHTML = citasDia.length
+    ? citasDia
+        .sort((a, b) => (a.hora || '').localeCompare(b.hora || ''))
+        .map(c => {
+          const paciente = c.NombrePaciente
+            ? `${c.NombrePaciente} ${c.ApellidosPaciente}`
+            : `#${c.idPaciente}`;
+          return `
+            <tr>
+              <td><strong>${c.hora ? c.hora.substring(0,5) : '–'}</strong></td>
+              <td>${paciente}</td>
+              <td>${c.motivo || '–'}</td>
+              <td>${estadoDot(c.estado)}</td>
+              <td>
+                ${c.estado === 'CONFIRMADA' || c.estado === 'PENDIENTE'
+                  ? `<button class="btn-tabla" onclick="abrirHistorialPaciente(${c.idCita}, ${c.idPaciente})">📋 Ver</button>`
+                  : '–'}
+              </td>
+            </tr>`;
+        }).join('')
+    : '<tr><td colspan="5" style="text-align:center;color:var(--text-soft);padding:16px;">Sin citas para este día</td></tr>';
+}
+
+// ── HISTORIAL CONSULTAS ───────────────────────
+async function cargarHistorialConsultas() {
+  try {
+    const res  = await fetch('/api/consultas', { headers: H });
+    const data = await res.json();
+    document.getElementById('tbody-historial-consultas').innerHTML = Array.isArray(data) && data.length
+      ? data.map(c => `
+          <tr>
+            <td>#${c.idConsulta}</td>
+            <td>${c.fecha_consulta || '–'}</td>
+            <td>#${c.idCita || '–'}</td>
+            <td>${c.peso ? c.peso + ' kg' : '–'}</td>
+            <td>${c.presion_arterial || '–'}</td>
+            <td>${c.temperatura ? c.temperatura + ' °C' : '–'}</td>
+            <td>${c.observaciones || '–'}</td>
+          </tr>`).join('')
+      : '<tr><td colspan="7" style="text-align:center;color:var(--text-soft);padding:20px;">Sin consultas registradas</td></tr>';
   } catch {
-    document.getElementById('horario-info').innerHTML =
-      '<p style="color:#c03030;font-size:13px;">Error al cargar horario</p>';
+    document.getElementById('tbody-historial-consultas').innerHTML =
+      '<tr><td colspan="7" style="text-align:center;color:#c03030;padding:20px;">Error al cargar</td></tr>';
   }
 }
 
@@ -270,6 +551,7 @@ async function guardarConsulta() {
     alert('✅ Consulta registrada correctamente');
     ['con-peso','con-altura','con-presion','con-temp','con-obs','con-historial','con-cita']
       .forEach(id => document.getElementById(id).value = '');
+    document.getElementById('bloque-preconsulta').style.display = 'none';
     cargarConsultasRecientes();
     cargarStats();
   } else {
@@ -407,7 +689,6 @@ async function abrirExpediente(idPaciente) {
 
     cont.innerHTML = `
       <button onclick="volverBuscador()" style="margin-bottom:16px;padding:8px 16px;border:1.5px solid var(--border);border-radius:10px;background:transparent;color:var(--text-soft);cursor:pointer;font-size:13px;">← Volver</button>
-
       <div style="background:var(--cream);border:1.5px solid var(--border);border-radius:16px;padding:24px;margin-bottom:16px;">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
           <h3 style="font-size:15px;font-weight:700;color:var(--deep);">👤 Datos del Paciente</h3>
@@ -420,57 +701,45 @@ async function abrirExpediente(idPaciente) {
           <div><span style="color:var(--text-soft);">Tipo de sangre:</span> <strong>${p.tipo_sangre || 'N/A'}</strong></div>
           <div><span style="color:var(--text-soft);">Estado:</span> <strong>${p.estado_paciente || '–'}</strong></div>
           <div><span style="color:var(--text-soft);">Fecha registro:</span> <strong>${p.fecha_registro ? p.fecha_registro.split('T')[0] : '–'}</strong></div>
-          <div><span style="color:var(--text-soft);">Contacto emergencia:</span> <strong>${p.contacto_emergencia || '–'}</strong></div>
-          <div><span style="color:var(--text-soft);">Teléfono emergencia:</span> <strong>${p.telefono_emergencia || '–'}</strong></div>
         </div>
       </div>
-
       <div style="background:var(--cream);border:1.5px solid var(--border);border-radius:16px;padding:24px;margin-bottom:16px;">
         <h3 style="font-size:15px;font-weight:700;color:var(--deep);margin-bottom:14px;">🏥 Historial Clínico</h3>
         ${h ? `
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:13px;">
-            <div><span style="color:var(--text-soft);">Antecedentes familiares:</span><br/><strong>${h.antecedentes_familiares || 'Ninguno'}</strong></div>
-            <div><span style="color:var(--text-soft);">Antecedentes personales:</span><br/><strong>${h.antecedentes_personales || 'Ninguno'}</strong></div>
             <div><span style="color:var(--text-soft);">Alergias:</span><br/><strong>${h.alergias || 'Ninguna'}</strong></div>
             <div><span style="color:var(--text-soft);">Padecimientos crónicos:</span><br/><strong>${h.padecimientos_cronicos || 'Ninguno'}</strong></div>
+            <div><span style="color:var(--text-soft);">Antecedentes familiares:</span><br/><strong>${h.antecedentes_familiares || 'Ninguno'}</strong></div>
             <div><span style="color:var(--text-soft);">Cirugías previas:</span><br/><strong>${h.cirugias_previas || 'Ninguna'}</strong></div>
-            <div><span style="color:var(--text-soft);">Observaciones:</span><br/><strong>${h.observaciones_generales || 'Ninguna'}</strong></div>
           </div>` : '<p style="color:var(--text-soft);font-size:13px;">Sin historial registrado</p>'}
       </div>
-
       <div style="background:var(--cream);border:1.5px solid var(--border);border-radius:16px;padding:24px;margin-bottom:16px;">
-        <h3 style="font-size:15px;font-weight:700;color:var(--deep);margin-bottom:14px;">📅 Registro de Citas</h3>
+        <h3 style="font-size:15px;font-weight:700;color:var(--deep);margin-bottom:14px;">📅 Citas</h3>
         ${citasPaciente.length ? `
           <table style="width:100%;border-collapse:collapse;font-size:13px;">
             <thead><tr style="color:var(--text-soft);font-size:11.5px;">
-              <th style="text-align:left;padding:6px 0;">Fecha</th>
-              <th style="text-align:left;padding:6px 0;">Hora</th>
-              <th style="text-align:left;padding:6px 0;">Motivo</th>
-              <th style="text-align:left;padding:6px 0;">Estado</th>
+              <th style="text-align:left;padding:6px 0;">Fecha</th><th style="text-align:left;padding:6px 0;">Hora</th>
+              <th style="text-align:left;padding:6px 0;">Motivo</th><th style="text-align:left;padding:6px 0;">Estado</th>
             </tr></thead>
-            <tbody>
-              ${citasPaciente.map(c => `
-                <tr style="border-top:1px solid rgba(42,107,94,0.07);">
-                  <td style="padding:8px 0;">${c.fecha ? c.fecha.split('T')[0] : '–'}</td>
-                  <td style="padding:8px 0;">${c.hora ? c.hora.substring(0,5) : '–'}</td>
-                  <td style="padding:8px 0;">${c.motivo || '–'}</td>
-                  <td style="padding:8px 0;"><span class="badge badge--${['CONFIRMADA','FINALIZADA'].includes(c.estado) ? 'activo' : 'pendiente'}">${c.estado}</span></td>
-                </tr>`).join('')}
-            </tbody>
-          </table>` : '<p style="color:var(--text-soft);font-size:13px;">Sin citas registradas</p>'}
+            <tbody>${citasPaciente.map(c => `
+              <tr style="border-top:1px solid rgba(42,107,94,0.07);">
+                <td style="padding:8px 0;">${c.fecha ? c.fecha.split('T')[0] : '–'}</td>
+                <td style="padding:8px 0;">${c.hora ? c.hora.substring(0,5) : '–'}</td>
+                <td style="padding:8px 0;">${c.motivo || '–'}</td>
+                <td style="padding:8px 0;">${estadoDot(c.estado)}</td>
+              </tr>`).join('')}</tbody>
+          </table>` : '<p style="color:var(--text-soft);font-size:13px;">Sin citas</p>'}
       </div>
-
-      <div style="background:var(--cream);border:1.5px solid var(--border);border-radius:16px;padding:24px;margin-bottom:16px;">
+      <div style="background:var(--cream);border:1.5px solid var(--border);border-radius:16px;padding:24px;">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
           <h3 style="font-size:15px;font-weight:700;color:var(--deep);">💊 Recetas</h3>
-          <button onclick="mostrarFormReceta(${p.idPaciente})" style="padding:7px 14px;border:none;border-radius:9px;background:linear-gradient(135deg,var(--teal),var(--teal-light));color:#fff;font-size:12px;font-weight:600;cursor:pointer;">+ Agregar Receta</button>
+          <button onclick="mostrarFormReceta(${p.idPaciente})" style="padding:7px 14px;border:none;border-radius:9px;background:linear-gradient(135deg,var(--teal),var(--teal-light));color:#fff;font-size:12px;font-weight:600;cursor:pointer;">+ Agregar</button>
         </div>
         <div id="recetas-expediente-${p.idPaciente}">
           ${recetasPaciente.length ? recetasPaciente.map(r => `
             <div style="padding:10px 0;border-bottom:1px solid rgba(42,107,94,0.07);font-size:13px;">
               <strong>${r.medicamento}</strong> — ${r.dosis} · ${r.frecuencia} · ${r.duracion || '–'}
-              <br/><span style="color:var(--text-soft);font-size:11.5px;">${r.indicaciones || ''}</span>
-            </div>`).join('') : '<p style="color:var(--text-soft);font-size:13px;">Sin recetas registradas</p>'}
+            </div>`).join('') : '<p style="color:var(--text-soft);font-size:13px;">Sin recetas</p>'}
         </div>
         <div id="form-receta-${p.idPaciente}" style="display:none;margin-top:16px;">
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
@@ -482,12 +751,11 @@ async function abrirExpediente(idPaciente) {
             <input type="text" id="nr-duracion-${p.idPaciente}" placeholder="Duración" style="padding:9px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:13px;background:white;"/>
             <textarea id="nr-indicaciones-${p.idPaciente}" placeholder="Indicaciones..." style="padding:9px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:13px;background:white;grid-column:span 2;"></textarea>
           </div>
-          <button onclick="guardarRecetaExpediente(${p.idPaciente})" style="margin-top:10px;padding:10px 20px;border:none;border-radius:10px;background:linear-gradient(135deg,var(--teal),var(--teal-light));color:#fff;font-weight:600;font-size:13px;cursor:pointer;">Guardar Receta</button>
+          <button onclick="guardarRecetaExpediente(${p.idPaciente})" style="margin-top:10px;padding:10px 20px;border:none;border-radius:10px;background:linear-gradient(135deg,var(--teal),var(--teal-light));color:#fff;font-weight:600;font-size:13px;cursor:pointer;">Guardar</button>
           <button onclick="document.getElementById('form-receta-${p.idPaciente}').style.display='none'" style="margin-top:10px;margin-left:8px;padding:10px 20px;border:1.5px solid var(--border);border-radius:10px;background:transparent;color:var(--text-soft);font-size:13px;cursor:pointer;">Cancelar</button>
         </div>
       </div>
-
-      <div id="form-editar-${p.idPaciente}" style="display:none;background:var(--cream);border:1.5px solid var(--border);border-radius:16px;padding:24px;margin-bottom:16px;">
+      <div id="form-editar-${p.idPaciente}" style="display:none;background:var(--cream);border:1.5px solid var(--border);border-radius:16px;padding:24px;margin-top:16px;">
         <h3 style="font-size:15px;font-weight:700;color:var(--deep);margin-bottom:14px;">✏️ Editar Paciente</h3>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
           <div>
@@ -511,18 +779,14 @@ async function abrirExpediente(idPaciente) {
             <label style="font-size:11.5px;color:var(--text-soft);font-weight:600;">Teléfono Emergencia</label>
             <input type="text" id="ep-telefono-${p.idPaciente}" value="${p.telefono_emergencia || ''}" style="width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:13px;background:white;margin-top:4px;box-sizing:border-box;"/>
           </div>
-          <div style="grid-column:span 2;">
-            <label style="font-size:11.5px;color:var(--text-soft);font-weight:600;">Observaciones Generales</label>
-            <textarea id="ep-observaciones-${p.idPaciente}" style="width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:13px;background:white;margin-top:4px;box-sizing:border-box;">${p.observaciones_generales || ''}</textarea>
-          </div>
         </div>
         <div style="margin-top:12px;">
-          <button onclick="guardarEdicionPaciente(${p.idPaciente})" style="padding:10px 20px;border:none;border-radius:10px;background:linear-gradient(135deg,var(--teal),var(--teal-light));color:#fff;font-weight:600;font-size:13px;cursor:pointer;">Guardar Cambios</button>
+          <button onclick="guardarEdicionPaciente(${p.idPaciente})" style="padding:10px 20px;border:none;border-radius:10px;background:linear-gradient(135deg,var(--teal),var(--teal-light));color:#fff;font-weight:600;font-size:13px;cursor:pointer;">Guardar</button>
           <button onclick="document.getElementById('form-editar-${p.idPaciente}').style.display='none'" style="margin-left:8px;padding:10px 20px;border:1.5px solid var(--border);border-radius:10px;background:transparent;color:var(--text-soft);font-size:13px;cursor:pointer;">Cancelar</button>
         </div>
       </div>`;
   } catch {
-    cont.innerHTML = '<p style="text-align:center;color:#c03030;padding:24px;">Error al cargar el expediente</p>';
+    cont.innerHTML = '<p style="text-align:center;color:#c03030;padding:24px;">Error al cargar</p>';
   }
 }
 
@@ -532,29 +796,27 @@ function volverBuscador() {
   document.getElementById('q-expediente').value = '';
 }
 
-function editarPaciente(idPaciente) {
-  const form = document.getElementById(`form-editar-${idPaciente}`);
-  form.style.display = form.style.display === 'none' ? 'block' : 'none';
+function editarPaciente(id) {
+  const f = document.getElementById(`form-editar-${id}`);
+  f.style.display = f.style.display === 'none' ? 'block' : 'none';
 }
 
-function mostrarFormReceta(idPaciente) {
-  const form = document.getElementById(`form-receta-${idPaciente}`);
-  form.style.display = form.style.display === 'none' ? 'block' : 'none';
+function mostrarFormReceta(id) {
+  const f = document.getElementById(`form-receta-${id}`);
+  f.style.display = f.style.display === 'none' ? 'block' : 'none';
 }
 
 async function guardarEdicionPaciente(idPaciente) {
   const payload = {
-    tipo_sangre:             document.getElementById(`ep-sangre-${idPaciente}`).value,
-    estado_paciente:         document.getElementById(`ep-estado-${idPaciente}`).value,
-    contacto_emergencia:     document.getElementById(`ep-contacto-${idPaciente}`).value,
-    telefono_emergencia:     document.getElementById(`ep-telefono-${idPaciente}`).value,
-    observaciones_generales: document.getElementById(`ep-observaciones-${idPaciente}`).value,
+    tipo_sangre:         document.getElementById(`ep-sangre-${idPaciente}`).value,
+    estado_paciente:     document.getElementById(`ep-estado-${idPaciente}`).value,
+    contacto_emergencia: document.getElementById(`ep-contacto-${idPaciente}`).value,
+    telefono_emergencia: document.getElementById(`ep-telefono-${idPaciente}`).value,
   };
   const res  = await fetch(`/api/pacientes/${idPaciente}`, { method:'PUT', headers: H, body: JSON.stringify(payload) });
   const data = await res.json();
   if (data.message) {
-    alert('✅ Paciente actualizado correctamente');
-    document.getElementById(`form-editar-${idPaciente}`).style.display = 'none';
+    alert('✅ Paciente actualizado');
     abrirExpediente(idPaciente);
   } else {
     alert('Error: ' + (data.error?.sqlMessage || 'No se pudo actualizar'));
@@ -574,33 +836,10 @@ async function guardarRecetaExpediente(idPaciente) {
   const res  = await fetch('/api/recetas', { method:'POST', headers: H, body: JSON.stringify(payload) });
   const data = await res.json();
   if (data.id) {
-    alert('✅ Receta agregada correctamente');
+    alert('✅ Receta agregada');
     abrirExpediente(idPaciente);
   } else {
     alert('Error: ' + (data.error?.sqlMessage || 'No se pudo agregar'));
-  }
-}
-
-// ── HISTORIAL CONSULTAS ───────────────────────
-async function cargarHistorialConsultas() {
-  try {
-    const res  = await fetch('/api/consultas', { headers: H });
-    const data = await res.json();
-    document.getElementById('tbody-historial-consultas').innerHTML = Array.isArray(data) && data.length
-      ? data.map(c => `
-          <tr>
-            <td>#${c.idConsulta}</td>
-            <td>${c.fecha_consulta || '–'}</td>
-            <td>#${c.idCita || '–'}</td>
-            <td>${c.peso ? c.peso + ' kg' : '–'}</td>
-            <td>${c.presion_arterial || '–'}</td>
-            <td>${c.temperatura ? c.temperatura + ' °C' : '–'}</td>
-            <td>${c.observaciones || '–'}</td>
-          </tr>`).join('')
-      : '<tr><td colspan="7" style="text-align:center;color:var(--text-soft);padding:20px;">Sin consultas registradas</td></tr>';
-  } catch {
-    document.getElementById('tbody-historial-consultas').innerHTML =
-      '<tr><td colspan="7" style="text-align:center;color:#c03030;padding:20px;">Error al cargar</td></tr>';
   }
 }
 

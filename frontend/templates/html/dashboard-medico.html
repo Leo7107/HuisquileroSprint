@@ -68,7 +68,7 @@
 
       <div class="panels-row">
 
-        <!-- AGENDA DIARIA — HU09 criterio 1 -->
+        <!-- AGENDA DIARIA — criterio 1 y 4 -->
         <div class="panel">
           <div class="panel__header">
             <h2>Agenda de Hoy</h2>
@@ -84,7 +84,7 @@
           </table>
         </div>
 
-        <!-- ACCIONES RÁPIDAS — HU09 criterio 3 -->
+        <!-- ACCIONES RÁPIDAS — criterio 3 -->
         <div class="panel">
           <div class="panel__header"><h2>Acciones Rápidas</h2></div>
           <div class="acciones-grid">
@@ -96,7 +96,7 @@
         </div>
       </div>
 
-      <!-- HISTORIAL RECIENTE DE PACIENTES — HU09 criterio 2 -->
+      <!-- PACIENTES RECIENTES Y ÚLTIMAS CONSULTAS -->
       <div class="panels-row">
         <div class="panel">
           <div class="panel__header">
@@ -140,11 +140,21 @@
     <div id="sec-consulta" style="display:none;">
       <div class="panel">
         <div class="panel__header"><h2>Registrar Consulta</h2></div>
+
+        <!-- PRECONSULTA — criterio 6 -->
+        <div class="preconsulta-card" id="bloque-preconsulta" style="display:none;">
+          <div class="preconsulta-card__header">
+            <span>📋</span>
+            <h4>Datos de Preconsulta</h4>
+          </div>
+          <div class="preconsulta-grid" id="preconsulta-datos"></div>
+        </div>
+
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
           <div>
             <div style="margin-bottom:14px;">
               <label style="display:block;font-size:11.5px;font-weight:600;color:var(--text-soft);margin-bottom:5px;">ID de Cita</label>
-              <input type="number" id="con-cita" placeholder="ID de la cita" style="width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:11px;font-size:13.5px;background:var(--cream);box-sizing:border-box;"/>
+              <input type="number" id="con-cita" placeholder="ID de la cita" oninput="cargarPreconsulta(this.value)" style="width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:11px;font-size:13.5px;background:var(--cream);box-sizing:border-box;"/>
             </div>
             <div style="margin-bottom:14px;">
               <label style="display:block;font-size:11.5px;font-weight:600;color:var(--text-soft);margin-bottom:5px;">ID de Historial</label>
@@ -181,6 +191,24 @@
             <div id="consultas-recientes"><p style="color:var(--text-soft);font-size:13px;">Cargando...</p></div>
           </div>
         </div>
+      </div>
+    </div>
+
+    <!-- ══ HISTORIAL CONSULTAS ══ -->
+    <div id="sec-historial-consultas" style="display:none;">
+      <div class="panel">
+        <div class="panel__header">
+          <h2>Historial de Consultas</h2>
+          <button onclick="nav('consulta',null)" style="padding:8px 18px;border:none;border-radius:10px;background:linear-gradient(135deg,var(--teal),var(--teal-light));color:#fff;font-weight:700;font-size:12.5px;font-family:'DM Sans',sans-serif;cursor:pointer;">+ Nueva Consulta</button>
+        </div>
+        <table class="tabla">
+          <thead>
+            <tr><th>ID</th><th>Fecha</th><th>Cita</th><th>Peso</th><th>Presión</th><th>Temperatura</th><th>Observaciones</th></tr>
+          </thead>
+          <tbody id="tbody-historial-consultas">
+            <tr><td colspan="7" style="text-align:center;color:var(--text-soft);padding:20px;">Cargando...</td></tr>
+          </tbody>
+        </table>
       </div>
     </div>
 
@@ -258,24 +286,6 @@
       </div>
     </div>
 
-    <!-- ══ HISTORIAL CONSULTAS ══ -->
-    <div id="sec-historial-consultas" style="display:none;">
-      <div class="panel">
-        <div class="panel__header">
-          <h2>Historial de Consultas</h2>
-          <button onclick="nav('consulta',null)" style="padding:8px 18px;border:none;border-radius:10px;background:linear-gradient(135deg,var(--teal),var(--teal-light));color:#fff;font-weight:700;font-size:12.5px;font-family:'DM Sans',sans-serif;cursor:pointer;">+ Nueva Consulta</button>
-        </div>
-        <table class="tabla">
-          <thead>
-            <tr><th>ID</th><th>Fecha</th><th>Cita</th><th>Peso</th><th>Presión</th><th>Temperatura</th><th>Observaciones</th></tr>
-          </thead>
-          <tbody id="tbody-historial-consultas">
-            <tr><td colspan="7" style="text-align:center;color:var(--text-soft);padding:20px;">Cargando...</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
     <!-- ══ VER EXPEDIENTE ══ -->
     <div id="sec-expediente" style="display:none;">
       <div class="panel">
@@ -290,17 +300,74 @@
       </div>
     </div>
 
-    <!-- ══ MI HORARIO — HU09 ══ -->
+    <!-- ══ MI HORARIO — criterio 5 ══ -->
     <div id="sec-horario" style="display:none;">
       <div class="panel">
-        <div class="panel__header"><h2>Mi Horario</h2></div>
+        <div class="panel__header">
+          <h2>Mi Horario</h2>
+          <!-- Tabs vista diaria / semanal -->
+          <div class="tabs" style="margin-bottom:0;width:220px;">
+            <button class="tab-btn active" id="tab-diaria" onclick="cambiarVistaHorario('diaria')">Vista Diaria</button>
+            <button class="tab-btn" id="tab-semanal" onclick="cambiarVistaHorario('semanal')">Vista Semanal</button>
+          </div>
+        </div>
+
+        <!-- Info del médico -->
         <div id="horario-info">
           <p style="text-align:center;color:var(--text-soft);padding:24px;font-size:13px;">Cargando...</p>
+        </div>
+
+        <!-- Vista diaria -->
+        <div id="vista-diaria">
+          <div class="semana-nav">
+            <button class="semana-nav__btn" onclick="navegarDia(-1)">‹</button>
+            <span class="semana-nav__titulo" id="titulo-dia-actual">Hoy</span>
+            <button class="semana-nav__btn" onclick="navegarDia(1)">›</button>
+          </div>
+          <table class="tabla">
+            <thead><tr><th>Hora</th><th>Paciente</th><th>Motivo</th><th>Estado</th><th>Acción</th></tr></thead>
+            <tbody id="tbody-citas-dia">
+              <tr><td colspan="5" style="text-align:center;color:var(--text-soft);padding:20px;">Cargando...</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Vista semanal -->
+        <div id="vista-semanal" style="display:none;">
+          <div class="semana-nav">
+            <button class="semana-nav__btn" onclick="navegarSemana(-1)">‹</button>
+            <span class="semana-nav__titulo" id="titulo-semana">Semana actual</span>
+            <button class="semana-nav__btn" onclick="navegarSemana(1)">›</button>
+          </div>
+          <div class="semana-tabs" id="semana-tabs"></div>
+          <table class="tabla">
+            <thead><tr><th>Hora</th><th>Paciente</th><th>Motivo</th><th>Estado</th><th>Acción</th></tr></thead>
+            <tbody id="tbody-citas-semana">
+              <tr><td colspan="5" style="text-align:center;color:var(--text-soft);padding:20px;">Selecciona un día</td></tr>
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
 
   </main>
+</div>
+
+<!-- MODAL HISTORIAL PACIENTE — criterio 2 -->
+<div class="modal-overlay" id="modal-historial-paciente">
+  <div class="modal" style="max-width:680px;">
+    <div class="modal__header">
+      <h3>📋 Historial del Paciente</h3>
+      <button class="modal__close" onclick="cerrarModalHistorial()">✕</button>
+    </div>
+    <div id="modal-historial-contenido">
+      <p style="text-align:center;color:var(--text-soft);padding:30px;">Cargando...</p>
+    </div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px;padding-top:16px;border-top:1px solid var(--border);">
+      <button class="btn-cancelar" onclick="cerrarModalHistorial()">Cerrar</button>
+      <button class="btn-primary" id="btn-atender-modal" onclick="">🩺 Atender</button>
+    </div>
+  </div>
 </div>
 
 <script src="/js/dashboard-medico.js"></script>
