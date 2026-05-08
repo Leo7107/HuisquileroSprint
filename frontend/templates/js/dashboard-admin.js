@@ -758,3 +758,10 @@ async function toggleMedicamento(id, nuevoEstado) {
   if (data.message) cargarInventario();
   else alert('Error: ' + (data.error?.sqlMessage || JSON.stringify(data.error)));
 }
+
+function switchTabInv(tab) {
+  document.getElementById('tab-inv-medicamentos').style.display = tab === 'medicamentos' ? 'block' : 'none';
+  document.getElementById('tab-inv-movimientos').style.display  = tab === 'movimientos'  ? 'block' : 'none';
+  document.getElementById('tab-medicamentos').classList.toggle('active', tab === 'medicamentos');
+  document.getElementById('tab-movimientos').classList.toggle('active',  tab === 'movimientos');
+}
