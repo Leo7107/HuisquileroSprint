@@ -163,119 +163,7 @@
       </div>
     </div>
 
-  </main>
-</div>
-
-<!-- MODAL USUARIO -->
-<div class="modal-overlay" id="modal-usuario">
-  <div class="modal">
-    <h3 id="modal-titulo">Nuevo Usuario</h3>
-    <input type="hidden" id="m-id"/>
-    <div class="form-row">
-      <div class="form-group"><label>Nombres</label><input type="text" id="m-nombres" placeholder="Ana"/></div>
-      <div class="form-group"><label>Apellidos</label><input type="text" id="m-apellidos" placeholder="García"/></div>
-    </div>
-    <div class="form-row">
-      <div class="form-group">
-        <label>Sexo</label>
-        <select id="m-sexo"><option value="M">Masculino</option><option value="F">Femenino</option><option value="OTRO">Otro</option></select>
-      </div>
-      <div class="form-group"><label>Fecha Nacimiento</label><input type="date" id="m-fecha"/></div>
-    </div>
-    <div class="form-group"><label>Email</label><input type="email" id="m-email" placeholder="correo@ejemplo.com"/></div>
-    <div class="form-row">
-      <div class="form-group"><label>Teléfono</label><input type="tel" id="m-telefono" placeholder="7000-0000"/></div>
-      <div class="form-group">
-        <label>Rol</label>
-        <select id="m-rol">
-          <option value="1">Administrador</option>
-          <option value="30002">Doctor</option>
-          <option value="30003">Recepcionista</option>
-          <option value="30001">Paciente</option>
-        </select>
-      </div>
-    </div>
-    <div class="form-group"><label>Dirección</label><input type="text" id="m-direccion" placeholder="Colonia, calle..."/></div>
-    <div class="form-group" id="campo-pass"><label>Contraseña</label><input type="password" id="m-pass" placeholder="Mínimo 6 caracteres"/></div>
-    <div class="modal-actions">
-      <button class="btn-cancelar" onclick="cerrarModal()">Cancelar</button>
-      <button class="btn-primary" onclick="guardarUsuario()">Guardar</button>
-    </div>
-  </div>
-</div>
-
-<!-- MODAL MÉDICO -->
-<div class="modal-overlay" id="modal-medico">
-  <div class="modal">
-    <h3 id="modal-medico-titulo">Nuevo Médico</h3>
-    <input type="hidden" id="md-id"/>
-    <div class="form-row">
-      <div class="form-group">
-        <label>Especialidad</label>
-        <select id="md-especialidad">
-          <option value="">Seleccione...</option>
-          <option>Medicina General</option>
-          <option>Pediatría</option>
-          <option>Ginecología</option>
-          <option>Cardiología</option>
-          <option>Neurología</option>
-          <option>Ortopedia</option>
-          <option>Dermatología</option>
-          <option>Psiquiatría</option>
-          <option>Oftalmología</option>
-          <option>Odontología</option>
-          <option>Otra</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label>N° Junta Médica</label>
-        <input type="text" id="md-junta" placeholder="JM-0001"/>
-      </div>
-    </div>
-    <div class="form-row">
-      <div class="form-group">
-        <label>Consultorio</label>
-        <input type="text" id="md-consultorio" placeholder="Consultorio 1"/>
-      </div>
-      <div class="form-group">
-        <label>Teléfono</label>
-        <input type="tel" id="md-telefono" placeholder="7000-0000"/>
-      </div>
-    </div>
-    <div class="form-row">
-      <div class="form-group">
-        <label>Hora Inicio</label>
-        <input type="time" id="md-hora-inicio"/>
-      </div>
-      <div class="form-group">
-        <label>Hora Fin</label>
-        <input type="time" id="md-hora-fin"/>
-      </div>
-    </div>
-    <div class="form-row">
-      <div class="form-group">
-        <label>Estado</label>
-        <select id="md-estado">
-          <option value="ACTIVO">Activo</option>
-          <option value="INACTIVO">Inactivo</option>
-        </select>
-      </div>
-      <div class="form-group autocomplete-wrap">
-        <label>Usuario Doctor</label>
-        <input type="text" id="md-usuario-nombre" placeholder="Buscar por nombre..."
-          oninput="buscarUsuarioDoctor()" autocomplete="off"/>
-        <input type="hidden" id="md-usuario"/>
-        <div id="sugerencias-usuario-doctor" class="autocomplete-lista"></div>
-      </div>
-    </div>
-    <div class="modal-actions">
-      <button class="btn-cancelar" onclick="cerrarModalMedico()">Cancelar</button>
-      <button class="btn-primary" onclick="guardarMedico()">Guardar</button>
-    </div>
-  </div>
-</div>
-
-<!-- ══ INVENTARIO ══ -->
+    <!-- ══ INVENTARIO ══ -->
 <div id="sec-inventario" style="display:none;">
  
   <!-- Alertas de stock bajo — criterio 3 -->
@@ -455,6 +343,118 @@
     <div class="modal-actions">
       <button class="btn-cancelar" onclick="cerrarModalAjuste()">Cancelar</button>
       <button class="btn-primary" onclick="guardarAjuste()">Aplicar Ajuste</button>
+    </div>
+  </div>
+</div>
+
+  </main>
+</div>
+
+<!-- MODAL USUARIO -->
+<div class="modal-overlay" id="modal-usuario">
+  <div class="modal">
+    <h3 id="modal-titulo">Nuevo Usuario</h3>
+    <input type="hidden" id="m-id"/>
+    <div class="form-row">
+      <div class="form-group"><label>Nombres</label><input type="text" id="m-nombres" placeholder="Ana"/></div>
+      <div class="form-group"><label>Apellidos</label><input type="text" id="m-apellidos" placeholder="García"/></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Sexo</label>
+        <select id="m-sexo"><option value="M">Masculino</option><option value="F">Femenino</option><option value="OTRO">Otro</option></select>
+      </div>
+      <div class="form-group"><label>Fecha Nacimiento</label><input type="date" id="m-fecha"/></div>
+    </div>
+    <div class="form-group"><label>Email</label><input type="email" id="m-email" placeholder="correo@ejemplo.com"/></div>
+    <div class="form-row">
+      <div class="form-group"><label>Teléfono</label><input type="tel" id="m-telefono" placeholder="7000-0000"/></div>
+      <div class="form-group">
+        <label>Rol</label>
+        <select id="m-rol">
+          <option value="1">Administrador</option>
+          <option value="30002">Doctor</option>
+          <option value="30003">Recepcionista</option>
+          <option value="30001">Paciente</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group"><label>Dirección</label><input type="text" id="m-direccion" placeholder="Colonia, calle..."/></div>
+    <div class="form-group" id="campo-pass"><label>Contraseña</label><input type="password" id="m-pass" placeholder="Mínimo 6 caracteres"/></div>
+    <div class="modal-actions">
+      <button class="btn-cancelar" onclick="cerrarModal()">Cancelar</button>
+      <button class="btn-primary" onclick="guardarUsuario()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL MÉDICO -->
+<div class="modal-overlay" id="modal-medico">
+  <div class="modal">
+    <h3 id="modal-medico-titulo">Nuevo Médico</h3>
+    <input type="hidden" id="md-id"/>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Especialidad</label>
+        <select id="md-especialidad">
+          <option value="">Seleccione...</option>
+          <option>Medicina General</option>
+          <option>Pediatría</option>
+          <option>Ginecología</option>
+          <option>Cardiología</option>
+          <option>Neurología</option>
+          <option>Ortopedia</option>
+          <option>Dermatología</option>
+          <option>Psiquiatría</option>
+          <option>Oftalmología</option>
+          <option>Odontología</option>
+          <option>Otra</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>N° Junta Médica</label>
+        <input type="text" id="md-junta" placeholder="JM-0001"/>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Consultorio</label>
+        <input type="text" id="md-consultorio" placeholder="Consultorio 1"/>
+      </div>
+      <div class="form-group">
+        <label>Teléfono</label>
+        <input type="tel" id="md-telefono" placeholder="7000-0000"/>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Hora Inicio</label>
+        <input type="time" id="md-hora-inicio"/>
+      </div>
+      <div class="form-group">
+        <label>Hora Fin</label>
+        <input type="time" id="md-hora-fin"/>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Estado</label>
+        <select id="md-estado">
+          <option value="ACTIVO">Activo</option>
+          <option value="INACTIVO">Inactivo</option>
+        </select>
+      </div>
+      <div class="form-group autocomplete-wrap">
+        <label>Usuario Doctor</label>
+        <input type="text" id="md-usuario-nombre" placeholder="Buscar por nombre..."
+          oninput="buscarUsuarioDoctor()" autocomplete="off"/>
+        <input type="hidden" id="md-usuario"/>
+        <div id="sugerencias-usuario-doctor" class="autocomplete-lista"></div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancelar" onclick="cerrarModalMedico()">Cancelar</button>
+      <button class="btn-primary" onclick="guardarMedico()">Guardar</button>
     </div>
   </div>
 </div>
