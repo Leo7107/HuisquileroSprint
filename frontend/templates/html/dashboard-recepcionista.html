@@ -1,136 +1,32 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Medisync – Recepcionista</title>
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
-  <link rel="stylesheet" href="/css/dashboard.css"/>
-</head>
-<body>
-<div class="layout rol-recep">
-
-  <aside class="sidebar">
-    <div class="sidebar__brand">
-      <span class="brand-icon">✦</span>
-      <span class="brand-name">Medisync</span>
-    </div>
-    <div class="sidebar__rol sidebar__rol--recep">Recepcionista</div>
-    <nav class="sidebar__nav">
-      <a href="#" class="nav-item active" onclick="nav('inicio',this);return false;"><span class="nav-icon">⊞</span> Mi Panel</a>
+@ -21,6 +21,7 @@
       <a href="#" class="nav-item" onclick="nav('citas',this);return false;"><span class="nav-icon">📅</span> Gestión de Citas</a>
       <a href="#" class="nav-item" onclick="nav('pacientes',this);return false;"><span class="nav-icon">👤</span> Registro de Expediente</a>
       <a href="#" class="nav-item" onclick="nav('buscar',this);return false;"><span class="nav-icon">🔍</span> Buscar Expediente</a>
+      <a href="#" class="nav-item" onclick="nav('preconsulta',this);return false;"><span class="nav-icon">📋</span> Preconsulta</a>
       <a href="#" class="nav-item" onclick="nav('medicos',this);return false;"><span class="nav-icon">🩺</span> Gestión de Médicos</a>
     </nav>
     <button class="sidebar__logout" onclick="cerrarSesion()"><span>⏻</span> Cerrar sesión</button>
-  </aside>
-
-  <main class="main">
-
-    <header class="topbar">
-      <div class="topbar__title">
-        <h1>Hola, <span id="nombre-recep">Recepcionista</span></h1>
-        <p id="fecha-actual"></p>
-      </div>
-      <div class="topbar__usuario">
-        <div class="avatar avatar--recep" id="avatar-inicial">R</div>
-        <div>
-          <div class="usuario-nombre" id="usuario-nombre">Recepcionista</div>
-          <div class="usuario-rol">Atención al Paciente</div>
-        </div>
-      </div>
-    </header>
-
-    <!-- ══ INICIO ══ -->
-    <div id="sec-inicio">
-      <section class="stats-grid">
-        <div class="stat-card stat-card--teal">
-          <div class="stat-icon">📅</div>
+@ -50,8 +51,8 @@
           <div class="stat-info"><div class="stat-num" id="s-citas-hoy">—</div><div class="stat-label">Citas de Hoy</div></div>
         </div>
         <div class="stat-card stat-card--gold">
           <div class="stat-icon">⏳</div>
           <div class="stat-info"><div class="stat-num" id="s-espera">0</div><div class="stat-label">En Sala de Espera</div></div>
+          <div class="stat-icon">📋</div>
+          <div class="stat-info"><div class="stat-num" id="s-preconsultas">0</div><div class="stat-label">Preconsultas Pendientes</div></div>
         </div>
         <div class="stat-card stat-card--soft">
           <div class="stat-icon">✅</div>
-          <div class="stat-info"><div class="stat-num" id="s-atendidos">0</div><div class="stat-label">Atendidos Hoy</div></div>
-        </div>
-        <div class="stat-card stat-card--dark">
-          <div class="stat-icon">👤</div>
-          <div class="stat-info"><div class="stat-num" id="s-pacientes">—</div><div class="stat-label">Pacientes Registrados</div></div>
-        </div>
-      </section>
-
-      <div class="panels-row">
-        <div class="panel">
-          <div class="panel__header">
-            <h2>Citas de Hoy</h2>
-            <a href="#" class="panel__link" onclick="nav('citas',null);return false;">Ver todas →</a>
-          </div>
-          <table class="tabla">
-            <thead><tr><th>Hora</th><th>Paciente</th><th>Doctor</th><th>Estado</th></tr></thead>
-            <tbody id="citas-preview">
-              <tr><td colspan="4" style="text-align:center;color:var(--text-soft);padding:16px;">Cargando...</td></tr>
-            </tbody>
-          </table>
-        </div>
-        <div class="panel">
-          <div class="panel__header"><h2>Acciones Rápidas</h2></div>
+@ -81,7 +82,7 @@
           <div class="acciones-grid">
             <button class="accion-btn" onclick="abrirModalCita()"><span>📅</span><span>Nueva Cita</span></button>
             <button class="accion-btn" onclick="nav('pacientes',null)"><span>👤</span><span>Nuevo Paciente</span></button>
             <button class="accion-btn" onclick="nav('espera',null)"><span>🏥</span><span>Sala de Espera</span></button>
+            <button class="accion-btn" onclick="nav('preconsulta',null)"><span>📋</span><span>Preconsulta</span></button>
             <button class="accion-btn" onclick="nav('medicos',null)"><span>🩺</span><span>Médicos</span></button>
           </div>
         </div>
-      </div>
-    </div>
-
-    <!-- ══ CITAS ══ -->
-    <div id="sec-citas" style="display:none;">
-      <div class="panel">
-        <div class="panel__header">
-          <h2>Gestión de Citas</h2>
-          <button class="header-btn" onclick="abrirModalCita()">+ Nueva Cita</button>
-        </div>
-        <div class="tabs">
-          <button class="tab-btn active" onclick="setTabCitas('todas',this)">Todas</button>
-          <button class="tab-btn" onclick="setTabCitas('PENDIENTE',this)">Pendientes</button>
-          <button class="tab-btn" onclick="setTabCitas('CONFIRMADA',this)">Confirmadas</button>
-          <button class="tab-btn" onclick="setTabCitas('CANCELADA',this)">Canceladas</button>
-          <button class="tab-btn" onclick="setTabCitas('FINALIZADA',this)">Finalizadas</button>
-        </div>
-        <table class="tabla">
-          <thead><tr><th>ID</th><th>Fecha</th><th>Hora</th><th>Paciente</th><th>Doctor</th><th>Estado</th><th>Acciones</th></tr></thead>
-          <tbody id="tbody-citas">
-            <tr><td colspan="7" style="text-align:center;color:var(--text-soft);padding:24px;">Cargando...</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- ══ PACIENTES ══ -->
-    <div id="sec-pacientes" style="display:none;">
-      <div class="panel">
-        <div class="panel__header"><h2>Registro de Expediente</h2></div>
-        <div class="pac-form-wrap">
-          <div>
-            <div class="form-group"><label>Número de Expediente</label><input type="text" id="pac-exp" placeholder="EXP-001"/></div>
-            <div class="form-row">
-              <div class="form-group"><label>Fecha de Registro</label><input type="date" id="pac-fecha"/></div>
-              <div class="form-group">
-                <label>Tipo de Sangre</label>
-                <select id="pac-sangre">
-                  <option value="">Seleccione</option>
-                  <option>A+</option><option>A-</option><option>B+</option><option>B-</option>
-                  <option>AB+</option><option>AB-</option><option>O+</option><option>O-</option>
-                </select>
-              </div>
-            </div>
-            <div class="form-group"><label>Contacto de Emergencia</label><input type="text" id="pac-contacto" placeholder="Nombre completo"/></div>
-            <div class="form-row">
+@ -134,19 +135,12 @@
               <div class="form-group"><label>Parentesco</label><input type="text" id="pac-parentesco" placeholder="Madre, Padre..."/></div>
               <div class="form-group"><label>Teléfono Emergencia</label><input type="tel" id="pac-tel" placeholder="7000-0000"/></div>
             </div>
@@ -147,54 +43,15 @@
 
   <div id="sugerencias-usuario-paciente" class="autocomplete-lista"></div>
 </div>
+              <label>Usuario Paciente</label>
+              <input type="text" id="pac-usuario-nombre" placeholder="Buscar por nombre..." oninput="buscarUsuarioPaciente()" autocomplete="off"/>
+              <input type="hidden" id="pac-usuario"/>
+              <div id="sugerencias-usuario-paciente" class="autocomplete-lista"></div>
+            </div>
             <div class="form-group">
               <label>Observaciones</label>
               <textarea id="pac-obs" rows="3" placeholder="Notas adicionales..."></textarea>
-            </div>
-            <div class="form-group">
-              <label>Estado</label>
-              <select id="pac-estado"><option value="ACTIVO">Activo</option><option value="INACTIVO">Inactivo</option></select>
-            </div>
-            <button class="btn-full" onclick="registrarPaciente()">Registrar Paciente</button>
-          </div>
-          <div>
-            <h3>Pacientes Recientes</h3>
-            <div id="lista-recientes"><p style="color:var(--text-soft);font-size:13px;">Cargando...</p></div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ══ BUSCAR ══ -->
-    <div id="sec-buscar" style="display:none;">
-      <div class="panel">
-        <div class="panel__header"><h2>Buscar Expediente de Paciente</h2></div>
-        <div class="search-wrap">
-          <span>🔍</span>
-          <input type="text" id="q-global" placeholder="Buscar por expediente o ID..." oninput="buscarPaciente()"/>
-        </div>
-        <div id="resultados-busqueda">
-          <p style="text-align:center;color:var(--text-soft);padding:24px;font-size:13px;">Escribe para buscar un paciente...</p>
-        </div>
-      </div>
-    </div>
-
-    <!-- ══ MÉDICOS ══ -->
-    <div id="sec-medicos" style="display:none;">
-      <div class="panel">
-        <div class="panel__header">
-          <h2>Gestión de Médicos</h2>
-          <button class="header-btn" onclick="abrirModalMedico()">+ Nuevo Médico</button>
-        </div>
-        <div class="search-wrap">
-          <span>🔍</span>
-          <input type="text" id="q-medicos" placeholder="Buscar por nombre, especialidad o junta médica..." oninput="filtrarMedicos()"/>
-        </div>
-        <div class="tabs">
-          <button class="tab-btn active" onclick="setTabMedicos('todos',this)">Todos</button>
-          <button class="tab-btn" onclick="setTabMedicos('ACTIVO',this)">Activos</button>
-          <button class="tab-btn" onclick="setTabMedicos('INACTIVO',this)">Inactivos</button>
-        </div>
+@ -198,13 +192,8 @@
         <table class="tabla">
           <thead>
             <tr>
@@ -205,32 +62,113 @@
               <th>Horario</th>
               <th>Estado</th>
               <th>Acciones</th>
+              <th>ID</th><th>Nombre</th><th>Especialidad</th>
+              <th>Junta Médica</th><th>Horario</th><th>Estado</th><th>Acciones</th>
             </tr>
           </thead>
           <tbody id="tbody-medicos">
-            <tr><td colspan="7" style="text-align:center;color:var(--text-soft);padding:24px;">Cargando...</td></tr>
-          </tbody>
-        </table>
+@ -214,6 +203,94 @@
+      </div>
+    </div>
+
+    <!-- ══ PRECONSULTA ══ -->
+    <div id="sec-preconsulta" style="display:none;">
+      <style>
+        .pre-bloque { background:rgba(42,107,94,0.04); border:1.5px solid rgba(42,107,94,0.18); border-radius:14px; padding:16px 18px; margin-bottom:16px; }
+        .pre-bloque__label { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:var(--teal); margin-bottom:10px; }
+        .pre-inp { width:100%; padding:10px 14px; border:1.5px solid var(--border); border-radius:11px; font-size:13.5px; color:var(--text); background:var(--cream); font-family:'DM Sans',sans-serif; box-sizing:border-box; transition:border 0.2s,background 0.2s; }
+        .pre-inp:focus { outline:none; border-color:var(--teal); background:#fff; }
+        .pre-lbl { display:block; font-size:11.5px; font-weight:600; color:var(--text-soft); margin-bottom:5px; letter-spacing:0.04em; }
+        .pre-fgroup { margin-bottom:14px; }
+        .pre-cita-badge { background:rgba(42,107,94,0.08); border:1.5px solid rgba(42,107,94,0.2); border-radius:10px; padding:10px 14px; font-size:12.5px; color:var(--teal); font-weight:600; margin-bottom:14px; display:none; }
+        .pre-vitales-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:14px; }
+        .pre-vitales-grid--4 { grid-template-columns:1fr 1fr 1fr 1fr; }
+        .pre-lista-citas .pre-cita-item { padding:10px 14px; border:1.5px solid var(--border); border-radius:10px; cursor:pointer; transition:all 0.2s; margin-bottom:8px; }
+        .pre-lista-citas .pre-cita-item:hover { border-color:var(--teal); background:rgba(42,107,94,0.04); }
+        .pre-cita-item strong { display:block; font-size:13px; color:var(--deep); }
+        .pre-cita-item span { font-size:11.5px; color:var(--text-soft); }
+        .pre-historial-item { padding:10px 0; border-bottom:1px solid rgba(42,107,94,0.07); }
+        .pre-historial-item:last-child { border-bottom:none; }
+        .pre-historial-item strong { display:block; font-size:13px; color:var(--deep); }
+        .pre-historial-item span { font-size:11.5px; color:var(--text-soft); }
+        .pre-alerta { background:rgba(200,50,50,0.07); border:1.5px solid rgba(200,50,50,0.18); border-radius:10px; padding:10px 14px; font-size:12.5px; color:#c03030; font-weight:600; margin-bottom:14px; }
+      </style>
+
+      <div style="display:grid;grid-template-columns:1fr 340px;gap:20px;align-items:start;">
+
+        <div class="panel">
+          <div class="panel__header"><h2>Registrar Preconsulta</h2></div>
+
+          <div class="pre-bloque">
+            <div class="pre-bloque__label">Paso 1 — Seleccionar Paciente</div>
+            <div class="autocomplete-wrap" style="margin-bottom:10px;">
+              <label class="pre-lbl">Buscar paciente por nombre o expediente</label>
+              <input type="text" id="pre-buscar-paciente" class="pre-inp"
+                placeholder="Ej: María González o EXP-001..."
+                oninput="preBuscarPaciente()" autocomplete="off"/>
+              <div id="pre-sug-paciente" class="autocomplete-lista"></div>
+            </div>
+            <div id="pre-alerta-alergias" class="pre-alerta" style="display:none;"></div>
+            <div id="pre-bloque-citas" style="display:none;">
+              <label class="pre-lbl" style="margin-bottom:8px;">Selecciona la cita a atender:</label>
+              <div class="pre-lista-citas" id="pre-lista-citas"></div>
+            </div>
+            <div id="pre-cita-badge" class="pre-cita-badge"></div>
+          </div>
+
+          <div class="pre-bloque" id="pre-bloque-vitales" style="display:none;">
+            <div class="pre-bloque__label">Paso 2 — Signos Vitales</div>
+            <div class="pre-vitales-grid pre-vitales-grid--4">
+              <div><label class="pre-lbl">Peso (kg)</label><input type="number" id="pre-peso" class="pre-inp" placeholder="70.5" step="0.1"/></div>
+              <div><label class="pre-lbl">Altura (cm)</label><input type="number" id="pre-altura" class="pre-inp" placeholder="170"/></div>
+              <div><label class="pre-lbl">Presión Arterial</label><input type="text" id="pre-presion" class="pre-inp" placeholder="120/80"/></div>
+              <div><label class="pre-lbl">Temperatura (°C)</label><input type="number" id="pre-temp" class="pre-inp" placeholder="36.5" step="0.1"/></div>
+            </div>
+            <div class="pre-vitales-grid">
+              <div><label class="pre-lbl">Frecuencia Cardíaca (lpm)</label><input type="number" id="pre-fc" class="pre-inp" placeholder="80"/></div>
+              <div><label class="pre-lbl">Saturación O₂ (%)</label><input type="number" id="pre-sat" class="pre-inp" placeholder="98" min="0" max="100"/></div>
+            </div>
+            <div class="pre-fgroup">
+              <label class="pre-lbl">Motivo de consulta (referido por el paciente)</label>
+              <textarea id="pre-motivo" rows="3" class="pre-inp" placeholder="Describa el motivo principal de la consulta según el paciente..."></textarea>
+            </div>
+            <div class="pre-fgroup">
+              <label class="pre-lbl">Observaciones adicionales</label>
+              <textarea id="pre-obs" rows="2" class="pre-inp" placeholder="Notas de enfermería, estado general del paciente..."></textarea>
+            </div>
+            <input type="hidden" id="pre-id-cita"/>
+            <input type="hidden" id="pre-id-historial"/>
+            <button onclick="guardarPreconsulta()"
+              style="width:100%;padding:13px;border:none;border-radius:12px;background:linear-gradient(135deg,var(--teal),var(--teal-light));color:#fff;font-weight:700;font-size:14px;font-family:'DM Sans',sans-serif;cursor:pointer;box-shadow:0 4px 14px rgba(42,107,94,0.25);">
+              Guardar Preconsulta
+            </button>
+          </div>
+        </div>
+
+        <div>
+          <div class="panel" id="pre-panel-historial" style="display:none;">
+            <div class="panel__header"><h2>Datos del Paciente</h2></div>
+            <div id="pre-datos-paciente"></div>
+          </div>
+          <div class="panel" style="margin-top:16px;">
+            <div class="panel__header"><h2>Últimas Preconsultas</h2></div>
+            <div id="pre-ultimas"><p style="color:var(--text-soft);font-size:13px;">Cargando...</p></div>
+          </div>
+        </div>
+
       </div>
     </div>
 
   </main>
 </div>
 
-<!-- MODAL CITA -->
-<div class="modal-overlay" id="modal-cita">
-  <div class="modal">
-    <h3 id="modal-cita-titulo">Nueva Cita</h3>
-    <input type="hidden" id="cita-id"/>
-    <div class="form-row">
-      <div class="form-group"><label>Fecha</label><input type="date" id="cita-fecha"/></div>
-      <div class="form-group"><label>Hora</label><input type="time" id="cita-hora"/></div>
-    </div>
+@ -229,15 +306,13 @@
     <div class="form-row">
       <div class="form-group autocomplete-wrap">
         <label>Paciente</label>
         <input type="text" id="cita-paciente-nombre" placeholder="Buscar paciente..."
           oninput="buscarAutocompletado('paciente')" autocomplete="off"/>
+        <input type="text" id="cita-paciente-nombre" placeholder="Buscar paciente..." oninput="buscarAutocompletado('paciente')" autocomplete="off"/>
         <input type="hidden" id="cita-paciente"/>
         <div id="sugerencias-paciente" class="autocomplete-lista"></div>
       </div>
@@ -238,37 +176,11 @@
         <label>Doctor</label>
         <input type="text" id="cita-doctor-nombre" placeholder="Buscar doctor..."
           oninput="buscarAutocompletado('doctor')" autocomplete="off"/>
+        <input type="text" id="cita-doctor-nombre" placeholder="Buscar doctor..." oninput="buscarAutocompletado('doctor')" autocomplete="off"/>
         <input type="hidden" id="cita-doctor"/>
         <div id="sugerencias-doctor" class="autocomplete-lista"></div>
       </div>
-    </div>
-    <div class="form-group">
-      <label>Estado</label>
-      <select id="cita-estado">
-        <option value="PENDIENTE">Pendiente</option>
-        <option value="CONFIRMADA">Confirmada</option>
-        <option value="CANCELADA">Cancelada</option>
-        <option value="FINALIZADA">Finalizada</option>
-      </select>
-    </div>
-    <div class="form-group">
-      <label>Motivo</label>
-      <textarea id="cita-motivo" rows="3" placeholder="Motivo de la cita..."></textarea>
-    </div>
-    <div class="modal-actions">
-      <button class="btn-cancelar" onclick="cerrarModalCita()">Cancelar</button>
-      <button class="btn-primary" onclick="guardarCita()">Guardar</button>
-    </div>
-  </div>
-</div>
-
-<!-- MODAL MÉDICO -->
-<div class="modal-overlay" id="modal-medico">
-  <div class="modal">
-    <h3 id="modal-medico-titulo">Nuevo Médico</h3>
-    <input type="hidden" id="md-id"/>
-    <div class="form-row">
-      <div class="form-group">
+@ -272,56 +347,30 @@
         <label>Especialidad</label>
         <select id="md-especialidad">
           <option value="">Seleccione...</option>
@@ -283,12 +195,17 @@
           <option>Oftalmología</option>
           <option>Odontología</option>
           <option>Otra</option>
+          <option>Medicina General</option><option>Pediatría</option><option>Ginecología</option>
+          <option>Cardiología</option><option>Neurología</option><option>Ortopedia</option>
+          <option>Dermatología</option><option>Psiquiatría</option><option>Oftalmología</option>
+          <option>Odontología</option><option>Otra</option>
         </select>
       </div>
       <div class="form-group">
         <label>N° Junta Médica</label>
         <input type="text" id="md-junta" placeholder="JM-0001"/>
       </div>
+      <div class="form-group"><label>N° Junta Médica</label><input type="text" id="md-junta" placeholder="JM-0001"/></div>
     </div>
     <div class="form-row">
       <div class="form-group">
@@ -299,6 +216,8 @@
         <label>Teléfono</label>
         <input type="tel" id="md-telefono" placeholder="7000-0000"/>
       </div>
+      <div class="form-group"><label>Consultorio</label><input type="text" id="md-consultorio" placeholder="Consultorio 1"/></div>
+      <div class="form-group"><label>Teléfono</label><input type="tel" id="md-telefono" placeholder="7000-0000"/></div>
     </div>
     <div class="form-row">
       <div class="form-group">
@@ -309,6 +228,8 @@
         <label>Hora Fin</label>
         <input type="time" id="md-hora-fin"/>
       </div>
+      <div class="form-group"><label>Hora Inicio</label><input type="time" id="md-hora-inicio"/></div>
+      <div class="form-group"><label>Hora Fin</label><input type="time" id="md-hora-fin"/></div>
     </div>
     <div class="form-row">
       <div class="form-group">
@@ -317,22 +238,13 @@
           <option value="ACTIVO">Activo</option>
           <option value="INACTIVO">Inactivo</option>
         </select>
+        <select id="md-estado"><option value="ACTIVO">Activo</option><option value="INACTIVO">Inactivo</option></select>
       </div>
       <div class="form-group autocomplete-wrap">
         <label>Usuario Doctor</label>
         <input type="text" id="md-usuario-nombre" placeholder="Buscar por nombre..."
           oninput="buscarUsuarioDoctor()" autocomplete="off"/>
+        <input type="text" id="md-usuario-nombre" placeholder="Buscar por nombre..." oninput="buscarUsuarioDoctor()" autocomplete="off"/>
         <input type="hidden" id="md-usuario"/>
         <div id="sugerencias-usuario-doctor" class="autocomplete-lista"></div>
       </div>
-    </div>
-    <div class="modal-actions">
-      <button class="btn-cancelar" onclick="cerrarModalMedico()">Cancelar</button>
-      <button class="btn-primary" onclick="guardarMedico()">Guardar</button>
-    </div>
-  </div>
-</div>
-
-<script src="/js/dashboard-recepcionista.js"></script>
-</body>
-</html>
