@@ -164,188 +164,168 @@
     </div>
 
     <!-- ══ INVENTARIO ══ -->
-<div id="sec-inventario" style="display:none;">
- 
-  <!-- Alertas de stock bajo — criterio 3 -->
-  <div id="alertas-stock" style="display:none;"></div>
- 
-  <!-- Tabs: Medicamentos / Movimientos -->
-  <div class="panel">
-    <div class="panel__header">
-      <h2>Inventario de Medicamentos</h2>
-      <button class="header-btn" onclick="abrirModalNuevoMed()">+ Nuevo Medicamento</button>
-    </div>
- 
-    <div class="tabs">
-      <button class="tab-btn active" id="tab-medicamentos" onclick="switchTabInv('medicamentos')">💊 Medicamentos</button>
-      <button class="tab-btn" id="tab-movimientos" onclick="switchTabInv('movimientos')">📋 Historial Movimientos</button>
-    </div>
- 
-    <!-- TAB MEDICAMENTOS -->
-    <div id="tab-inv-medicamentos">
-      <!-- Buscador -->
-      <div class="search-wrap" style="margin-bottom:16px;">
-        <span>🔍</span>
-        <input type="text" id="q-inventario" placeholder="Buscar medicamento..." oninput="buscarInventario()"/>
-      </div>
- 
-      <table class="tabla">
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Medicamento</th>
-            <th>Stock Actual</th>
-            <th>Stock Mínimo</th>
-            <th>Unidad</th>
-            <th>Precio</th>
-            <th>Estado</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody id="tbody-inventario">
-          <tr><td colspan="8" style="text-align:center;color:var(--text-soft);padding:20px;">Cargando...</td></tr>
-        </tbody>
-      </table>
-    </div>
- 
-    <!-- TAB MOVIMIENTOS -->
-    <div id="tab-inv-movimientos" style="display:none;">
-      <table class="tabla">
-        <thead>
-          <tr>
-            <th>Fecha</th>
-            <th>Medicamento</th>
-            <th>Tipo</th>
-            <th>Cantidad</th>
-            <th>Stock</th>
-            <th>Motivo</th>
-            <th>Proveedor</th>
-            <th>Responsable</th>
-          </tr>
-        </thead>
-        <tbody id="tbody-movimientos">
-          <tr><td colspan="8" style="text-align:center;color:var(--text-soft);padding:20px;">Cargando...</td></tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-</div>
- 
-<!-- MODAL NUEVO / EDITAR MEDICAMENTO -->
-<div class="modal-overlay" id="modal-medicamento">
-  <div class="modal">
-    <div class="modal__header">
-      <h3 id="modal-med-titulo">Nuevo Medicamento</h3>
-      <button class="modal__close" onclick="cerrarModalMed()">✕</button>
-    </div>
-    <input type="hidden" id="med-id"/>
- 
-    <div class="form-row">
-      <div class="form-group" style="grid-column:span 2;">
-        <label>Nombre del Medicamento *</label>
-        <input type="text" id="med-nombre" placeholder="Ej: Amoxicilina 500mg"/>
+    <div id="sec-inventario" style="display:none;">
+      <div id="alertas-stock" style="display:none;"></div>
+      <div class="panel">
+        <div class="panel__header">
+          <h2>Inventario de Medicamentos</h2>
+          <button class="header-btn" onclick="abrirModalNuevoMed()">+ Nuevo Medicamento</button>
+        </div>
+        <div class="tabs">
+          <button class="tab-btn active" id="tab-medicamentos" onclick="switchTabInv('medicamentos')">💊 Medicamentos</button>
+          <button class="tab-btn" id="tab-movimientos" onclick="switchTabInv('movimientos')">📋 Historial Movimientos</button>
+        </div>
+        <div id="tab-inv-medicamentos">
+          <div class="search-wrap" style="margin-bottom:16px;">
+            <span>🔍</span>
+            <input type="text" id="q-inventario" placeholder="Buscar medicamento..." oninput="buscarInventario()"/>
+          </div>
+          <table class="tabla">
+            <thead>
+              <tr>
+                <th>ID</th><th>Medicamento</th><th>Stock Actual</th><th>Stock Mínimo</th>
+                <th>Unidad</th><th>Precio</th><th>Estado</th><th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-inventario">
+              <tr><td colspan="8" style="text-align:center;color:var(--text-soft);padding:20px;">Cargando...</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div id="tab-inv-movimientos" style="display:none;">
+          <table class="tabla">
+            <thead>
+              <tr>
+                <th>Fecha</th><th>Medicamento</th><th>Tipo</th><th>Cantidad</th>
+                <th>Stock</th><th>Motivo</th><th>Proveedor</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-movimientos">
+              <tr><td colspan="7" style="text-align:center;color:var(--text-soft);padding:20px;">Cargando...</td></tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
-    <div class="form-group">
-      <label>Descripción</label>
-      <textarea id="med-descripcion" rows="2" placeholder="Descripción breve..."></textarea>
-    </div>
-    <div class="form-row">
-      <div class="form-group">
-        <label>Stock Actual</label>
-        <input type="number" id="med-stock" placeholder="0" min="0"/>
+
+    <!-- MODAL NUEVO / EDITAR MEDICAMENTO -->
+    <div class="modal-overlay" id="modal-medicamento">
+      <div class="modal">
+        <div class="modal__header">
+          <h3 id="modal-med-titulo">Nuevo Medicamento</h3>
+          <button class="modal__close" onclick="cerrarModalMed()">✕</button>
+        </div>
+        <input type="hidden" id="med-id"/>
+        <div class="form-row">
+          <div class="form-group" style="grid-column:span 2;">
+            <label>Nombre del Medicamento *</label>
+            <input type="text" id="med-nombre" placeholder="Ej: Amoxicilina 500mg"/>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Descripción</label>
+          <textarea id="med-descripcion" rows="2" placeholder="Descripción breve..."></textarea>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Stock Actual</label>
+            <input type="number" id="med-stock" placeholder="0" min="0"/>
+          </div>
+          <div class="form-group">
+            <label>Stock Mínimo</label>
+            <input type="number" id="med-stock-min" placeholder="5" min="0"/>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Unidad de Medida</label>
+            <select id="med-unidad">
+              <option value="tableta">Tableta</option>
+              <option value="cápsula">Cápsula</option>
+              <option value="inhalador">Inhalador</option>
+              <option value="frasco">Frasco</option>
+              <option value="ampolla">Ampolla</option>
+              <option value="sobre">Sobre</option>
+              <option value="unidad">Unidad</option>
+              <option value="ml">ml</option>
+              <option value="mg">mg</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Precio Unitario ($)</label>
+            <input type="number" id="med-precio" placeholder="0.00" min="0" step="0.01"/>
+          </div>
+        </div>
+
+        <!-- ✅ ÚNICO CAMBIO: modal-actions con botones de stock integrados -->
+        <div id="acciones-stock-modal" style="display:none; margin-bottom:14px;">
+          <div style="display:flex; gap:8px;">
+            <button class="btn-cancelar" style="flex:1; font-size:13px;"
+              onclick="abrirDesdeEditar('entrada')">➕ Agregar stock</button>
+            <button class="btn-cancelar" style="flex:1; font-size:13px;"
+              onclick="abrirDesdeEditar('ajuste')">🔧 Ajustar stock</button>
+          </div>
+        </div>
+
+        <div class="modal-actions">
+          <button class="btn-cancelar" onclick="cerrarModalMed()">Cancelar</button>
+          <button class="btn-primary" onclick="guardarMedicamento()">Guardar</button>
+        </div>
       </div>
-      <div class="form-group">
-        <label>Stock Mínimo</label>
-        <input type="number" id="med-stock-min" placeholder="5" min="0"/>
+    </div>
+
+    <!-- MODAL ENTRADA DE STOCK -->
+    <div class="modal-overlay" id="modal-entrada">
+      <div class="modal" style="max-width:460px;">
+        <div class="modal__header">
+          <h3>📦 Registrar Entrada de Stock</h3>
+          <button class="modal__close" onclick="cerrarModalEntrada()">✕</button>
+        </div>
+        <input type="hidden" id="entrada-id-med"/>
+        <div style="background:rgba(42,107,94,0.07);border:1.5px solid rgba(42,107,94,0.15);border-radius:12px;padding:12px 16px;margin-bottom:18px;">
+          <p style="font-size:13px;color:var(--deep);font-weight:600;" id="entrada-nombre">—</p>
+        </div>
+        <div class="form-group">
+          <label>Cantidad a ingresar *</label>
+          <input type="number" id="entrada-cantidad" placeholder="Ej: 50" min="1"/>
+        </div>
+        <div class="form-group">
+          <label>Proveedor</label>
+          <input type="text" id="entrada-proveedor" placeholder="Nombre del proveedor"/>
+        </div>
+        <div class="modal-actions">
+          <button class="btn-cancelar" onclick="cerrarModalEntrada()">Cancelar</button>
+          <button class="btn-primary" onclick="guardarEntrada()">Registrar Entrada</button>
+        </div>
       </div>
     </div>
-    <div class="form-row">
-      <div class="form-group">
-        <label>Unidad de Medida</label>
-        <select id="med-unidad">
-          <option value="tableta">Tableta</option>
-          <option value="cápsula">Cápsula</option>
-          <option value="inhalador">Inhalador</option>
-          <option value="frasco">Frasco</option>
-          <option value="ampolla">Ampolla</option>
-          <option value="sobre">Sobre</option>
-          <option value="unidad">Unidad</option>
-          <option value="ml">ml</option>
-          <option value="mg">mg</option>
-        </select>
+
+    <!-- MODAL AJUSTE MANUAL -->
+    <div class="modal-overlay" id="modal-ajuste">
+      <div class="modal" style="max-width:460px;">
+        <div class="modal__header">
+          <h3>🔧 Ajuste Manual de Stock</h3>
+          <button class="modal__close" onclick="cerrarModalAjuste()">✕</button>
+        </div>
+        <input type="hidden" id="ajuste-id-med"/>
+        <div style="background:rgba(201,168,76,0.08);border:1.5px solid rgba(201,168,76,0.2);border-radius:12px;padding:12px 16px;margin-bottom:18px;">
+          <p style="font-size:13px;color:var(--deep);font-weight:600;" id="ajuste-nombre">—</p>
+          <p style="font-size:12px;color:var(--text-soft);margin-top:4px;">Stock actual: <strong id="ajuste-stock-actual">—</strong></p>
+        </div>
+        <div class="form-group">
+          <label>Nuevo stock total *</label>
+          <input type="number" id="ajuste-cantidad" placeholder="Cantidad correcta" min="0"/>
+        </div>
+        <div class="form-group">
+          <label>Motivo del ajuste</label>
+          <input type="text" id="ajuste-motivo" placeholder="Ej: Conteo físico, corrección de error..."/>
+        </div>
+        <div class="modal-actions">
+          <button class="btn-cancelar" onclick="cerrarModalAjuste()">Cancelar</button>
+          <button class="btn-primary" onclick="guardarAjuste()">Aplicar Ajuste</button>
+        </div>
       </div>
-      <div class="form-group">
-        <label>Precio Unitario ($)</label>
-        <input type="number" id="med-precio" placeholder="0.00" min="0" step="0.01"/>
-      </div>
     </div>
- 
-    <div class="modal-actions">
-      <button class="btn-cancelar" onclick="cerrarModalMed()">Cancelar</button>
-      <button class="btn-primary" onclick="guardarMedicamento()">Guardar</button>
-    </div>
-  </div>
-</div>
- 
-<!-- MODAL ENTRADA DE STOCK — criterio 6 -->
-<div class="modal-overlay" id="modal-entrada">
-  <div class="modal" style="max-width:460px;">
-    <div class="modal__header">
-      <h3>📦 Registrar Entrada de Stock</h3>
-      <button class="modal__close" onclick="cerrarModalEntrada()">✕</button>
-    </div>
-    <input type="hidden" id="entrada-id-med"/>
- 
-    <div style="background:rgba(42,107,94,0.07);border:1.5px solid rgba(42,107,94,0.15);border-radius:12px;padding:12px 16px;margin-bottom:18px;">
-      <p style="font-size:13px;color:var(--deep);font-weight:600;" id="entrada-nombre">—</p>
-    </div>
- 
-    <div class="form-group">
-      <label>Cantidad a ingresar *</label>
-      <input type="number" id="entrada-cantidad" placeholder="Ej: 50" min="1"/>
-    </div>
-    <div class="form-group">
-      <label>Proveedor</label>
-      <input type="text" id="entrada-proveedor" placeholder="Nombre del proveedor"/>
-    </div>
- 
-    <div class="modal-actions">
-      <button class="btn-cancelar" onclick="cerrarModalEntrada()">Cancelar</button>
-      <button class="btn-primary" onclick="guardarEntrada()">Registrar Entrada</button>
-    </div>
-  </div>
-</div>
- 
-<!-- MODAL AJUSTE MANUAL -->
-<div class="modal-overlay" id="modal-ajuste">
-  <div class="modal" style="max-width:460px;">
-    <div class="modal__header">
-      <h3>🔧 Ajuste Manual de Stock</h3>
-      <button class="modal__close" onclick="cerrarModalAjuste()">✕</button>
-    </div>
-    <input type="hidden" id="ajuste-id-med"/>
- 
-    <div style="background:rgba(201,168,76,0.08);border:1.5px solid rgba(201,168,76,0.2);border-radius:12px;padding:12px 16px;margin-bottom:18px;">
-      <p style="font-size:13px;color:var(--deep);font-weight:600;" id="ajuste-nombre">—</p>
-      <p style="font-size:12px;color:var(--text-soft);margin-top:4px;">Stock actual: <strong id="ajuste-stock-actual">—</strong></p>
-    </div>
- 
-    <div class="form-group">
-      <label>Nuevo stock total *</label>
-      <input type="number" id="ajuste-cantidad" placeholder="Cantidad correcta" min="0"/>
-    </div>
-    <div class="form-group">
-      <label>Motivo del ajuste</label>
-      <input type="text" id="ajuste-motivo" placeholder="Ej: Conteo físico, corrección de error..."/>
-    </div>
- 
-    <div class="modal-actions">
-      <button class="btn-cancelar" onclick="cerrarModalAjuste()">Cancelar</button>
-      <button class="btn-primary" onclick="guardarAjuste()">Aplicar Ajuste</button>
-    </div>
-  </div>
-</div>
 
   </main>
 </div>

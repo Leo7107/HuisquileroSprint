@@ -548,10 +548,6 @@ function renderTablaInventario(lista) {
               <div class="action-icons">
                 <button class="icon-btn icon-btn--edit" title="Editar medicamento"
                   onclick='abrirModalEditarMed(${JSON.stringify(m)})'>✏️</button>
-                <button class="icon-btn icon-btn--edit" title="Agregar unidades al inventario"
-                  onclick="abrirModalEntrada(${m.idMedicamento}, '${m.nombre}')">➕</button>
-                <button class="icon-btn icon-btn--toggle" title="Corregir cantidad en inventario"
-                  onclick="abrirModalAjuste(${m.idMedicamento}, '${m.nombre}', ${m.stock_actual})">📝</button>
                 <button
                   class="icon-btn"
                   style="background:${esActivo ? 'rgba(200,50,50,0.15)' : 'rgba(42,107,94,0.15)'};"
@@ -608,19 +604,19 @@ async function cargarMovimientos() {
             : m.tipo_movimiento === 'SALIDA'
               ? 'color:#c03030;'
               : 'color:var(--gold);';
+          const simbolo = m.tipo_movimiento === 'ENTRADA' ? '+' : m.tipo_movimiento === 'SALIDA' ? '-' : '±';
           return `
             <tr>
               <td>${m.fecha_movimiento ? m.fecha_movimiento.split('T')[0] : '–'}</td>
               <td><strong>${m.nombreMedicamento || '–'}</strong></td>
               <td style="${colorTipo}font-weight:700;">${m.tipo_movimiento}</td>
-              <td>${m.tipo_movimiento === 'ENTRADA' ? '+' : m.tipo_movimiento === 'SALIDA' ? '-' : '±'}${m.cantidad}</td>
+              <td>${simbolo}${m.cantidad}</td>
               <td>${m.stock_anterior} → ${m.stock_nuevo}</td>
               <td>${m.motivo || '–'}</td>
               <td>${m.proveedor || '–'}</td>
-              <td>${m.nombreUsuario ? `${m.nombreUsuario} ${m.apellidosUsuario || ''}` : '–'}</td>
             </tr>`;
         }).join('')
-      : '<tr><td colspan="8" style="text-align:center;color:var(--text-soft);padding:20px;">Sin movimientos registrados</td></tr>';
+      : '<tr><td colspan="7" style="text-align:center;color:var(--text-soft);padding:20px;">Sin movimientos registrados</td></tr>';
   } catch { /* sin datos */ }
 }
 
@@ -645,6 +641,16 @@ function abrirModalNuevoMed() {
   document.getElementById('med-unidad').value      = 'tableta';
   document.getElementById('med-precio').value      = '';
   document.getElementById('modal-med-titulo').textContent = 'Nuevo Medicamento';
+
+  // Desbloquear stock al crear
+  document.getElementById('med-stock').removeAttribute('readonly');
+  document.getElementById('med-stock').style.opacity = '1';
+  document.getElementById('med-stock').style.cursor  = 'auto';
+  document.getElementById('med-stock-min').removeAttribute('readonly');
+  document.getElementById('med-stock-min').style.opacity = '1';
+  document.getElementById('med-stock-min').style.cursor  = 'auto';
+
+  document.getElementById('acciones-stock-modal').style.display = 'none';
   document.getElementById('modal-medicamento').classList.add('active');
 }
 
@@ -657,6 +663,16 @@ function abrirModalEditarMed(m) {
   document.getElementById('med-unidad').value      = m.unidad_medida;
   document.getElementById('med-precio').value      = m.precio_unitario || '';
   document.getElementById('modal-med-titulo').textContent = 'Editar Medicamento';
+
+  // Bloquear stock al editar
+  document.getElementById('med-stock').setAttribute('readonly', true);
+  document.getElementById('med-stock').style.opacity = '0.6';
+  document.getElementById('med-stock').style.cursor  = 'not-allowed';
+  document.getElementById('med-stock-min').setAttribute('readonly', true);
+  document.getElementById('med-stock-min').style.opacity = '0.6';
+  document.getElementById('med-stock-min').style.cursor  = 'not-allowed';
+
+  document.getElementById('acciones-stock-modal').style.display = 'block';
   document.getElementById('modal-medicamento').classList.add('active');
 }
 
@@ -774,4 +790,16 @@ function switchTabInv(tab) {
   document.getElementById('tab-inv-movimientos').style.display  = tab === 'movimientos'  ? 'block' : 'none';
   document.getElementById('tab-medicamentos').classList.toggle('active', tab === 'medicamentos');
   document.getElementById('tab-movimientos').classList.toggle('active',  tab === 'movimientos');
+}
+
+function abrirDesdeEditar(tipo) {
+  const id     = document.getElementById('med-id').value;
+  const nombre = document.getElementById('med-nombre').value;
+  const stock  = parseInt(document.getElementById('med-stock').value) || 0;
+  cerrarModalMed();
+  if (tipo === 'entrada') {
+    abrirModalEntrada(id, nombre);
+  } else {
+    abrirModalAjuste(id, nombre, stock);
+  }
 }

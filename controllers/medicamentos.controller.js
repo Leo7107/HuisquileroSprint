@@ -28,7 +28,6 @@ exports.getById = (req, res) => {
   });
 };
 
-
 exports.create = (req, res) => {
   const { nombre, descripcion, stock_actual, stock_minimo, unidad_medida, precio_unitario } = req.body;
   if (!nombre) return res.status(400).json({ error: 'El nombre es requerido' });
@@ -39,16 +38,14 @@ exports.create = (req, res) => {
   });
 };
 
-
 exports.update = (req, res) => {
-  const { nombre, descripcion, stock_minimo, unidad_medida, precio_unitario } = req.body;
-  const data = { nombre, descripcion, stock_minimo, unidad_medida, precio_unitario };
+  const { nombre, descripcion, stock_actual, stock_minimo, unidad_medida, precio_unitario } = req.body;
+  const data = { nombre, descripcion, stock_actual, stock_minimo, unidad_medida, precio_unitario };
   Medicamento.update(req.params.id, data, (err) => {
     if (err) return res.status(500).json({ error: err });
     res.json({ message: 'Medicamento actualizado' });
   });
 };
-
 
 exports.toggleEstado = (req, res) => {
   const { estado } = req.body;
@@ -57,7 +54,6 @@ exports.toggleEstado = (req, res) => {
     res.json({ message: `Medicamento ${estado}` });
   });
 };
-
 
 exports.registrarEntrada = (req, res) => {
   const { cantidad, proveedor } = req.body;
@@ -89,14 +85,12 @@ exports.descontarStock = (req, res) => {
   });
 };
 
-
 exports.getMovimientos = (req, res) => {
   Medicamento.getMovimientos((err, rows) => {
     if (err) return res.status(500).json({ error: err });
     res.json(rows);
   });
 };
-
 
 exports.getMovimientosByMedicamento = (req, res) => {
   Medicamento.getMovimientosByMedicamento(req.params.id, (err, rows) => {
