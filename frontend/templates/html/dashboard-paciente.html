@@ -3,10 +3,11 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Medisync – Paciente</title>
+  <title>MedySync – Paciente</title>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="/css/dashboard.css"/>
   <style>
+    /* ── Overrides y estilos HU11 ─────────────────────────────── */
     .modal-overlay {
       display: none; position: fixed; inset: 0;
       background: rgba(26,46,42,0.55); z-index: 1000;
@@ -15,12 +16,13 @@
     .modal-overlay.active { display: flex; }
     .modal {
       background: #fff; border-radius: 20px; padding: 32px;
-      width: min(560px, 92vw); max-height: 90vh; overflow-y: auto;
+      width: min(600px, 92vw); max-height: 90vh; overflow-y: auto;
       box-shadow: 0 24px 64px rgba(26,46,42,0.22); animation: fadeDown 0.25s ease;
     }
     .modal h3 {
       font-family: 'Playfair Display', serif; font-size: 1.25rem;
       color: var(--deep); margin-bottom: 22px;
+      padding-bottom: 12px; border-bottom: 1px solid var(--border);
     }
     .form-group { margin-bottom: 14px; }
     .form-group label {
@@ -36,6 +38,7 @@
     .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
       outline: none; border-color: var(--teal); background: #fff;
     }
+    .form-group input[readonly] { background: #f0f0f0; color: var(--text-soft); cursor: default; }
     .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
     .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 22px; }
     .btn-cancelar {
@@ -51,6 +54,13 @@
       font-family: 'DM Sans', sans-serif; transition: opacity 0.2s, transform 0.15s;
     }
     .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
+    .btn-danger {
+      padding: 10px 22px; border: none; border-radius: 11px;
+      background: linear-gradient(135deg, #c03030, #e04040);
+      color: #fff; cursor: pointer; font-weight: 700; font-size: 13px;
+      font-family: 'DM Sans', sans-serif; transition: opacity 0.2s;
+    }
+    .btn-danger:hover { opacity: 0.88; }
     .header-btn {
       padding: 8px 18px; border: none; border-radius: 10px;
       background: linear-gradient(135deg, var(--teal), var(--teal-light));
@@ -76,6 +86,86 @@
       border-radius: 11px; padding: 10px 14px; font-size: 12.5px; color: var(--teal);
       font-weight: 600; margin-bottom: 14px; display: none;
     }
+
+    /* ── Detalle de cita ─────────────────────────────────────── */
+    .detalle-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 20px;
+    }
+    .detalle-item { background: var(--cream); border-radius: 12px; padding: 12px 14px; }
+    .detalle-item__label {
+      font-size: 10px; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 0.06em; color: var(--text-soft); margin-bottom: 4px;
+    }
+    .detalle-item__value { font-size: 14px; font-weight: 600; color: var(--deep); }
+    .detalle-item--full { grid-column: 1 / -1; }
+
+    /* ── Sección de documentos ───────────────────────────────── */
+    .docs-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px;
+      margin-top: 8px;
+    }
+    .doc-card {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 8px; padding: 20px 12px; background: var(--cream);
+      border: 1.5px solid var(--border); border-radius: 14px; cursor: pointer;
+      font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 600;
+      color: var(--text); transition: all 0.22s; text-align: center;
+      position: relative; overflow: hidden;
+    }
+    .doc-card::before {
+      content: ''; position: absolute; inset: 0;
+      background: linear-gradient(135deg, var(--teal), var(--teal-light));
+      opacity: 0; transition: opacity 0.25s;
+    }
+    .doc-card:hover::before { opacity: 1; }
+    .doc-card:hover { color: white; border-color: var(--teal); transform: translateY(-2px); box-shadow: 0 8px 20px rgba(42,107,94,0.22); }
+    .doc-card span { position: relative; z-index: 1; }
+    .doc-card span:first-child { font-size: 28px; }
+    .doc-card__badge {
+      position: relative; z-index: 1; font-size: 10px; padding: 2px 8px;
+      background: rgba(42,107,94,0.12); color: var(--teal); border-radius: 100px;
+    }
+    .doc-card:hover .doc-card__badge { background: rgba(255,255,255,0.2); color: white; }
+
+    /* ── Recetas tabla con botón PDF ─────────────────────────── */
+    .btn-pdf {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 4px 12px; border: 1.5px solid rgba(201,168,76,0.4);
+      border-radius: 8px; background: rgba(201,168,76,0.1); color: #7a5c00;
+      font-size: 11.5px; font-weight: 600; font-family: 'DM Sans', sans-serif;
+      cursor: pointer; transition: all 0.2s;
+    }
+    .btn-pdf:hover { background: var(--gold); color: var(--deep); border-color: var(--gold); box-shadow: 0 3px 10px rgba(201,168,76,0.3); }
+
+    /* ── Toast notificaciones ────────────────────────────────── */
+    #toast {
+      position: fixed; bottom: 28px; right: 28px; z-index: 9999;
+      padding: 14px 22px; border-radius: 14px; font-size: 13.5px; font-weight: 600;
+      font-family: 'DM Sans', sans-serif; box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+      display: none; animation: fadeUp 0.3s ease;
+      max-width: 340px; line-height: 1.4;
+    }
+    #toast.success { background: var(--teal);  color: #fff; }
+    #toast.error   { background: #c03030;       color: #fff; }
+    #toast.warning { background: var(--gold);   color: var(--deep); }
+
+    /* ── Confirmación peligrosa ──────────────────────────────── */
+    .confirm-box {
+      background: rgba(192,48,48,0.06); border: 1.5px solid rgba(192,48,48,0.2);
+      border-radius: 12px; padding: 16px 18px; margin-bottom: 18px;
+    }
+    .confirm-box p { font-size: 13.5px; color: var(--deep); line-height: 1.5; }
+    .confirm-box strong { color: #c03030; }
+
+    /* ── Estado badge colores ────────────────────────────────── */
+    .badge--confirmada  { background: rgba(42,107,94,0.12); color: var(--teal); }
+    .badge--pendiente   { background: rgba(201,168,76,0.15); color: #7a5c00; }
+    .badge--cancelada   { background: rgba(200,50,50,0.1); color: #c03030; }
+    .badge--completada  { background: rgba(26,46,42,0.08); color: var(--deep); }
+    .badge--en-atencion { background: rgba(61,140,124,0.15); color: var(--teal-light); }
+
+    /* ── Estadísticas dinámicas ──────────────────────────────── */
+    .stat-num { transition: all 0.4s ease; }
   </style>
 </head>
 <body>
@@ -85,15 +175,16 @@
   <aside class="sidebar">
     <div class="sidebar__brand">
       <span class="brand-icon">✦</span>
-      <span class="brand-name">Medisync</span>
+      <span class="brand-name">MedySync</span>
     </div>
     <div class="sidebar__rol sidebar__rol--paciente">Paciente</div>
     <nav class="sidebar__nav">
-      <a href="#" class="nav-item active" onclick="nav('inicio',this);return false;"><span class="nav-icon">⊞</span> Mi Panel</a>
-      <a href="#" class="nav-item" onclick="nav('citas',this);return false;"><span class="nav-icon">📅</span> Mis Citas</a>
-      <a href="#" class="nav-item" onclick="nav('consultas',this);return false;"><span class="nav-icon">🩺</span> Mis Consultas</a>
-      <a href="#" class="nav-item" onclick="nav('recetas',this);return false;"><span class="nav-icon">💊</span> Mis Recetas</a>
-      <a href="#" class="nav-item" onclick="nav('perfil',this);return false;"><span class="nav-icon">👤</span> Mi Perfil</a>
+      <a href="#" class="nav-item active"  onclick="nav('inicio',this);return false;"><span class="nav-icon">⊞</span> Mi Panel</a>
+      <a href="#" class="nav-item"         onclick="nav('citas',this);return false;"><span class="nav-icon">📅</span> Mis Citas</a>
+      <a href="#" class="nav-item"         onclick="nav('consultas',this);return false;"><span class="nav-icon">🩺</span> Mis Consultas</a>
+      <a href="#" class="nav-item"         onclick="nav('recetas',this);return false;"><span class="nav-icon">💊</span> Mis Recetas</a>
+      <a href="#" class="nav-item"         onclick="nav('documentos',this);return false;"><span class="nav-icon">📄</span> Mis Documentos</a>
+      <a href="#" class="nav-item"         onclick="nav('perfil',this);return false;"><span class="nav-icon">👤</span> Mi Perfil</a>
     </nav>
     <button class="sidebar__logout" onclick="cerrarSesion()"><span>⏻</span> Cerrar sesión</button>
   </aside>
@@ -109,7 +200,7 @@
         <div class="avatar avatar--paciente" id="avatar-inicial">P</div>
         <div>
           <div class="usuario-nombre" id="usuario-nombre">Paciente</div>
-          <div class="usuario-rol">Medisync</div>
+          <div class="usuario-rol">MedySync</div>
         </div>
       </div>
     </header>
@@ -119,15 +210,24 @@
       <section class="stats-grid">
         <div class="stat-card stat-card--teal">
           <div class="stat-icon">📅</div>
-          <div class="stat-info"><div class="stat-num">1</div><div class="stat-label">Próxima Cita</div></div>
+          <div class="stat-info">
+            <div class="stat-num" id="stat-proximas">—</div>
+            <div class="stat-label">Citas Activas</div>
+          </div>
         </div>
         <div class="stat-card stat-card--gold">
           <div class="stat-icon">🩺</div>
-          <div class="stat-info"><div class="stat-num">5</div><div class="stat-label">Consultas Previas</div></div>
+          <div class="stat-info">
+            <div class="stat-num" id="stat-consultas">—</div>
+            <div class="stat-label">Consultas Previas</div>
+          </div>
         </div>
         <div class="stat-card stat-card--soft">
           <div class="stat-icon">💊</div>
-          <div class="stat-info"><div class="stat-num">2</div><div class="stat-label">Recetas Activas</div></div>
+          <div class="stat-info">
+            <div class="stat-num" id="stat-recetas">—</div>
+            <div class="stat-label">Recetas Emitidas</div>
+          </div>
         </div>
       </section>
       <div class="panels-row">
@@ -137,10 +237,9 @@
             <a href="#" class="panel__link" onclick="nav('citas',null);return false;">Ver todas →</a>
           </div>
           <table class="tabla">
-            <thead><tr><th>Fecha</th><th>Hora</th><th>Doctor</th><th>Estado</th></tr></thead>
-            <tbody>
-              <tr><td>10/03/2026</td><td>09:00</td><td>Dr. Carlos Hernández</td><td><span class="badge badge--activo">Confirmada</span></td></tr>
-              <tr><td>18/03/2026</td><td>11:30</td><td>Dra. Ana Martínez</td><td><span class="badge badge--pendiente">Pendiente</span></td></tr>
+            <thead><tr><th>Fecha</th><th>Hora</th><th>Doctor</th><th>Estado</th><th>Acciones</th></tr></thead>
+            <tbody id="tbody-citas-inicio">
+              <tr><td colspan="5" style="text-align:center;color:var(--text-soft);padding:20px;">Cargando...</td></tr>
             </tbody>
           </table>
         </div>
@@ -149,22 +248,10 @@
           <div class="acciones-grid">
             <button class="accion-btn" onclick="abrirModalCita()"><span>📅</span><span>Nueva Cita</span></button>
             <button class="accion-btn" onclick="nav('citas',this)"><span>📋</span><span>Mis Citas</span></button>
-            <button class="accion-btn" onclick="nav('consultas',this)"><span>🩺</span><span>Mis Consultas</span></button>
+            <button class="accion-btn" onclick="nav('documentos',this)"><span>📄</span><span>Documentos</span></button>
             <button class="accion-btn" onclick="nav('recetas',this)"><span>💊</span><span>Mis Recetas</span></button>
           </div>
         </div>
-      </div>
-      <div class="panel">
-        <div class="panel__header">
-          <h2>Mis Últimas Consultas</h2>
-          <a href="#" class="panel__link" onclick="nav('consultas',null);return false;">Ver historial →</a>
-        </div>
-        <table class="tabla">
-          <thead><tr><th>Fecha</th><th>Doctor</th><th>Motivo</th><th>Hora</th><th>Estado</th></tr></thead>
-          <tbody id="tbody-consultas-inicio">
-            <tr><td colspan="5" style="text-align:center;color:var(--text-soft);padding:20px;">No tienes consultas anteriores</td></tr>
-          </tbody>
-        </table>
       </div>
     </div>
 
@@ -177,10 +264,13 @@
         </div>
         <table class="tabla">
           <thead>
-            <tr><th>ID</th><th>Fecha</th><th>Hora</th><th>Doctor</th><th>Motivo</th><th>Estado</th></tr>
+            <tr>
+              <th>ID</th><th>Fecha</th><th>Hora</th><th>Doctor</th>
+              <th>Motivo</th><th>Estado</th><th>Acciones</th>
+            </tr>
           </thead>
           <tbody id="tbody-citas">
-            <tr><td colspan="6" style="text-align:center;color:var(--text-soft);padding:20px;">Cargando...</td></tr>
+            <tr><td colspan="7" style="text-align:center;color:var(--text-soft);padding:20px;">Cargando...</td></tr>
           </tbody>
         </table>
       </div>
@@ -204,11 +294,59 @@
       <div class="panel">
         <div class="panel__header"><h2>Mis Recetas</h2></div>
         <table class="tabla">
-          <thead><tr><th>Medicamento</th><th>Dosis</th><th>Frecuencia</th><th>Duración</th><th>Indicaciones</th></tr></thead>
+          <thead>
+            <tr>
+              <th>Medicamento</th><th>Dosis</th><th>Frecuencia</th>
+              <th>Duración</th><th>Indicaciones</th><th>PDF</th>
+            </tr>
+          </thead>
           <tbody id="tbody-recetas">
-            <tr><td colspan="5" style="text-align:center;color:var(--text-soft);padding:20px;">Cargando...</td></tr>
+            <tr><td colspan="6" style="text-align:center;color:var(--text-soft);padding:20px;">Cargando...</td></tr>
           </tbody>
         </table>
+      </div>
+    </div>
+
+    <!-- ══ DOCUMENTOS ══ -->
+    <div id="sec-documentos" style="display:none;">
+      <div class="panel">
+        <div class="panel__header">
+          <h2>Mis Documentos</h2>
+        </div>
+        <p style="font-size:13px;color:var(--text-soft);margin-bottom:22px;">
+          Descarga tus documentos médicos en PDF. Generados en tiempo real con tu información actualizada.
+        </p>
+        <div class="docs-grid">
+          <div class="doc-card" onclick="descargarHistorial()">
+            <span>📋</span>
+            <span>Historial Clínico Completo</span>
+            <span class="doc-card__badge">PDF · Completo</span>
+          </div>
+          <div class="doc-card" onclick="descargarDiagnosticos()">
+            <span>🔬</span>
+            <span>Diagnósticos</span>
+            <span class="doc-card__badge">PDF · Por consulta</span>
+          </div>
+        </div>
+
+        <div style="margin-top:32px;">
+          <div class="panel__header">
+            <h2>Recetas Individuales</h2>
+          </div>
+          <p style="font-size:13px;color:var(--text-soft);margin-bottom:16px;">
+            Descarga cada receta por separado.
+          </p>
+          <table class="tabla">
+            <thead>
+              <tr>
+                <th>Medicamento</th><th>Dosis</th><th>Frecuencia</th><th>Duración</th><th>Descargar</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-recetas-docs">
+              <tr><td colspan="5" style="text-align:center;color:var(--text-soft);padding:20px;">Cargando...</td></tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
 
@@ -219,26 +357,18 @@
 
         <h3 style="font-size:14px;font-weight:700;color:var(--deep);margin:8px 0 16px;">Datos de la Cuenta</h3>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:28px;">
-          <div class="form-group"><label>Nombres</label>
-            <input type="text" id="perf-nombres" readonly style="background:#f5f5f5;"/></div>
-          <div class="form-group"><label>Apellidos</label>
-            <input type="text" id="perf-apellidos" readonly style="background:#f5f5f5;"/></div>
-          <div class="form-group"><label>Correo</label>
-            <input type="email" id="perf-email" readonly style="background:#f5f5f5;"/></div>
-          <div class="form-group"><label>Fecha de nacimiento</label>
-            <input type="text" id="perf-fecha-nac" readonly style="background:#f5f5f5;"/></div>
-          <div class="form-group"><label>Sexo</label>
-            <input type="text" id="perf-sexo" readonly style="background:#f5f5f5;"/></div>
-          <div class="form-group"><label>N° Expediente</label>
-            <input type="text" id="perf-expediente" readonly style="background:#f5f5f5;"/></div>
+          <div class="form-group"><label>Nombres</label><input type="text" id="perf-nombres" readonly/></div>
+          <div class="form-group"><label>Apellidos</label><input type="text" id="perf-apellidos" readonly/></div>
+          <div class="form-group"><label>Correo</label><input type="email" id="perf-email" readonly/></div>
+          <div class="form-group"><label>Fecha de nacimiento</label><input type="text" id="perf-fecha-nac" readonly/></div>
+          <div class="form-group"><label>Sexo</label><input type="text" id="perf-sexo" readonly/></div>
+          <div class="form-group"><label>N° Expediente</label><input type="text" id="perf-expediente" readonly/></div>
         </div>
 
         <h3 style="font-size:14px;font-weight:700;color:var(--deep);margin-bottom:16px;">Datos de Contacto</h3>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:28px;">
-          <div class="form-group"><label>Teléfono</label>
-            <input type="text" id="perf-telefono"/></div>
-          <div class="form-group"><label>Dirección</label>
-            <input type="text" id="perf-direccion"/></div>
+          <div class="form-group"><label>Teléfono</label><input type="text" id="perf-telefono"/></div>
+          <div class="form-group"><label>Dirección</label><input type="text" id="perf-direccion"/></div>
         </div>
 
         <h3 style="font-size:14px;font-weight:700;color:var(--deep);margin-bottom:16px;">Información Clínica y Emergencia</h3>
@@ -252,28 +382,18 @@
               <option>AB+</option><option>AB-</option>
             </select>
           </div>
-          <div class="form-group"><label>Contacto de Emergencia</label>
-            <input type="text" id="perf-contacto-emg"/></div>
-          <div class="form-group"><label>Parentesco</label>
-            <input type="text" id="perf-parentesco" placeholder="Madre, Padre, Hermano..."/></div>
-          <div class="form-group"><label>Teléfono de Emergencia</label>
-            <input type="text" id="perf-tel-emg"/></div>
+          <div class="form-group"><label>Contacto de Emergencia</label><input type="text" id="perf-contacto-emg"/></div>
+          <div class="form-group"><label>Parentesco</label><input type="text" id="perf-parentesco" placeholder="Madre, Padre, Hermano..."/></div>
+          <div class="form-group"><label>Teléfono de Emergencia</label><input type="text" id="perf-tel-emg"/></div>
         </div>
 
         <h3 style="font-size:14px;font-weight:700;color:var(--deep);margin:12px 0 16px;">Historial Clínico</h3>
-        <div class="form-group"><label>Alergias</label>
-          <textarea id="perf-alergias" rows="2" placeholder="Ej: Penicilina, mariscos..."></textarea></div>
-        <div class="form-group"><label>Antecedentes familiares</label>
-          <textarea id="perf-ant-fam" rows="2" placeholder="Enfermedades hereditarias..."></textarea></div>
-        <div class="form-group"><label>Antecedentes personales</label>
-          <textarea id="perf-ant-per" rows="2" placeholder="Enfermedades que has tenido..."></textarea></div>
-        <div class="form-group"><label>Padecimientos crónicos</label>
-          <textarea id="perf-cronicos" rows="2" placeholder="Diabetes, hipertensión..."></textarea></div>
-        <div class="form-group"><label>Cirugías previas</label>
-          <textarea id="perf-cirugias" rows="2" placeholder="Cirugías que te han hecho..."></textarea></div>
-        <div class="form-group"><label>Observaciones generales</label>
-          <textarea id="perf-observaciones" rows="2"></textarea></div>
-
+        <div class="form-group"><label>Alergias</label><textarea id="perf-alergias" rows="2" placeholder="Ej: Penicilina, mariscos..."></textarea></div>
+        <div class="form-group"><label>Antecedentes familiares</label><textarea id="perf-ant-fam" rows="2"></textarea></div>
+        <div class="form-group"><label>Antecedentes personales</label><textarea id="perf-ant-per" rows="2"></textarea></div>
+        <div class="form-group"><label>Padecimientos crónicos</label><textarea id="perf-cronicos" rows="2"></textarea></div>
+        <div class="form-group"><label>Cirugías previas</label><textarea id="perf-cirugias" rows="2"></textarea></div>
+        <div class="form-group"><label>Observaciones generales</label><textarea id="perf-observaciones" rows="2"></textarea></div>
         <div style="display:flex;justify-content:flex-end;margin-top:20px;">
           <button class="btn-primary" onclick="guardarPerfil()" style="padding:12px 32px;">Guardar cambios</button>
         </div>
@@ -283,15 +403,19 @@
   </main>
 </div>
 
-<!-- MODAL NUEVA CITA -->
+<!-- ════════════════════════════════════════════════════════════
+     MODALES
+════════════════════════════════════════════════════════════ -->
+
+<!-- Modal Nueva / Reagendar Cita -->
 <div class="modal-overlay" id="modal-cita">
   <div class="modal">
-    <h3>Solicitar Nueva Cita</h3>
+    <h3 id="modal-cita-titulo">Solicitar Nueva Cita</h3>
     <div class="form-row">
       <div class="form-group"><label>Fecha</label><input type="date" id="cita-fecha"/></div>
       <div class="form-group"><label>Hora</label><input type="time" id="cita-hora"/></div>
     </div>
-    <div class="form-group autocomplete-wrap">
+    <div class="form-group autocomplete-wrap" id="doctor-wrap">
       <label>Doctor</label>
       <input type="text" id="cita-doctor-nombre" placeholder="Buscar doctor..."
         oninput="buscarDoctor()" autocomplete="off"/>
@@ -299,16 +423,50 @@
       <div id="sugerencias-doctor" class="autocomplete-lista"></div>
     </div>
     <div class="horario-info" id="horario-info">🕐 Horario disponible: <span id="horario-texto"></span></div>
-    <div class="form-group">
+    <div class="form-group" id="motivo-wrap">
       <label>Motivo</label>
       <textarea id="cita-motivo" rows="3" placeholder="Describe el motivo de tu cita..."></textarea>
     </div>
     <div class="modal-actions">
       <button class="btn-cancelar" onclick="cerrarModalCita()">Cancelar</button>
-      <button class="btn-primary" onclick="solicitarCita()">Guardar</button>
+      <button class="btn-primary" id="btn-guardar-cita" onclick="guardarCitaModal()">Guardar</button>
     </div>
   </div>
 </div>
+
+<!-- Modal Ver Detalle Cita -->
+<div class="modal-overlay" id="modal-detalle">
+  <div class="modal">
+    <h3>Detalle de la Cita</h3>
+    <div class="detalle-grid" id="detalle-contenido">
+      <!-- Inyectado por JS -->
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancelar" onclick="cerrarModal('modal-detalle')">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Confirmar Cancelación -->
+<div class="modal-overlay" id="modal-cancelar">
+  <div class="modal" style="width:min(480px,92vw);">
+    <h3>Cancelar Cita</h3>
+    <div class="confirm-box">
+      <p>¿Estás seguro de que deseas cancelar la cita del<br>
+         <strong id="cancelar-info">—</strong>?<br>
+         <span style="font-size:12px;color:var(--text-soft);">Esta acción no se puede deshacer.</span>
+      </p>
+    </div>
+    <input type="hidden" id="cancelar-id-cita"/>
+    <div class="modal-actions">
+      <button class="btn-cancelar" onclick="cerrarModal('modal-cancelar')">No, mantener</button>
+      <button class="btn-danger"   onclick="confirmarCancelacion()">Sí, cancelar cita</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
 
 <script src="/js/dashboard-paciente.js"></script>
 </body>

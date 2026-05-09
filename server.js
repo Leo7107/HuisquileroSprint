@@ -9,6 +9,7 @@ app.use(express.static(path.join(__dirname, "frontend/templates")));
 app.use('/css', express.static(path.join(__dirname, "frontend/templates/css")));
 app.use('/js', express.static(path.join(__dirname, "frontend/templates/js")));
 
+
 app.get("/", (req, res) => {
     res.sendFile(path.join(__dirname, "frontend/templates/html", "login.html"));
 });
@@ -17,6 +18,7 @@ app.get("/html/:pagina", (req, res) => {
     res.sendFile(path.join(__dirname, "frontend/templates/html", req.params.pagina));
 });
 
+const pdfRoutes   = require('./routes/pdf.routes.js');
 const consultasRoutes = require("./routes/consultas.routes");
 const facturasRoutes = require("./routes/facturas.routes");
 const recetasRoutes = require("./routes/recetas.routes");
@@ -41,7 +43,8 @@ app.use("/api/diagnosticos", diagnosticosRoutes);
 app.use("/api/historial", historialRoutes);
 app.use("/api/detalles-factura", detallesFacturaRoutes);
 app.use("/api/perfil", perfilRoutes); 
-app.use("/api/medicamentos", medicamentosRoutes);  
+app.use("/api/medicamentos", medicamentosRoutes); 
+app.use('/api/pdf', pdfRoutes); 
 
 const PORT = process.env.PORT || 3000;
 

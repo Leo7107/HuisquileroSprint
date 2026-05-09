@@ -1,13 +1,19 @@
 const express = require("express");
-const router = express.Router();
+const router  = express.Router();
 const citasController = require("../controllers/citas.controller");
+const auth    = require("../middleware/auth");
 
-router.get("/", citasController.getCitas);
-router.get("/paciente/:idUsuario", citasController.getCitasByPaciente);
-router.get("/:id", citasController.getCitaById);
-router.post("/", citasController.createCita);
-router.put("/:id", citasController.updateCita);
-router.delete("/:id", citasController.deleteCita);
-router.patch("/:id/completar", citasController.completarCita);
+// ── EXISTENTES ────────────────────────────────────────────────────────────────
+router.get("/",                        auth, citasController.getCitas);
+router.get("/paciente/:idUsuario",     auth, citasController.getCitasByPaciente);
+router.get("/porpaciente/:idPaciente", auth, citasController.getCitasByIdPaciente);
+router.get("/doctor/:idDoctor",        auth, citasController.getCitasByDoctor);   // ← NUEVO
+router.get("/:id",                     auth, citasController.getCitaById);
+router.post("/",                       auth, citasController.createCita);
+router.put("/:id",                     auth, citasController.updateCita);
+router.delete("/:id",                  auth, citasController.deleteCita);
+router.patch("/:id/completar",         auth, citasController.completarCita);
+router.patch("/:id/cancelar",          auth, citasController.cancelarCita);
+router.put("/:id/reprogramar",         auth, citasController.reprogramarCita);
 
 module.exports = router;
