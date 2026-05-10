@@ -740,6 +740,52 @@ async function guardarPreconsulta() {
     return;
   }
 
+  // ── Validaciones de rango clínico ──────────────────────────────────────────
+  const erroresClinico = [];
+
+  if (peso !== null) {
+    if (peso < 0.5 || peso > 500)
+      erroresClinico.push(`Peso fuera de rango clínico: ${peso} kg (rango válido: 0.5 – 500 kg)`);
+  }
+  if (altura !== null) {
+    if (altura < 20 || altura > 250)
+      erroresClinico.push(`Talla fuera de rango clínico: ${altura} cm (rango válido: 20 – 250 cm)`);
+  }
+  if (temp !== null) {
+    if (temp < 32 || temp > 43)
+      erroresClinico.push(`Temperatura fuera de rango clínico: ${temp}°C (rango válido: 32 – 43°C)`);
+  }
+  if (fc !== null) {
+    if (fc < 30 || fc > 250)
+      erroresClinico.push(`Frecuencia cardíaca fuera de rango: ${fc} lpm (rango válido: 30 – 250 lpm)`);
+  }
+  if (sat !== null) {
+    if (sat < 50 || sat > 100)
+      erroresClinico.push(`Saturación O₂ fuera de rango: ${sat}% (rango válido: 50 – 100%)`);
+  }
+  if (presion) {
+    // Validar formato NNN/NNN y rangos sistólica/diastólica
+    const matchPres = presion.match(/^(\d{2,3})\/(\d{2,3})$/);
+    if (!matchPres) {
+      erroresClinico.push(`Formato de presión arterial inválido: "${presion}". Use el formato 120/80`);
+    } else {
+      const sistolica  = parseInt(matchPres[1]);
+      const diastolica = parseInt(matchPres[2]);
+      if (sistolica < 50 || sistolica > 300)
+        erroresClinico.push(`Presión sistólica fuera de rango: ${sistolica} mmHg (rango válido: 50 – 300)`);
+      if (diastolica < 30 || diastolica > 200)
+        erroresClinico.push(`Presión diastólica fuera de rango: ${diastolica} mmHg (rango válido: 30 – 200)`);
+      if (diastolica >= sistolica)
+        erroresClinico.push(`La presión diastólica (${diastolica}) no puede ser mayor o igual a la sistólica (${sistolica})`);
+    }
+  }
+
+  if (erroresClinico.length) {
+    alert('⚠️ Datos fuera de rango clínico:\n\n' + erroresClinico.join('\n'));
+    return;
+  }
+  // ── Fin validaciones ───────────────────────────────────────────────────────
+
   try {
     const checkRes  = await fetch('/api/consultas', { headers: H });
     const consultas = await checkRes.json();
