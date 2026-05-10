@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const consultasController = require("../controllers/consultas.controller");
 
+router.get("/by-cita/:idCita", consultasController.getConsultaByCita);
 router.get("/", consultasController.getConsultas);
 router.get("/:id", consultasController.getConsultaById);
 router.post("/", consultasController.createConsulta);
