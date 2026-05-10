@@ -1,5 +1,12 @@
 const Consulta = require("../models/consultas.model");
 
+exports.getConsultaByCita = (req, res) => {
+    Consulta.getByCita(req.params.idCita, (err, result) => {
+        if (err) return res.status(500).json({ error: err });
+        res.json(result[0] || null);
+    });
+};
+
 exports.getConsultas = (req, res) => {
     Consulta.getAll((err, results) => {
         if (err) return res.status(500).json({ error: err });
