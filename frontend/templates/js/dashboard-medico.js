@@ -418,25 +418,76 @@ async function cargarPreconsulta(idCita) {
   const bloque = document.getElementById('bloque-preconsulta');
   const datos  = document.getElementById('preconsulta-datos');
   try {
-    const res  = await fetch('/api/consultas', { headers: H });
-    const list = await res.json();
-    const pre  = Array.isArray(list)
-      ? list.find(c => String(c.idCita) === String(idCita))
-      : null;
+    // Usar endpoint directo por cita
+    const res = await fetch(`/api/consultas/by-cita/${idCita}`, { headers: H });
+    const pre = await res.json();
 
-    if (pre) {
+    if (pre && pre.idConsulta) {
+      // Extraer FC y SpO2 de observaciones si están guardados en ese campo
+      let fcVal = '–', satVal = '–', motivoVal = '–', obsVal = '';
+      if (pre.observaciones) {
+        const partes = pre.observaciones.split(' | ');
+        partes.forEach(p => {
+          if (p.startsWith('FC:'))   fcVal   = p.replace('FC:', '').trim();
+          if (p.startsWith('SpO2:')) satVal  = p.replace('SpO2:', '').trim();
+          if (!p.startsWith('FC:') && !p.startsWith('SpO2:')) {
+            if (!motivoVal || motivoVal === '–') motivoVal = p;
+            else obsVal += (obsVal ? ' | ' : '') + p;
+          }
+        });
+      }
+
       datos.innerHTML = `
-        <div class="preconsulta-item"><div class="preconsulta-item__label">Peso</div><div class="preconsulta-item__value">${pre.peso ? pre.peso + ' kg' : '–'}</div></div>
-        <div class="preconsulta-item"><div class="preconsulta-item__label">Presión Arterial</div><div class="preconsulta-item__value">${pre.presion_arterial || '–'}</div></div>
-        <div class="preconsulta-item"><div class="preconsulta-item__label">Temperatura</div><div class="preconsulta-item__value">${pre.temperatura ? pre.temperatura + '°C' : '–'}</div></div>
-        <div class="preconsulta-item"><div class="preconsulta-item__label">Altura</div><div class="preconsulta-item__value">${pre.altura ? pre.altura + ' cm' : '–'}</div></div>`;
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px;">
+          <div class="preconsulta-item">
+            <div class="preconsulta-item__label">Peso</div>
+            <div class="preconsulta-item__value">${pre.peso ? pre.peso + ' kg' : '–'}</div>
+          </div>
+          <div class="preconsulta-item">
+            <div class="preconsulta-item__label">Talla</div>
+            <div class="preconsulta-item__value">${pre.altura ? pre.altura + ' cm' : '–'}</div>
+          </div>
+          <div class="preconsulta-item">
+            <div class="preconsulta-item__label">Temperatura</div>
+            <div class="preconsulta-item__value">${pre.temperatura ? pre.temperatura + '°C' : '–'}</div>
+          </div>
+          <div class="preconsulta-item">
+            <div class="preconsulta-item__label">Presión Arterial</div>
+            <div class="preconsulta-item__value">${pre.presion_arterial || '–'}</div>
+          </div>
+          <div class="preconsulta-item">
+            <div class="preconsulta-item__label">Frec. Cardíaca</div>
+            <div class="preconsulta-item__value">${fcVal}</div>
+          </div>
+          <div class="preconsulta-item">
+            <div class="preconsulta-item__label">Saturación O₂</div>
+            <div class="preconsulta-item__value">${satVal}</div>
+          </div>
+        </div>
+        ${motivoVal && motivoVal !== '–' ? `
+        <div class="preconsulta-item" style="margin-bottom:8px;">
+          <div class="preconsulta-item__label">Motivo de Consulta</div>
+          <div class="preconsulta-item__value" style="white-space:pre-wrap;">${motivoVal}</div>
+        </div>` : ''}
+        ${obsVal ? `
+        <div class="preconsulta-item">
+          <div class="preconsulta-item__label">Observaciones de Enfermería</div>
+          <div class="preconsulta-item__value" style="white-space:pre-wrap;">${obsVal}</div>
+        </div>` : ''}
+        <div style="margin-top:10px;padding:6px 10px;background:rgba(42,107,94,0.06);border-radius:8px;font-size:11px;color:var(--teal);font-weight:600;">
+          🔒 Solo lectura — registrado por recepcionista
+          ${pre.fecha_consulta ? ' · ' + pre.fecha_consulta.split('T')[0] : ''}
+        </div>`;
+
+      // Precargar campos del formulario de consulta (solo lectura de apoyo)
       if (pre.peso)             document.getElementById('con-peso').value    = pre.peso;
       if (pre.presion_arterial) document.getElementById('con-presion').value = pre.presion_arterial;
       if (pre.temperatura)      document.getElementById('con-temp').value    = pre.temperatura;
       if (pre.altura)           document.getElementById('con-altura').value  = pre.altura;
       bloque.style.display = 'block';
     } else {
-      bloque.style.display = 'none';
+      datos.innerHTML = `<div style="font-size:12.5px;color:var(--text-soft);padding:8px 0;">Sin preconsulta registrada para esta cita.</div>`;
+      bloque.style.display = 'block';
     }
   } catch { bloque.style.display = 'none'; }
 }
