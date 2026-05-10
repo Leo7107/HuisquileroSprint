@@ -29,8 +29,13 @@ const citasRoutes = require("./routes/citas.routes");
 const diagnosticosRoutes = require("./routes/diagnosticos.routes");
 const historialRoutes = require("./routes/historial.routes");
 const detallesFacturaRoutes = require("./routes/detalles_factura.routes");
+<<<<<<< Updated upstream
 const perfilRoutes = require("./routes/perfil.routes");   
 const medicamentosRoutes = require("./routes/medicamentos.routes");
+=======
+const perfilRoutes = require("./routes/perfil.routes");   // ← NUEVA LÍNEA
+const router = require("./routes/facturas.routes");
+>>>>>>> Stashed changes
 
 app.use("/api/consultas", consultasRoutes);
 app.use("/api/facturas", facturasRoutes);
@@ -46,8 +51,11 @@ app.use("/api/perfil", perfilRoutes);
 app.use("/api/medicamentos", medicamentosRoutes); 
 app.use('/api/pdf', pdfRoutes); 
 
+
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
     console.log(`🔥 Servidor corriendo en puerto ${PORT}`);
 });
+
+module.exports = router;
