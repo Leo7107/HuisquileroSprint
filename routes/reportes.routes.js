@@ -12,7 +12,7 @@ router.use(auth);
 // Admin
 router.get('/filtros',    ctrl.getFiltros);          // médicos + especialidades
 router.get('/citas',      ctrl.getReporteCitas);     // reporte citas
-router.get('/inventario', ctrl.getReporteInventario);// reporte inventario
+router.get('/inventario', ctrl.getReporteInventario); // reporte inventario (Maneja JSON y PDF con Logs)
 
 // Médico
 router.get('/consultas-medico', ctrl.getReporteConsultasMedico);
