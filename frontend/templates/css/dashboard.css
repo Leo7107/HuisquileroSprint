@@ -1230,3 +1230,203 @@ select.rol-select {
 }
 
 .resultado-item:hover { background: rgba(42,107,94,0.04); }
+
+/* ============================================================
+   HU12 — REPORTES CONSOLIDADOS
+   Pegar al final de dashboard.css
+   ============================================================ */
+
+/* ── Tabs de reporte (nivel superior: Citas / Inventario) ── */
+.rep-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.rep-tab {
+  padding: 10px 22px;
+  border: 1.5px solid var(--border);
+  border-radius: 11px;
+  background: var(--white);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-soft);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.rep-tab:hover {
+  border-color: var(--teal);
+  color: var(--teal);
+}
+
+.rep-tab--active {
+  background: linear-gradient(135deg, var(--teal), var(--teal-light));
+  border-color: var(--teal);
+  color: var(--white);
+  box-shadow: 0 4px 14px rgba(42, 107, 94, 0.25);
+}
+
+/* ── Grid de filtros ───────────────────────────────────────── */
+.rep-filtros-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr auto;
+  gap: 12px;
+  align-items: end;
+}
+
+.rep-input {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: 11px;
+  font-size: 13.5px;
+  color: var(--text);
+  background: var(--cream);
+  font-family: 'DM Sans', sans-serif;
+  box-sizing: border-box;
+  transition: border 0.2s, background 0.2s;
+}
+
+.rep-input:focus {
+  outline: none;
+  border-color: var(--gold);
+  background: var(--white);
+}
+
+.rep-btn-wrap {
+  min-width: 140px;
+}
+
+/* ── Barra de progreso en tabla de citas ──────────────────── */
+.rep-progress-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.rep-progress-bar {
+  flex: 1;
+  height: 6px;
+  background: var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.rep-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--teal), var(--teal-light));
+  border-radius: 4px;
+  transition: width 0.6s ease;
+}
+
+/* ── Diagnósticos frecuentes (médico) ─────────────────────── */
+.rep-diag-item {
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(42, 107, 94, 0.07);
+}
+
+.rep-diag-item:last-child {
+  border-bottom: none;
+}
+
+.rep-diag-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.rep-diag-nombre {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--deep);
+}
+
+.rep-diag-count {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--teal);
+  min-width: 60px;
+  text-align: right;
+}
+
+/* ── Responsive ───────────────────────────────────────────── */
+@media (max-width: 1100px) {
+  .rep-filtros-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .rep-btn-wrap {
+    grid-column: span 2;
+  }
+}
+
+@media (max-width: 640px) {
+  .rep-filtros-grid {
+    grid-template-columns: 1fr;
+  }
+  .rep-btn-wrap {
+    grid-column: span 1;
+  }
+  .rep-tabs {
+    flex-direction: column;
+  }
+}
+
+/* ============================================================
+   HU12 — Reportes médico: layout y tabla recetas
+   Pegar al final de dashboard.css
+   ============================================================ */
+
+/* Filtros grid médico (2 columnas + botón) */
+.rep-filtros-grid-medico {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 12px;
+  align-items: end;
+}
+
+/* Tabla recetas sin truncar texto */
+#repm-tbody-recetas td {
+  white-space: normal;
+  word-break: break-word;
+  vertical-align: top;
+}
+
+/* Contenedor tabla recetas con scroll horizontal si pantalla chica */
+.rep-tabla-recetas-wrap {
+  overflow-x: auto;
+}
+
+.rep-tabla-recetas-wrap .tabla {
+  min-width: 700px;
+}
+
+/* Barra de progreso diagnósticos */
+.rep-diag-bar-wrap {
+  height: 6px;
+  background: var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-top: 6px;
+}
+
+.rep-diag-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--teal), var(--teal-light));
+  border-radius: 4px;
+  transition: width 0.6s ease;
+}
+
+@media (max-width: 1100px) {
+  .rep-filtros-grid-medico {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .rep-filtros-grid-medico {
+    grid-template-columns: 1fr;
+  }
+}

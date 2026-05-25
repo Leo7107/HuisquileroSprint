@@ -7,6 +7,7 @@
  * 3. Mi Horario: filtrado por idDoctor del médico logueado (GET /api/citas/doctor/:idDoctor)
  * 4. Todas las tablas: nombres en vez de IDs
  * 5. Diagnósticos recientes: muestra nombre del paciente
+ * 6. HU12: reportes médico integrados en nav()
  */
 
 const usuario = JSON.parse(localStorage.getItem('usuario') || 'null');
@@ -29,14 +30,14 @@ const token = localStorage.getItem('token');
 const H = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
 
 // ── ESTADO GLOBAL ─────────────────────────────────────────────────────────────
-let todasLasCitas   = [];   // citas del doctor logueado
-let miDoctor        = null; // objeto doctor del usuario logueado
+let todasLasCitas   = [];
+let miDoctor        = null;
 let fechaDia        = new Date();
 let fechaSemana     = new Date();
 let diaSeleccionado = null;
-let todosPacientes  = [];   // para búsqueda en consultas/expediente
+let todosPacientes  = [];
 
-// ── NAVEGACIÓN ────────────────────────────────────────────────────────────────
+// ── NAVEGACIÓN — HU12: hook reportes integrado ────────────────────────────────
 function nav(seccion, linkEl) {
   document.querySelectorAll('[id^="sec-"]').forEach(s => s.style.display = 'none');
   document.getElementById('sec-' + seccion).style.display = 'block';
@@ -50,6 +51,7 @@ function nav(seccion, linkEl) {
   if (seccion === 'diagnostico')         iniciarSeccionDiagnostico();
   if (seccion === 'expediente')          iniciarBuscador();
   if (seccion === 'horario')             iniciarHorario();
+  if (seccion === 'reportes')            iniciarReportesMedico(); // ← HU12
 }
 
 // ── HELPERS ───────────────────────────────────────────────────────────────────
@@ -80,7 +82,7 @@ async function obtenerMiDoctor() {
   } catch { return null; }
 }
 
-// ── CARGAR PACIENTES (para autocompletados) ───────────────────────────────────
+// ── CARGAR PACIENTES ──────────────────────────────────────────────────────────
 async function cargarPacientes() {
   if (todosPacientes.length) return todosPacientes;
   try {
@@ -95,7 +97,6 @@ async function cargarStats() {
   try {
     const doc = await obtenerMiDoctor();
     const idDoctor = doc?.idDoctor;
-
     const citasUrl = idDoctor ? `/api/citas/doctor/${idDoctor}` : '/api/citas';
 
     const [cRes, pRes, conRes, rRes] = await Promise.all([
@@ -121,7 +122,6 @@ async function cargarStats() {
     document.getElementById('s-consultas').textContent = Array.isArray(consultas) ? consultas.length : '–';
     document.getElementById('s-recetas').textContent   = Array.isArray(recetas)   ? recetas.length   : '–';
 
-    // Agenda de hoy
     document.getElementById('citas-preview').innerHTML = citasHoy.length
       ? citasHoy.slice(0, 4).map(c => `
           <tr>
@@ -129,15 +129,12 @@ async function cargarStats() {
             <td>${nombrePaciente(c)}</td>
             <td>${c.motivo || '–'}</td>
             <td>${estadoDot(c.estado)}</td>
-            <td>
-              ${['CONFIRMADA','PENDIENTE'].includes(c.estado)
-                ? `<button class="btn-tabla" onclick="abrirHistorialPaciente(${c.idCita}, ${c.idPaciente})">📋 Ver</button>`
-                : '–'}
-            </td>
+            <td>${['CONFIRMADA','PENDIENTE'].includes(c.estado)
+              ? `<button class="btn-tabla" onclick="abrirHistorialPaciente(${c.idCita}, ${c.idPaciente})">📋 Ver</button>`
+              : '–'}</td>
           </tr>`).join('')
       : '<tr><td colspan="5" style="text-align:center;color:var(--text-soft);padding:16px;">Sin citas para hoy</td></tr>';
 
-    // Pacientes recientes
     const recientes = [...new Map(
       todasLasCitas
         .filter(c => c.NombrePaciente)
@@ -159,7 +156,6 @@ async function cargarStats() {
           </div>`).join('')
       : '<p style="color:var(--text-soft);font-size:13px;padding:12px 0;">Sin pacientes recientes</p>';
 
-    // Consultas recientes
     document.getElementById('consultas-preview').innerHTML = Array.isArray(consultas) && consultas.length
       ? consultas.slice(0,3).map(c => `
           <tr>
@@ -196,7 +192,6 @@ async function abrirHistorialPaciente(idCita, idPaciente) {
     const consultas    = await conRes.json();
     const diagnosticos = await diagRes.json();
     const recetas      = await recRes.json();
-
     const p = Array.isArray(paciente) ? paciente[0] : paciente;
 
     document.getElementById('modal-historial-contenido').innerHTML = `
@@ -210,7 +205,6 @@ async function abrirHistorialPaciente(idCita, idPaciente) {
         </div>
         ${p?.alergias ? `<div style="margin-left:auto;background:rgba(200,50,50,0.07);border:1px solid rgba(200,50,50,0.15);border-radius:10px;padding:8px 12px;font-size:11.5px;color:#c03030;">⚠️ Alergia: ${p.alergias}</div>` : ''}
       </div>
-
       <h4 style="font-size:12.5px;font-weight:700;color:var(--deep);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.06em;">🩺 Últimas Consultas</h4>
       <div class="historial-mini" style="margin-bottom:18px;">
         ${Array.isArray(consultas) && consultas.length
@@ -222,7 +216,6 @@ async function abrirHistorialPaciente(idCita, idPaciente) {
               </div>`).join('')
           : '<p style="color:var(--text-soft);font-size:12.5px;">Sin consultas registradas</p>'}
       </div>
-
       <h4 style="font-size:12.5px;font-weight:700;color:var(--deep);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.06em;">🔬 Diagnósticos Recientes</h4>
       <div class="historial-mini" style="margin-bottom:18px;">
         ${Array.isArray(diagnosticos) && diagnosticos.length
@@ -233,7 +226,6 @@ async function abrirHistorialPaciente(idCita, idPaciente) {
               </div>`).join('')
           : '<p style="color:var(--text-soft);font-size:12.5px;">Sin diagnósticos registrados</p>'}
       </div>
-
       <h4 style="font-size:12.5px;font-weight:700;color:var(--deep);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.06em;">💊 Recetas Recientes</h4>
       <div class="historial-mini">
         ${Array.isArray(recetas) && recetas.length
@@ -258,7 +250,6 @@ function cerrarModalHistorial() {
 function accesoCitaRapido(idCita, idPaciente) {
   nav('consulta', document.querySelector('[onclick*="consulta"]'));
   setTimeout(async () => {
-    // Buscar historial del paciente
     try {
       const res  = await fetch(`/api/historial/by-paciente?idPaciente=${idPaciente}`, { headers: H });
       const data = await res.json();
@@ -272,13 +263,12 @@ function accesoCitaRapido(idCita, idPaciente) {
   }, 150);
 }
 
-// ── SECCIÓN CONSULTAS: autocompletado por nombre de paciente ──────────────────
-let _citaSeleccionada = null; // { idCita, idPaciente, idHistorial, nombre, fecha, hora }
+// ── SECCIÓN CONSULTAS ─────────────────────────────────────────────────────────
+let _citaSeleccionada = null;
 
 async function iniciarSeccionConsulta() {
   await cargarPacientes();
   cargarConsultasRecientes();
-  // Limpiar selección previa si no viene de acceso rápido
   if (!_citaSeleccionada) limpiarSeleccionCita();
 }
 
@@ -296,7 +286,6 @@ function limpiarSeleccionCita() {
 }
 
 function renderCitaSeleccionada() {
-  // Actualizar campos ocultos/visibles con la cita seleccionada
   if (_citaSeleccionada) {
     document.getElementById('con-cita').value      = _citaSeleccionada.idCita      || '';
     document.getElementById('con-historial').value = _citaSeleccionada.idHistorial || '';
@@ -318,7 +307,6 @@ function renderCitaSeleccionada() {
   }
 }
 
-// Autocompletado de paciente en sección consulta
 let _sugTimeoutConsulta = null;
 function buscarPacienteConsulta() {
   clearTimeout(_sugTimeoutConsulta);
@@ -329,7 +317,6 @@ async function _doBuscarPacienteConsulta() {
   const input = document.getElementById('buscar-paciente-consulta');
   const lista = document.getElementById('sug-paciente-consulta');
   const q     = input.value.toLowerCase().trim();
-
   if (!q) { lista.style.display = 'none'; return; }
 
   const pacs = Array.isArray(todosPacientes) ? todosPacientes.filter(p =>
@@ -344,7 +331,6 @@ async function _doBuscarPacienteConsulta() {
           <span>Exp: ${p.numero_expediente || '–'}</span>
         </div>`).join('')
     : '<div class="autocomplete-item" style="color:var(--text-soft);">Sin resultados</div>';
-
   lista.style.display = 'block';
 }
 
@@ -356,7 +342,6 @@ async function seleccionarPacienteConsulta(idPaciente, nombre) {
   document.getElementById('bloque-citas-paciente').style.display = 'block';
 
   try {
-    // Obtener citas activas del paciente
     const pac = todosPacientes.find(p => p.idPaciente === idPaciente);
     const res  = await fetch(`/api/citas/paciente/${pac?.idUsuario || idPaciente}`, { headers: H });
     const citas = await res.json();
@@ -364,7 +349,6 @@ async function seleccionarPacienteConsulta(idPaciente, nombre) {
       ? citas.filter(c => ['PENDIENTE','CONFIRMADA'].includes(c.estado))
       : [];
 
-    // Obtener historial del paciente
     const hRes  = await fetch(`/api/historial/by-paciente?idPaciente=${idPaciente}`, { headers: H });
     const hData = await hRes.json();
     const historial = Array.isArray(hData) ? hData[0] : hData;
@@ -387,8 +371,6 @@ async function seleccionarPacienteConsulta(idPaciente, nombre) {
 
 async function elegirCita(idCita, idPaciente, nombre, fecha, hora, idHistorial) {
   _citaSeleccionada = { idCita, idPaciente, nombre, fecha, hora, idHistorial };
-
-  // Si no se encontró el historial, intentar obtenerlo
   if (!idHistorial) {
     try {
       const res  = await fetch(`/api/historial/by-paciente?idPaciente=${idPaciente}`, { headers: H });
@@ -397,14 +379,12 @@ async function elegirCita(idCita, idPaciente, nombre, fecha, hora, idHistorial) 
       _citaSeleccionada.idHistorial = h?.idHistorial || null;
     } catch {}
   }
-
   document.getElementById('bloque-citas-paciente').style.display = 'none';
   document.getElementById('buscar-paciente-consulta').value = '';
   renderCitaSeleccionada();
   cargarPreconsulta(idCita);
 }
 
-// Cerrar sugerencias al click fuera
 document.addEventListener('click', (e) => {
   const inp = document.getElementById('buscar-paciente-consulta');
   const sug = document.getElementById('sug-paciente-consulta');
@@ -418,12 +398,10 @@ async function cargarPreconsulta(idCita) {
   const bloque = document.getElementById('bloque-preconsulta');
   const datos  = document.getElementById('preconsulta-datos');
   try {
-    // Usar endpoint directo por cita
     const res = await fetch(`/api/consultas/by-cita/${idCita}`, { headers: H });
     const pre = await res.json();
 
     if (pre && pre.idConsulta) {
-      // Extraer FC y SpO2 de observaciones si están guardados en ese campo
       let fcVal = '–', satVal = '–', motivoVal = '–', obsVal = '';
       if (pre.observaciones) {
         const partes = pre.observaciones.split(' | ');
@@ -436,50 +414,20 @@ async function cargarPreconsulta(idCita) {
           }
         });
       }
-
       datos.innerHTML = `
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px;">
-          <div class="preconsulta-item">
-            <div class="preconsulta-item__label">Peso</div>
-            <div class="preconsulta-item__value">${pre.peso ? pre.peso + ' kg' : '–'}</div>
-          </div>
-          <div class="preconsulta-item">
-            <div class="preconsulta-item__label">Talla</div>
-            <div class="preconsulta-item__value">${pre.altura ? pre.altura + ' cm' : '–'}</div>
-          </div>
-          <div class="preconsulta-item">
-            <div class="preconsulta-item__label">Temperatura</div>
-            <div class="preconsulta-item__value">${pre.temperatura ? pre.temperatura + '°C' : '–'}</div>
-          </div>
-          <div class="preconsulta-item">
-            <div class="preconsulta-item__label">Presión Arterial</div>
-            <div class="preconsulta-item__value">${pre.presion_arterial || '–'}</div>
-          </div>
-          <div class="preconsulta-item">
-            <div class="preconsulta-item__label">Frec. Cardíaca</div>
-            <div class="preconsulta-item__value">${fcVal}</div>
-          </div>
-          <div class="preconsulta-item">
-            <div class="preconsulta-item__label">Saturación O₂</div>
-            <div class="preconsulta-item__value">${satVal}</div>
-          </div>
+          <div class="preconsulta-item"><div class="preconsulta-item__label">Peso</div><div class="preconsulta-item__value">${pre.peso ? pre.peso + ' kg' : '–'}</div></div>
+          <div class="preconsulta-item"><div class="preconsulta-item__label">Talla</div><div class="preconsulta-item__value">${pre.altura ? pre.altura + ' cm' : '–'}</div></div>
+          <div class="preconsulta-item"><div class="preconsulta-item__label">Temperatura</div><div class="preconsulta-item__value">${pre.temperatura ? pre.temperatura + '°C' : '–'}</div></div>
+          <div class="preconsulta-item"><div class="preconsulta-item__label">Presión Arterial</div><div class="preconsulta-item__value">${pre.presion_arterial || '–'}</div></div>
+          <div class="preconsulta-item"><div class="preconsulta-item__label">Frec. Cardíaca</div><div class="preconsulta-item__value">${fcVal}</div></div>
+          <div class="preconsulta-item"><div class="preconsulta-item__label">Saturación O₂</div><div class="preconsulta-item__value">${satVal}</div></div>
         </div>
-        ${motivoVal && motivoVal !== '–' ? `
-        <div class="preconsulta-item" style="margin-bottom:8px;">
-          <div class="preconsulta-item__label">Motivo de Consulta</div>
-          <div class="preconsulta-item__value" style="white-space:pre-wrap;">${motivoVal}</div>
-        </div>` : ''}
-        ${obsVal ? `
-        <div class="preconsulta-item">
-          <div class="preconsulta-item__label">Observaciones de Enfermería</div>
-          <div class="preconsulta-item__value" style="white-space:pre-wrap;">${obsVal}</div>
-        </div>` : ''}
+        ${motivoVal && motivoVal !== '–' ? `<div class="preconsulta-item" style="margin-bottom:8px;"><div class="preconsulta-item__label">Motivo de Consulta</div><div class="preconsulta-item__value" style="white-space:pre-wrap;">${motivoVal}</div></div>` : ''}
+        ${obsVal ? `<div class="preconsulta-item"><div class="preconsulta-item__label">Observaciones de Enfermería</div><div class="preconsulta-item__value" style="white-space:pre-wrap;">${obsVal}</div></div>` : ''}
         <div style="margin-top:10px;padding:6px 10px;background:rgba(42,107,94,0.06);border-radius:8px;font-size:11px;color:var(--teal);font-weight:600;">
-          🔒 Solo lectura — registrado por recepcionista
-          ${pre.fecha_consulta ? ' · ' + pre.fecha_consulta.split('T')[0] : ''}
+          🔒 Solo lectura — registrado por recepcionista${pre.fecha_consulta ? ' · ' + pre.fecha_consulta.split('T')[0] : ''}
         </div>`;
-
-      // Precargar campos del formulario de consulta (solo lectura de apoyo)
       if (pre.peso)             document.getElementById('con-peso').value    = pre.peso;
       if (pre.presion_arterial) document.getElementById('con-presion').value = pre.presion_arterial;
       if (pre.temperatura)      document.getElementById('con-temp').value    = pre.temperatura;
@@ -494,14 +442,8 @@ async function cargarPreconsulta(idCita) {
 
 // ── GUARDAR CONSULTA ──────────────────────────────────────────────────────────
 async function guardarConsulta() {
-  if (!_citaSeleccionada) {
-    alert('⚠️ Primero selecciona un paciente y una cita.');
-    return;
-  }
-  if (!_citaSeleccionada.idHistorial) {
-    alert('⚠️ No se encontró historial clínico para este paciente. Verifica que el paciente tenga historial registrado.');
-    return;
-  }
+  if (!_citaSeleccionada) { alert('⚠️ Primero selecciona un paciente y una cita.'); return; }
+  if (!_citaSeleccionada.idHistorial) { alert('⚠️ No se encontró historial clínico para este paciente.'); return; }
 
   const payload = {
     fecha_consulta:   new Date().toISOString().slice(0,19).replace('T',' '),
@@ -516,7 +458,6 @@ async function guardarConsulta() {
 
   const res  = await fetch('/api/consultas', { method:'POST', headers: H, body: JSON.stringify(payload) });
   const data = await res.json();
-
   if (data.id) {
     alert(`✅ Consulta registrada correctamente (Cita #${_citaSeleccionada.idCita})`);
     limpiarSeleccionCita();
@@ -551,7 +492,6 @@ async function cargarHistorialConsultas() {
 }
 
 async function verDetalleConsulta(idConsulta) {
-  // Placeholder — puede expandirse a modal si se necesita
   alert(`Detalle de consulta #${idConsulta} — próximamente`);
 }
 
@@ -589,11 +529,9 @@ async function cargarCitas() {
             <td>${nombrePaciente(c)}</td>
             <td>${c.motivo || '–'}</td>
             <td>${estadoDot(c.estado)}</td>
-            <td>
-              ${['CONFIRMADA','PENDIENTE'].includes(c.estado)
-                ? `<button class="btn-tabla" onclick="abrirHistorialPaciente(${c.idCita}, ${c.idPaciente})">📋 Ver</button>`
-                : '–'}
-            </td>
+            <td>${['CONFIRMADA','PENDIENTE'].includes(c.estado)
+              ? `<button class="btn-tabla" onclick="abrirHistorialPaciente(${c.idCita}, ${c.idPaciente})">📋 Ver</button>`
+              : '–'}</td>
           </tr>`).join('')
       : '<tr><td colspan="7" style="text-align:center;color:var(--text-soft);padding:20px;">Sin citas</td></tr>';
   } catch {
@@ -602,7 +540,7 @@ async function cargarCitas() {
   }
 }
 
-// ── MI HORARIO: filtrado por idDoctor ─────────────────────────────────────────
+// ── MI HORARIO ────────────────────────────────────────────────────────────────
 async function iniciarHorario() {
   try {
     const doc = await obtenerMiDoctor();
@@ -628,8 +566,6 @@ async function iniciarHorario() {
             <p style="font-family:monospace;font-size:1rem;font-weight:700;color:var(--deep);">${doc.numero_junta_medica || '–'}</p>
           </div>
         </div>`;
-
-      // Cargar citas del doctor si no están cargadas aún
       if (!todasLasCitas.length && doc.idDoctor) {
         const res = await fetch(`/api/citas/doctor/${doc.idDoctor}`, { headers: H });
         todasLasCitas = await res.json().catch(() => []);
@@ -639,7 +575,6 @@ async function iniciarHorario() {
         '<p style="color:var(--text-soft);font-size:13px;padding:12px;">No se encontró tu perfil de médico.</p>';
     }
   } catch {}
-
   fechaDia = new Date();
   renderVistaDia();
   renderVistaSemanal();
@@ -663,9 +598,7 @@ function renderVistaDia() {
   const label    = fechaStr === hoy
     ? 'Hoy — ' + fechaDia.toLocaleDateString('es-SV', { weekday:'long', day:'numeric', month:'long' })
     : fechaDia.toLocaleDateString('es-SV', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
-
   document.getElementById('titulo-dia-actual').textContent = label;
-
   const citasDia = todasLasCitas.filter(c => c.fecha && String(c.fecha).startsWith(fechaStr));
   document.getElementById('tbody-citas-dia').innerHTML = citasDia.length
     ? citasDia.sort((a,b) => (a.hora||'').localeCompare(b.hora||'')).map(c => `
@@ -674,11 +607,9 @@ function renderVistaDia() {
           <td>${nombrePaciente(c)}</td>
           <td>${c.motivo || '–'}</td>
           <td>${estadoDot(c.estado)}</td>
-          <td>
-            ${['CONFIRMADA','PENDIENTE'].includes(c.estado)
-              ? `<button class="btn-tabla" onclick="abrirHistorialPaciente(${c.idCita}, ${c.idPaciente})">📋 Ver</button>`
-              : '–'}
-          </td>
+          <td>${['CONFIRMADA','PENDIENTE'].includes(c.estado)
+            ? `<button class="btn-tabla" onclick="abrirHistorialPaciente(${c.idCita}, ${c.idPaciente})">📋 Ver</button>`
+            : '–'}</td>
         </tr>`).join('')
     : '<tr><td colspan="5" style="text-align:center;color:var(--text-soft);padding:20px;">Sin citas para este día</td></tr>';
 }
@@ -692,15 +623,12 @@ function renderVistaSemanal() {
   const hoy   = new Date();
   const lunes = new Date(fechaSemana);
   lunes.setDate(lunes.getDate() - (lunes.getDay() === 0 ? 6 : lunes.getDay() - 1));
-
-  const dias   = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
+  const dias    = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
   const domingo = new Date(lunes);
   domingo.setDate(domingo.getDate() + 6);
-
   document.getElementById('titulo-semana').textContent =
     lunes.toLocaleDateString('es-SV', { day:'numeric', month:'short' }) + ' – ' +
     domingo.toLocaleDateString('es-SV', { day:'numeric', month:'short', year:'numeric' });
-
   document.getElementById('semana-tabs').innerHTML = dias.map((nombre, i) => {
     const dia      = new Date(lunes);
     dia.setDate(dia.getDate() + i);
@@ -715,7 +643,6 @@ function renderVistaSemanal() {
         ${tieneCitas ? '<span class="dia-badge"></span>' : '<span style="width:6px;height:6px;"></span>'}
       </div>`;
   }).join('');
-
   if (diaSeleccionado) renderCitasSemana(diaSeleccionado);
 }
 
@@ -734,17 +661,15 @@ function renderCitasSemana(fechaStr) {
           <td>${nombrePaciente(c)}</td>
           <td>${c.motivo || '–'}</td>
           <td>${estadoDot(c.estado)}</td>
-          <td>
-            ${['CONFIRMADA','PENDIENTE'].includes(c.estado)
-              ? `<button class="btn-tabla" onclick="abrirHistorialPaciente(${c.idCita}, ${c.idPaciente})">📋 Ver</button>`
-              : '–'}
-          </td>
+          <td>${['CONFIRMADA','PENDIENTE'].includes(c.estado)
+            ? `<button class="btn-tabla" onclick="abrirHistorialPaciente(${c.idCita}, ${c.idPaciente})">📋 Ver</button>`
+            : '–'}</td>
         </tr>`).join('')
     : '<tr><td colspan="5" style="text-align:center;color:var(--text-soft);padding:16px;">Sin citas para este día</td></tr>';
 }
 
-// ── SECCIÓN DIAGNÓSTICOS: autocompletado por consulta ────────────────────────
-let _consultaSeleccionada = null; // { idConsulta, nombrePaciente, fecha }
+// ── DIAGNÓSTICOS ──────────────────────────────────────────────────────────────
+let _consultaSeleccionada = null;
 
 async function iniciarSeccionDiagnostico() {
   await cargarPacientes();
@@ -761,8 +686,7 @@ function renderConsultaSeleccionada() {
     info.innerHTML = `
       <span style="font-size:12px;color:var(--teal);font-weight:600;">
         ✅ Consulta seleccionada: <strong>${_consultaSeleccionada.nombrePaciente}</strong>
-        · ${_consultaSeleccionada.fecha || ''}
-        · Consulta #${_consultaSeleccionada.idConsulta}
+        · ${_consultaSeleccionada.fecha || ''} · Consulta #${_consultaSeleccionada.idConsulta}
       </span>
       <button onclick="limpiarConsultaSeleccionada()" style="margin-left:10px;padding:3px 10px;border:1px solid var(--border);border-radius:7px;background:transparent;font-size:11px;cursor:pointer;color:var(--text-soft);">✕ Cambiar</button>`;
     document.getElementById('diag-consulta').value = _consultaSeleccionada.idConsulta;
@@ -791,12 +715,10 @@ async function _doBuscarPacienteDiag() {
   const lista = document.getElementById('sug-paciente-diag');
   const q     = input.value.toLowerCase().trim();
   if (!q) { lista.style.display = 'none'; return; }
-
   const pacs = todosPacientes.filter(p =>
     `${p.Nombres} ${p.Apellidos}`.toLowerCase().includes(q) ||
     (p.numero_expediente || '').toLowerCase().includes(q)
   );
-
   lista.innerHTML = pacs.length
     ? pacs.slice(0,8).map(p => `
         <div class="autocomplete-item" onclick="seleccionarPacienteDiag(${p.idPaciente}, '${(p.Nombres+' '+p.Apellidos).replace(/'/g,"\\'")}')">
@@ -813,16 +735,11 @@ async function seleccionarPacienteDiag(idPaciente, nombre) {
   document.getElementById('bloque-consultas-diag').style.display = 'block';
   document.getElementById('lista-consultas-diag').innerHTML =
     '<p style="font-size:12.5px;color:var(--text-soft);">Cargando consultas...</p>';
-
   try {
     const res  = await fetch('/api/consultas', { headers: H });
     const data = await res.json();
-    // Filtrar consultas de este paciente mediante sus citas
     const citasPac = todasLasCitas.filter(c => c.idPaciente === idPaciente).map(c => c.idCita);
-    const cons = Array.isArray(data)
-      ? data.filter(c => citasPac.includes(c.idCita))
-      : [];
-
+    const cons = Array.isArray(data) ? data.filter(c => citasPac.includes(c.idCita)) : [];
     document.getElementById('lista-consultas-diag').innerHTML = cons.length
       ? cons.map(c => `
           <div onclick="elegirConsultaDiag(${c.idConsulta}, '${nombre.replace(/'/g,"\\'")}', '${c.fecha_consulta ? c.fecha_consulta.split('T')[0] : ''}')"
@@ -853,29 +770,19 @@ document.addEventListener('click', (e) => {
     sug.style.display = 'none';
 });
 
-// ── GUARDAR DIAGNÓSTICO — FIX: solo campos que existen en la tabla ────────────
 async function guardarDiagnostico() {
-  if (!_consultaSeleccionada) {
-    alert('⚠️ Primero selecciona un paciente y una consulta.');
-    return;
-  }
-
+  if (!_consultaSeleccionada) { alert('⚠️ Primero selecciona un paciente y una consulta.'); return; }
   const descripcion = document.getElementById('diag-descripcion').value.trim();
   const fechaVal    = document.getElementById('diag-fecha').value;
-
   if (!descripcion) { alert('La descripción es obligatoria.'); return; }
-  if (!fechaVal)     { alert('La fecha del diagnóstico es obligatoria.'); return; }
-
-  // Solo los 3 campos que existen: descripcion, fecha_diagnostico, idConsulta
+  if (!fechaVal)    { alert('La fecha del diagnóstico es obligatoria.'); return; }
   const payload = {
     descripcion,
     fecha_diagnostico: fechaVal.replace('T', ' '),
     idConsulta:        _consultaSeleccionada.idConsulta,
   };
-
   const res  = await fetch('/api/diagnosticos', { method:'POST', headers: H, body: JSON.stringify(payload) });
   const data = await res.json();
-
   if (data.id) {
     alert(`✅ Diagnóstico registrado correctamente`);
     document.getElementById('diag-descripcion').value = '';
@@ -894,28 +801,19 @@ async function cargarDiagnosticosRecientes() {
     document.getElementById('diagnosticos-recientes').innerHTML = Array.isArray(data) && data.length
       ? data.slice(0,5).map(d => `
           <div style="padding:10px 0;border-bottom:1px solid rgba(42,107,94,0.07);">
-            <strong style="display:block;font-size:13px;color:var(--deep);">
-              Diagnóstico #${d.idDiagnostico} · Consulta #${d.idConsulta}
-            </strong>
+            <strong style="display:block;font-size:13px;color:var(--deep);">Diagnóstico #${d.idDiagnostico} · Consulta #${d.idConsulta}</strong>
             <span style="font-size:11.5px;color:var(--text-soft);">${d.fecha_diagnostico ? d.fecha_diagnostico.split('T')[0] : '–'} · ${d.descripcion || '–'}</span>
           </div>`).join('')
       : '<p style="color:var(--text-soft);font-size:13px;">Sin diagnósticos registrados</p>';
   } catch {}
 }
 
-// ═══════════════════════════════════════════════════════════════════
-// BLOQUE RECETAS — reemplaza todo el bloque "── RECETAS ───" en
-// dashboard-medico.js (desde "let listaMedsActivos" hasta el final
-// de "guardarReceta")
-// ═══════════════════════════════════════════════════════════════════
+// ── RECETAS ───────────────────────────────────────────────────────────────────
+let listaMedsActivos = [];
+let _recPacienteId   = null;
+let _recMedActual    = null;
+let _recLineas       = [];
 
-// ── Estado de receta ─────────────────────────────────────────────
-let listaMedsActivos    = [];
-let _recPacienteId      = null;   // idPaciente seleccionado
-let _recMedActual       = null;   // medicamento en curso antes de agregar
-let _recLineas          = [];     // [ { med, dosis, frecuencia, duracion, cantidad, indicaciones, subtotal } ]
-
-// ── Cargar medicamentos activos al init ───────────────────────────
 async function cargarMedicamentosActivos() {
   try {
     const res = await fetch('/api/medicamentos/activos', { headers: H });
@@ -923,7 +821,6 @@ async function cargarMedicamentosActivos() {
   } catch {}
 }
 
-// ── Iniciar sección receta ────────────────────────────────────────
 async function iniciarSeccionReceta() {
   await cargarPacientes();
   await cargarMedicamentosActivos();
@@ -932,10 +829,9 @@ async function iniciarSeccionReceta() {
 }
 
 function limpiarFormReceta() {
-  _recPacienteId  = null;
-  _recMedActual   = null;
-  _recLineas      = [];
-
+  _recPacienteId = null;
+  _recMedActual  = null;
+  _recLineas     = [];
   document.getElementById('rec-buscar-paciente').value = '';
   document.getElementById('rec-sug-paciente').style.display = 'none';
   document.getElementById('rec-paciente-info').style.display = 'none';
@@ -958,7 +854,6 @@ function limpiarCamposMed() {
   if (cant) cant.value = '1';
 }
 
-// ── PASO 1: Buscar paciente ───────────────────────────────────────
 let _recSugTimer = null;
 function buscarPacienteReceta() {
   clearTimeout(_recSugTimer);
@@ -967,12 +862,10 @@ function buscarPacienteReceta() {
     const lista = document.getElementById('rec-sug-paciente');
     const q     = input.value.toLowerCase().trim();
     if (!q) { lista.style.display = 'none'; return; }
-
     const pacs = todosPacientes.filter(p =>
       `${p.Nombres} ${p.Apellidos}`.toLowerCase().includes(q) ||
       (p.numero_expediente || '').toLowerCase().includes(q)
     );
-
     lista.innerHTML = pacs.length
       ? pacs.slice(0,8).map(p => `
           <div class="autocomplete-item"
@@ -989,35 +882,23 @@ async function seleccionarPacienteReceta(idPaciente, nombre, idUsuario) {
   _recPacienteId = idPaciente;
   document.getElementById('rec-buscar-paciente').value = nombre;
   document.getElementById('rec-sug-paciente').style.display = 'none';
-
   const info = document.getElementById('rec-paciente-info');
   info.textContent = `✅ Paciente: ${nombre}`;
   info.style.display = 'block';
-
-  // Cargar diagnósticos del paciente
   const sel = document.getElementById('rec-diagnostico-sel');
   sel.innerHTML = '<option value="">Cargando diagnósticos...</option>';
-
   try {
-    // Obtener citas del paciente para luego filtrar diagnósticos
     const resC = await fetch(`/api/citas/paciente/${idUsuario}`, { headers: H });
     const citas = await resC.json();
     const idsCitas = Array.isArray(citas) ? citas.map(c => c.idCita) : [];
-
     const resD = await fetch('/api/diagnosticos', { headers: H });
     const diags = await resD.json();
-
-    // Obtener consultas del paciente para cruzar con diagnósticos
     const resC2 = await fetch('/api/consultas', { headers: H });
     const consultas = await resC2.json();
     const idsCons = Array.isArray(consultas)
       ? consultas.filter(c => idsCitas.includes(c.idCita)).map(c => c.idConsulta)
       : [];
-
-    const diagsPac = Array.isArray(diags)
-      ? diags.filter(d => idsCons.includes(d.idConsulta))
-      : [];
-
+    const diagsPac = Array.isArray(diags) ? diags.filter(d => idsCons.includes(d.idConsulta)) : [];
     sel.innerHTML = diagsPac.length
       ? `<option value="">— Sin diagnóstico asociado —</option>` +
         diagsPac.map(d => `
@@ -1030,7 +911,6 @@ async function seleccionarPacienteReceta(idPaciente, nombre, idUsuario) {
   }
 }
 
-// Cerrar sugerencias al click fuera
 document.addEventListener('click', (e) => {
   const inp = document.getElementById('rec-buscar-paciente');
   const sug = document.getElementById('rec-sug-paciente');
@@ -1038,35 +918,26 @@ document.addEventListener('click', (e) => {
     sug.style.display = 'none';
 });
 
-// ── PASO 2: Buscar medicamento ────────────────────────────────────
 function buscarMedicamentoReceta() {
   const input = document.getElementById('rec-medicamento-nombre');
   const sug   = document.getElementById('sug-medicamento');
   const q     = input.value.toLowerCase().trim();
-
   _recMedActual = null;
   document.getElementById('rec-medicamento-id').value = '';
   document.getElementById('rec-med-campos').style.display = 'none';
   document.getElementById('rec-stock-info').style.display = 'none';
-
   if (!q) { sug.style.display = 'none'; return; }
-
   const lista = Array.isArray(listaMedsActivos)
-    ? listaMedsActivos.filter(m =>
-        m.nombre.toLowerCase().includes(q) &&
-        m.stock_actual > 0
-      )
+    ? listaMedsActivos.filter(m => m.nombre.toLowerCase().includes(q) && m.stock_actual > 0)
     : [];
-
   sug.innerHTML = lista.length
     ? lista.map(m => `
         <div class="autocomplete-item"
           onclick="seleccionarMedicamento(${m.idMedicamento}, '${m.nombre.replace(/'/g,"\\'")}', '${(m.descripcion||'').replace(/'/g,"\\'")}', '${m.unidad_medida}', ${m.stock_actual}, ${m.precio_unitario || 0})">
           <strong>${m.nombre}</strong>
-          <span>Stock: ${m.stock_actual} ${m.unidad_medida} · $${parseFloat(m.precio_unitario || 0).toFixed(2)} · ${m.descripcion ? m.descripcion.substring(0,40) : 'Sin descripción'}</span>
+          <span>Stock: ${m.stock_actual} ${m.unidad_medida} · $${parseFloat(m.precio_unitario || 0).toFixed(2)}</span>
         </div>`).join('')
-    : '<div class="autocomplete-item" style="color:var(--text-soft);">Sin medicamentos disponibles con ese nombre</div>';
-
+    : '<div class="autocomplete-item" style="color:var(--text-soft);">Sin medicamentos disponibles</div>';
   sug.style.display = 'block';
 }
 
@@ -1074,17 +945,9 @@ function seleccionarMedicamento(id, nombre, descripcion, unidad, stock, precio) 
   document.getElementById('rec-medicamento-nombre').value = nombre;
   document.getElementById('rec-medicamento-id').value     = id;
   document.getElementById('sug-medicamento').style.display = 'none';
-
-  // Autocompletar dosis desde descripción del medicamento
-  // La descripción suele contener "500mg", "250mg/5ml", etc.
   const dosisMatch = descripcion.match(/\d+\s*(?:mg|ml|mcg|g|UI|ug)(?:\/\d+\s*(?:mg|ml))?/i);
-  const dosisAuto  = dosisMatch ? dosisMatch[0] : '';
-
-  if (dosisAuto) document.getElementById('rec-dosis').value = dosisAuto;
-
+  if (dosisMatch) document.getElementById('rec-dosis').value = dosisMatch[0];
   _recMedActual = { id, nombre, descripcion, unidad, stock, precio: parseFloat(precio) };
-
-  // Mostrar campos y stock
   document.getElementById('rec-med-campos').style.display = 'block';
   const infoEl = document.getElementById('rec-stock-info');
   infoEl.textContent = `Stock disponible: ${stock} ${unidad} · Precio unitario: $${parseFloat(precio).toFixed(2)}`;
@@ -1098,68 +961,46 @@ document.addEventListener('click', (e) => {
     sug.style.display = 'none';
 });
 
-// ── Agregar medicamento a la lista ────────────────────────────────
 function agregarMedicamentoLista() {
-  if (!_recMedActual) {
-    alert('⚠️ Selecciona un medicamento del listado primero.');
-    return;
-  }
-
-  const cantidad   = parseInt(document.getElementById('rec-cantidad').value) || 1;
-  const dosis      = document.getElementById('rec-dosis').value.trim();
-  const frecuencia = document.getElementById('rec-frecuencia').value.trim();
-  const duracion   = document.getElementById('rec-duracion').value.trim();
-  const indicaciones = document.getElementById('rec-indicaciones').value.trim();
-
+  if (!_recMedActual) { alert('⚠️ Selecciona un medicamento del listado primero.'); return; }
+  const cantidad    = parseInt(document.getElementById('rec-cantidad').value) || 1;
+  const dosis       = document.getElementById('rec-dosis').value.trim();
+  const frecuencia  = document.getElementById('rec-frecuencia').value.trim();
+  const duracion    = document.getElementById('rec-duracion').value.trim();
+  const indicaciones= document.getElementById('rec-indicaciones').value.trim();
   if (!dosis)      { alert('⚠️ La dosis es obligatoria.'); return; }
   if (!frecuencia) { alert('⚠️ La frecuencia es obligatoria.'); return; }
+  if (!duracion)   { alert('⚠️ La duración es obligatoria.'); return; }
   if (cantidad < 1){ alert('⚠️ La cantidad debe ser al menos 1.'); return; }
   if (cantidad > _recMedActual.stock) {
     alert(`⚠️ Stock insuficiente. Solo hay ${_recMedActual.stock} ${_recMedActual.unidad} disponibles.`);
     return;
   }
-
-  // Verificar si ya está en la lista
   const yaEsta = _recLineas.find(l => l.med.id === _recMedActual.id);
-  if (yaEsta) {
-    alert('⚠️ Este medicamento ya fue agregado. Elimínalo primero si quieres cambiarlo.');
-    return;
-  }
-
+  if (yaEsta) { alert('⚠️ Este medicamento ya fue agregado.'); return; }
   const subtotal = _recMedActual.precio * cantidad;
-  _recLineas.push({
-    med: { ..._recMedActual },
-    dosis, frecuencia, duracion, cantidad, indicaciones,
-    subtotal,
-  });
-
-  // Limpiar campos para siguiente medicamento
+  _recLineas.push({ med: { ..._recMedActual }, dosis, frecuencia, duracion, cantidad, indicaciones, subtotal });
   document.getElementById('rec-medicamento-nombre').value = '';
   document.getElementById('rec-medicamento-id').value = '';
   document.getElementById('rec-med-campos').style.display = 'none';
   document.getElementById('rec-stock-info').style.display = 'none';
   _recMedActual = null;
   limpiarCamposMed();
-
   renderLineasReceta();
 }
 
-// ── Render tabla de medicamentos ──────────────────────────────────
 function renderLineasReceta() {
   const tbody = document.getElementById('rec-lista-meds');
   const wrap  = document.getElementById('rec-lista-meds-wrap');
   const vacio = document.getElementById('rec-lista-vacia');
-
   if (!_recLineas.length) {
     wrap.style.display  = 'none';
     vacio.style.display = 'block';
     document.getElementById('rec-total').textContent = '0.00';
     return;
   }
-
   wrap.style.display  = 'block';
   vacio.style.display = 'none';
-
   tbody.innerHTML = _recLineas.map((l, i) => `
     <tr>
       <td>
@@ -1168,15 +1009,12 @@ function renderLineasReceta() {
       </td>
       <td>${l.dosis}</td>
       <td>${l.frecuencia}</td>
-      <td>${l.duracion || '–'}</td>
+      <td>${l.duracion}</td>
       <td>${l.cantidad} ${l.med.unidad}</td>
       <td style="font-weight:600;color:var(--teal);">$${l.subtotal.toFixed(2)}</td>
-      <td>
-        <button onclick="eliminarLineaReceta(${i})"
-          style="width:28px;height:28px;border:none;border-radius:7px;background:rgba(200,50,50,0.1);color:#c03030;cursor:pointer;font-size:13px;">✕</button>
-      </td>
+      <td><button onclick="eliminarLineaReceta(${i})"
+        style="width:28px;height:28px;border:none;border-radius:7px;background:rgba(200,50,50,0.1);color:#c03030;cursor:pointer;font-size:13px;">✕</button></td>
     </tr>`).join('');
-
   const total = _recLineas.reduce((s, l) => s + l.subtotal, 0);
   document.getElementById('rec-total').textContent = total.toFixed(2);
 }
@@ -1186,40 +1024,27 @@ function eliminarLineaReceta(idx) {
   renderLineasReceta();
 }
 
-// ── Guardar receta (una por medicamento, misma sesión) ────────────
 async function guardarReceta() {
-  if (!_recPacienteId) {
-    alert('⚠️ Selecciona un paciente primero.');
-    return;
-  }
-  if (!_recLineas.length) {
-    alert('⚠️ Agrega al menos un medicamento.');
-    return;
-  }
-
+  if (!_recPacienteId) { alert('⚠️ Selecciona un paciente primero.'); return; }
+  if (!_recLineas.length) { alert('⚠️ Agrega al menos un medicamento.'); return; }
   const idDiagnostico = parseInt(document.getElementById('rec-diagnostico-sel').value) || null;
-
   try {
     let errores = 0;
-
     for (const linea of _recLineas) {
       const payload = {
         medicamento:   linea.med.nombre,
         dosis:         linea.dosis,
         frecuencia:    linea.frecuencia,
-        duracion:      linea.duracion  || null,
+        duracion:      linea.duracion || null,
         indicaciones:  linea.indicaciones || null,
         idDiagnostico: idDiagnostico,
         idFactura:     null,
         idMedicamento: linea.med.id,
         cantidad:      linea.cantidad,
       };
-
       const res  = await fetch('/api/recetas', { method:'POST', headers: H, body: JSON.stringify(payload) });
       const data = await res.json();
-
       if (data.id || data.message) {
-        // Descontar stock
         await fetch(`/api/medicamentos/${linea.med.id}/descontar`, {
           method: 'POST', headers: H,
           body: JSON.stringify({ cantidad: linea.cantidad, idReceta: data.id })
@@ -1229,16 +1054,14 @@ async function guardarReceta() {
         console.error('Error en receta:', linea.med.nombre, data.error);
       }
     }
-
     const total = _recLineas.reduce((s, l) => s + l.subtotal, 0);
-
     if (errores === 0) {
       alert(`✅ Receta emitida correctamente.\n${_recLineas.length} medicamento(s) registrado(s).\nMonto total: $${total.toFixed(2)}`);
       limpiarFormReceta();
-      await cargarMedicamentosActivos(); // refrescar stock
+      await cargarMedicamentosActivos();
       cargarRecetasRecientes();
     } else {
-      alert(`⚠️ Se emitieron ${_recLineas.length - errores} de ${_recLineas.length} medicamentos. Revisa la consola para detalles.`);
+      alert(`⚠️ Se emitieron ${_recLineas.length - errores} de ${_recLineas.length} medicamentos.`);
     }
   } catch (err) {
     alert('Error de conexión al emitir la receta.');
@@ -1246,7 +1069,6 @@ async function guardarReceta() {
   }
 }
 
-// ── Recetas recientes ─────────────────────────────────────────────
 async function cargarRecetasRecientes() {
   try {
     const res  = await fetch('/api/recetas', { headers: H });
@@ -1308,19 +1130,15 @@ async function abrirExpediente(idPaciente) {
   const cont = document.getElementById('resultados-expediente');
   cont.innerHTML = '<p style="text-align:center;color:var(--text-soft);padding:24px;">Cargando expediente...</p>';
   try {
-    const [pRes, hRes, recRes] = await Promise.all([
+    const [pRes, hRes] = await Promise.all([
       fetch(`/api/pacientes/${idPaciente}`, { headers: H }),
       fetch(`/api/historial/by-paciente?idPaciente=${idPaciente}`, { headers: H }),
-      fetch('/api/recetas', { headers: H }),
     ]);
     const paciente  = await pRes.json();
     const historial = await hRes.json();
-    const recetas   = await recRes.json();
-
     const p = Array.isArray(paciente) ? paciente[0] : paciente;
     const h = Array.isArray(historial) ? historial[0] : historial;
-    const citasPaciente   = todasLasCitas.filter(c => c.idPaciente === idPaciente);
-    const recetasPaciente = Array.isArray(recetas) ? recetas.filter(r => r.idPaciente === idPaciente) : [];
+    const citasPaciente = todasLasCitas.filter(c => c.idPaciente === idPaciente);
 
     cont.innerHTML = `
       <button onclick="volverBuscador()" style="margin-bottom:16px;padding:8px 16px;border:1.5px solid var(--border);border-radius:10px;background:transparent;color:var(--text-soft);cursor:pointer;font-size:13px;">← Volver</button>
@@ -1365,7 +1183,6 @@ async function abrirExpediente(idPaciente) {
               </tr>`).join('')}</tbody>
           </table>` : '<p style="color:var(--text-soft);font-size:13px;">Sin citas</p>'}
       </div>
-      <!-- form editar / recetas igual que antes -->
       <div id="form-editar-${p.idPaciente}" style="display:none;background:var(--cream);border:1.5px solid var(--border);border-radius:16px;padding:24px;margin-top:16px;">
         <h3 style="font-size:15px;font-weight:700;color:var(--deep);margin-bottom:14px;">✏️ Editar Paciente</h3>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
@@ -1435,3 +1252,80 @@ function cerrarSesion() {
 // ── INIT ──────────────────────────────────────────────────────────────────────
 cargarMedicamentosActivos();
 cargarStats();
+
+// ══════════════════════════════════════════════════════════════════════════════
+// HU12 — REPORTES MÉDICO
+// ══════════════════════════════════════════════════════════════════════════════
+function iniciarReportesMedico() {
+  _repmSetDefaultDates();
+  // No carga automático — médico presiona "Generar"
+}
+
+function _repmSetDefaultDates() {
+  const hoy    = new Date();
+  const hace30 = new Date(hoy - 30 * 24 * 60 * 60 * 1000);
+  document.getElementById('repm-fecha-inicio').value = hace30.toISOString().split('T')[0];
+  document.getElementById('repm-fecha-fin').value    = hoy.toISOString().split('T')[0];
+}
+
+async function repMedicoGenerar() {
+  const fechaInicio = document.getElementById('repm-fecha-inicio').value;
+  const fechaFin    = document.getElementById('repm-fecha-fin').value;
+  if (!fechaInicio || !fechaFin) { alert('⚠️ Selecciona un rango de fechas.'); return; }
+  const params = new URLSearchParams({ fechaInicio, fechaFin });
+  try {
+    const res  = await fetch(`/api/reportes/consultas-medico?${params}`, { headers: H });
+    const data = await res.json();
+    if (!res.ok) { alert('Error: ' + (data.error?.sqlMessage || data.error)); return; }
+    _repmRenderKPIs(data.resumen);
+    _repmRenderDiagnosticos(data.diagnosticos);
+    _repmRenderRecetas(data.recetas);
+  } catch (err) {
+    console.error('repMedicoGenerar:', err);
+  }
+}
+
+function _repmRenderKPIs(r) {
+  if (!r) return;
+  document.getElementById('repm-kpi-consultas').textContent    = r.totalConsultas     ?? 0;
+  document.getElementById('repm-kpi-pacientes').textContent    = r.pacientesAtendidos ?? 0;
+  document.getElementById('repm-kpi-recetas').textContent      = r.totalRecetas       ?? 0;
+  document.getElementById('repm-kpi-diagnosticos').textContent = r.totalDiagnosticos  ?? 0;
+}
+
+function _repmRenderDiagnosticos(lista) {
+  const el = document.getElementById('repm-diagnosticos');
+  if (!lista?.length) {
+    el.innerHTML = `<p style="text-align:center;color:var(--text-soft);padding:20px;font-size:13px;">Sin diagnósticos en el período seleccionado.</p>`;
+    return;
+  }
+  const max = lista[0].frecuencia;
+  el.innerHTML = lista.map((d, i) => `
+    <div style="padding:10px 0;border-bottom:1px solid rgba(42,107,94,0.07);">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+        <span style="font-size:13px;font-weight:600;color:var(--deep);">${i + 1}. ${d.descripcion}</span>
+        <span style="font-size:12px;font-weight:700;color:var(--teal);min-width:60px;text-align:right;">${d.frecuencia} caso${d.frecuencia !== 1 ? 's' : ''}</span>
+      </div>
+      <div style="height:6px;background:var(--border);border-radius:4px;overflow:hidden;">
+        <div style="height:100%;width:${Math.round(d.frecuencia * 100 / max)}%;background:linear-gradient(90deg,var(--teal),var(--teal-light));border-radius:4px;transition:width 0.6s;"></div>
+      </div>
+    </div>`).join('');
+}
+
+// ── Fix: tabla con 6 columnas (Fecha, Paciente, Medicamento, Dosis, Frecuencia, Duración)
+function _repmRenderRecetas(lista) {
+  const tbody = document.getElementById('repm-tbody-recetas');
+  if (!lista?.length) {
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--text-soft);padding:20px;">Sin recetas en el período seleccionado.</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = lista.map(r => `
+    <tr>
+      <td style="color:var(--text-soft);font-size:12px;">${r.fecha?.split('T')[0] ?? '—'}</td>
+      <td style="font-weight:600;color:var(--deep);">${r.paciente}</td>
+      <td>${r.medicamento}</td>
+      <td style="color:var(--text-soft);">${r.dosis ?? '—'}</td>
+      <td style="color:var(--text-soft);">${r.frecuencia ?? '—'}</td>
+      <td style="color:var(--text-soft);">${r.duracion ?? '—'}</td>
+    </tr>`).join('');
+}

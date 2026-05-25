@@ -30,6 +30,7 @@ const historialRoutes      = require("./routes/historial.routes");
 const detallesFacturaRoutes= require("./routes/detalles_factura.routes");
 const perfilRoutes         = require("./routes/perfil.routes");
 const medicamentosRoutes   = require("./routes/medicamentos.routes");
+const reportesRoutes        = require("./routes/reportes.routes");
 
 app.use("/api/consultas",       consultasRoutes);
 app.use("/api/facturas",        facturasRoutes);
@@ -44,6 +45,8 @@ app.use("/api/detalles-factura",detallesFacturaRoutes);
 app.use("/api/perfil",          perfilRoutes);
 app.use("/api/medicamentos",    medicamentosRoutes);
 app.use('/api/pdf',             pdfRoutes);
+app.use('/api/reportes',         reportesRoutes);
+
 
 const PORT = process.env.PORT || 3000;
 
