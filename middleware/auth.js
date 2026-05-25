@@ -29,9 +29,7 @@ function verificarRol(rolesPermitidos) {
     };
 }
 
-// TRUCO MÁGICO: La exportación principal sigue siendo la función directa
+// Exportación híbrida: Funciona como función directa y también contiene sub-propiedades
 module.exports = authMiddleware;
-
-// Y le pegamos la nueva función como una propiedad/método adicional
-module.exports = authMiddleware;
+module.exports.authMiddleware = authMiddleware;
 module.exports.verificarRol = verificarRol;
