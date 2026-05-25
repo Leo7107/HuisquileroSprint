@@ -1230,3 +1230,79 @@ select.rol-select {
 }
 
 .resultado-item:hover { background: rgba(42,107,94,0.04); }
+
+/* ══════════════════════════════════════════
+   HU14 — Métricas y Panel Admin
+══════════════════════════════════════════ */
+
+.alerta-card { border-color: #c0392b !important; }
+
+.badge-alerta {
+  background: #c0392b;
+  color: #fff;
+  border-radius: 12px;
+  padding: 2px 10px;
+  font-size: .85rem;
+  font-weight: 700;
+}
+
+/* Feed actividad */
+.feed-actividad {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.feed-actividad li {
+  display: flex;
+  align-items: flex-start;
+  gap: .8rem;
+  padding: .7rem 0;
+  border-bottom: 1px solid rgba(255,255,255,.07);
+  color: var(--text-soft);
+  font-size: .88rem;
+}
+.feed-actividad li:last-child { border-bottom: none; }
+
+.feed-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--teal, #2a6b5e);
+  margin-top: 5px;
+  flex-shrink: 0;
+}
+
+.feed-fecha {
+  color: #888;
+  font-size: .78rem;
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+.sin-datos {
+  color: #aaa;
+  font-style: italic;
+  text-align: center;
+  padding: 1rem;
+  width: 100%;
+}
+
+/* Stock crítico en tablas */
+.stock-agotado { color: #e74c3c; font-weight: 700; }
+.stock-critico  { color: #f39c12; font-weight: 700; }
+
+/* Botón refresh */
+.btn-refresh {
+  background: transparent;
+  border: 1px solid var(--teal, #2a6b5e);
+  color: var(--teal, #2a6b5e);
+  padding: .3rem .8rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: .85rem;
+  transition: all .2s;
+}
+.btn-refresh:hover {
+  background: var(--teal, #2a6b5e);
+  color: #fff;
+}

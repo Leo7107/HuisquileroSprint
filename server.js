@@ -30,6 +30,8 @@ const historialRoutes      = require("./routes/historial.routes");
 const detallesFacturaRoutes= require("./routes/detalles_factura.routes");
 const perfilRoutes         = require("./routes/perfil.routes");
 const medicamentosRoutes   = require("./routes/medicamentos.routes");
+const metricasRoutes = require('./routes/metricas.routes');
+app.use('/api/metricas', metricasRoutes);
 
 app.use("/api/consultas",       consultasRoutes);
 app.use("/api/facturas",        facturasRoutes);

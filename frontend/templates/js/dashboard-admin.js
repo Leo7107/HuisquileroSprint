@@ -30,10 +30,10 @@ function nav(seccion, linkEl) {
   document.querySelectorAll('.nav-item').forEach(a => a.classList.remove('active'));
   if (linkEl) linkEl.classList.add('active');
 
-  if (seccion === 'usuarios') cargarUsuarios();
-  if (seccion === 'medicos')  cargarMedicos();
-  if (seccion === 'roles')    cargarRoles();
-  if (seccion === 'logs')     cargarLogs();
+  if (seccion === 'usuarios')   cargarUsuarios();
+  if (seccion === 'medicos')    cargarMedicos();
+  if (seccion === 'roles')      cargarRoles();
+  if (seccion === 'logs')       { cargarLogs(); cargarInventarioCriticoLogs(); }
   if (seccion === 'inventario') cargarInventario();
 }
 
@@ -58,9 +58,7 @@ async function cargarStats() {
       ? doctores.filter(d => d.Estado === 'ACTIVO') : [];
 
     document.getElementById('s-pacientes').textContent = Array.isArray(pacientes) ? pacientes.length : '—';
-    document.getElementById('s-citas').textContent     = citasMes.length;
-    document.getElementById('s-doctores').textContent  = doctoresActivos.length;
-    document.getElementById('s-usuarios').textContent  = Array.isArray(usuarios) ? usuarios.length : '—';
+    document.getElementById('s-usuarios').textContent  = Array.isArray(usuarios)  ? usuarios.length  : '—';
   } catch { /* sin datos */ }
 }
 
@@ -188,7 +186,7 @@ async function guardarUsuario() {
     cerrarModal();
     cargarUsuarios();
     cargarStats();
-    cargarUsuariosDoctores(); // refresca el autocompletado de usuario doctor
+    cargarUsuariosDoctores();
   } else {
     alert('Error: ' + (data.error?.sqlMessage || data.error || 'Revisa los datos'));
   }
@@ -269,8 +267,6 @@ function renderLogs(contenedor, lista) {
 function cargarLogs() {
   renderLogs(document.getElementById('logs-full'), logsEjemplo);
 }
-
-renderLogs(document.getElementById('logs-preview'), logsEjemplo.slice(0, 3));
 
 // ── MÉDICOS ───────────────────────────────────
 let todosMedicos   = [];
@@ -452,7 +448,7 @@ async function cargarUsuariosDoctores() {
 }
 
 function buscarUsuarioDoctor() {
-  const input     = document.getElementById('md-usuario-nombre');
+  const input       = document.getElementById('md-usuario-nombre');
   const sugerencias = document.getElementById('sugerencias-usuario-doctor');
   const q = input.value.toLowerCase().trim();
 
@@ -496,14 +492,9 @@ function cerrarSesion() {
   window.location.href = '/';
 }
 
-// ── INIT ──────────────────────────────────────
-cargarStats();
-cargarUsuariosDoctores();
-
-// ── ESTADO ────────────────────────────────────
+// ── INVENTARIO ────────────────────────────────
 let listaMedicamentos = [];
 
-// ── CARGAR INVENTARIO ─────────────────────────
 async function cargarInventario() {
   await cargarAlertasStock();
   await cargarTablaInventario();
@@ -528,12 +519,8 @@ function renderTablaInventario(lista) {
         const estadoBadge = m.estado === 'ACTIVO'
           ? '<span class="badge badge--activo">ACTIVO</span>'
           : '<span class="badge badge--inactivo">INACTIVO</span>';
-        const stockColor = bajo
-          ? 'color:#c03030;font-weight:700;'
-          : 'color:var(--teal);font-weight:700;';
-        const stockTexto = bajo
-          ? `<span style="${stockColor}" title="Sin stock disponible">${m.stock_actual} ${m.unidad_medida}</span>`
-          : `<span style="${stockColor}">${m.stock_actual} ${m.unidad_medida}</span>`;
+        const stockColor = bajo ? 'color:#c03030;font-weight:700;' : 'color:var(--teal);font-weight:700;';
+        const stockTexto = `<span style="${stockColor}">${m.stock_actual} ${m.unidad_medida}</span>`;
         const esActivo = m.estado === 'ACTIVO';
         return `
           <tr>
@@ -546,12 +533,11 @@ function renderTablaInventario(lista) {
             <td>${estadoBadge}</td>
             <td>
               <div class="action-icons">
-                <button class="icon-btn icon-btn--edit" title="Editar medicamento"
+                <button class="icon-btn icon-btn--edit" title="Editar"
                   onclick='abrirModalEditarMed(${JSON.stringify(m)})'>✏️</button>
-                <button
-                  class="icon-btn"
+                <button class="icon-btn"
                   style="background:${esActivo ? 'rgba(200,50,50,0.15)' : 'rgba(42,107,94,0.15)'};"
-                  title="${esActivo ? 'Desactivar medicamento' : 'Activar medicamento'}"
+                  title="${esActivo ? 'Desactivar' : 'Activar'}"
                   onclick="toggleMedicamento(${m.idMedicamento}, '${esActivo ? 'INACTIVO' : 'ACTIVO'}')">
                   ${esActivo ? '🟢' : '🔴'}
                 </button>
@@ -562,7 +548,6 @@ function renderTablaInventario(lista) {
     : '<tr><td colspan="8" style="text-align:center;color:var(--text-soft);padding:20px;">Sin medicamentos registrados</td></tr>';
 }
 
-// ── ALERTAS STOCK MÍNIMO — criterio 3 ─────────
 async function cargarAlertasStock() {
   try {
     const res  = await fetch('/api/medicamentos/bajo-stock', { headers: H });
@@ -592,7 +577,6 @@ async function cargarAlertasStock() {
   } catch { /* sin datos */ }
 }
 
-// ── HISTORIAL MOVIMIENTOS — criterio 5 ────────
 async function cargarMovimientos() {
   try {
     const res  = await fetch('/api/medicamentos/movimientos', { headers: H });
@@ -620,18 +604,15 @@ async function cargarMovimientos() {
   } catch { /* sin datos */ }
 }
 
-// ── BUSCAR EN INVENTARIO ──────────────────────
 function buscarInventario() {
   const q = document.getElementById('q-inventario').value.toLowerCase().trim();
   if (!q) return renderTablaInventario(listaMedicamentos);
-  const filtro = listaMedicamentos.filter(m =>
+  renderTablaInventario(listaMedicamentos.filter(m =>
     m.nombre.toLowerCase().includes(q) ||
     (m.descripcion || '').toLowerCase().includes(q)
-  );
-  renderTablaInventario(filtro);
+  ));
 }
 
-// ── MODAL NUEVO MEDICAMENTO ───────────────────
 function abrirModalNuevoMed() {
   document.getElementById('med-id').value          = '';
   document.getElementById('med-nombre').value      = '';
@@ -641,15 +622,12 @@ function abrirModalNuevoMed() {
   document.getElementById('med-unidad').value      = 'tableta';
   document.getElementById('med-precio').value      = '';
   document.getElementById('modal-med-titulo').textContent = 'Nuevo Medicamento';
-
-  // Desbloquear stock al crear
   document.getElementById('med-stock').removeAttribute('readonly');
   document.getElementById('med-stock').style.opacity = '1';
   document.getElementById('med-stock').style.cursor  = 'auto';
   document.getElementById('med-stock-min').removeAttribute('readonly');
   document.getElementById('med-stock-min').style.opacity = '1';
   document.getElementById('med-stock-min').style.cursor  = 'auto';
-
   document.getElementById('acciones-stock-modal').style.display = 'none';
   document.getElementById('modal-medicamento').classList.add('active');
 }
@@ -663,15 +641,12 @@ function abrirModalEditarMed(m) {
   document.getElementById('med-unidad').value      = m.unidad_medida;
   document.getElementById('med-precio').value      = m.precio_unitario || '';
   document.getElementById('modal-med-titulo').textContent = 'Editar Medicamento';
-
-  // Bloquear stock al editar
   document.getElementById('med-stock').setAttribute('readonly', true);
   document.getElementById('med-stock').style.opacity = '0.6';
   document.getElementById('med-stock').style.cursor  = 'not-allowed';
   document.getElementById('med-stock-min').setAttribute('readonly', true);
   document.getElementById('med-stock-min').style.opacity = '0.6';
   document.getElementById('med-stock-min').style.cursor  = 'not-allowed';
-
   document.getElementById('acciones-stock-modal').style.display = 'block';
   document.getElementById('modal-medicamento').classList.add('active');
 }
@@ -705,12 +680,11 @@ async function guardarMedicamento() {
   }
 }
 
-// ── MODAL ENTRADA DE STOCK — criterio 6 ───────
 function abrirModalEntrada(idMedicamento, nombre) {
-  document.getElementById('entrada-id-med').value  = idMedicamento;
+  document.getElementById('entrada-id-med').value       = idMedicamento;
   document.getElementById('entrada-nombre').textContent = nombre;
-  document.getElementById('entrada-cantidad').value = '';
-  document.getElementById('entrada-proveedor').value = '';
+  document.getElementById('entrada-cantidad').value     = '';
+  document.getElementById('entrada-proveedor').value    = '';
   document.getElementById('modal-entrada').classList.add('active');
 }
 
@@ -719,9 +693,9 @@ function cerrarModalEntrada() {
 }
 
 async function guardarEntrada() {
-  const id       = document.getElementById('entrada-id-med').value;
-  const cantidad = parseInt(document.getElementById('entrada-cantidad').value);
-  const proveedor= document.getElementById('entrada-proveedor').value.trim();
+  const id        = document.getElementById('entrada-id-med').value;
+  const cantidad  = parseInt(document.getElementById('entrada-cantidad').value);
+  const proveedor = document.getElementById('entrada-proveedor').value.trim();
 
   if (!cantidad || cantidad <= 0) return alert('Ingresa una cantidad válida');
 
@@ -738,13 +712,12 @@ async function guardarEntrada() {
   }
 }
 
-// ── MODAL AJUSTE MANUAL ───────────────────────
 function abrirModalAjuste(idMedicamento, nombre, stockActual) {
-  document.getElementById('ajuste-id-med').value    = idMedicamento;
-  document.getElementById('ajuste-nombre').textContent = nombre;
+  document.getElementById('ajuste-id-med').value           = idMedicamento;
+  document.getElementById('ajuste-nombre').textContent     = nombre;
   document.getElementById('ajuste-stock-actual').textContent = stockActual;
-  document.getElementById('ajuste-cantidad').value  = stockActual;
-  document.getElementById('ajuste-motivo').value    = '';
+  document.getElementById('ajuste-cantidad').value         = stockActual;
+  document.getElementById('ajuste-motivo').value           = '';
   document.getElementById('modal-ajuste').classList.add('active');
 }
 
@@ -757,7 +730,7 @@ async function guardarAjuste() {
   const cantidad_nueva = parseInt(document.getElementById('ajuste-cantidad').value);
   const motivo         = document.getElementById('ajuste-motivo').value.trim();
 
-  if (cantidad_nueva === undefined || isNaN(cantidad_nueva)) return alert('Ingresa una cantidad válida');
+  if (isNaN(cantidad_nueva)) return alert('Ingresa una cantidad válida');
 
   const res  = await fetch(`/api/medicamentos/${id}/ajuste`, {
     method: 'POST', headers: H,
@@ -772,7 +745,6 @@ async function guardarAjuste() {
   }
 }
 
-// ── TOGGLE ESTADO ─────────────────────────────
 async function toggleMedicamento(id, nuevoEstado) {
   const accion = nuevoEstado === 'ACTIVO' ? 'activar' : 'desactivar';
   if (!confirm(`¿Deseas ${accion} este medicamento?`)) return;
@@ -793,7 +765,7 @@ function switchTabInv(tab) {
 }
 
 function abrirDesdeEditar(tipo) {
-  const id     = document.getElementById('med-id').value;
+  const id    = document.getElementById('med-id').value;
   const nombre = document.getElementById('med-nombre').value;
   const stock  = parseInt(document.getElementById('med-stock').value) || 0;
   cerrarModalMed();
@@ -803,3 +775,147 @@ function abrirDesdeEditar(tipo) {
     abrirModalAjuste(id, nombre, stock);
   }
 }
+
+// ══════════════════════════════════════════
+//  HU14 — Panel de Métricas Administrativas
+// ══════════════════════════════════════════
+
+function _formatearFecha(fechaStr) {
+  if (!fechaStr) return '—';
+  const d = new Date(fechaStr);
+  return d.toLocaleDateString('es-SV', { day: '2-digit', month: 'short', year: 'numeric' })
+    + ' ' + d.toLocaleTimeString('es-SV', { hour: '2-digit', minute: '2-digit' });
+}
+
+async function cargarResumen() {
+  try {
+    const res  = await fetch('/api/metricas/resumen', { headers: H });
+    const data = await res.json();
+    const el   = (id) => document.getElementById(id);
+
+    if (el('s-pacientes'))     el('s-pacientes').textContent     = data.totalPacientes    ?? '—';
+    if (el('metCitasHoy'))     el('metCitasHoy').textContent     = data.citasHoy          ?? '0';
+    if (el('metMedicos'))      el('metMedicos').textContent      = data.medicosActivos    ?? '—';
+    if (el('metAlertas'))      el('metAlertas').textContent      = data.alertasInventario ?? '0';
+    if (el('badgeInventario')) el('badgeInventario').textContent = data.alertasInventario ?? '0';
+
+    if (el('metCitasSub')) {
+      el('metCitasSub').innerHTML =
+        `✅ ${data.citasCompletadas ?? 0} completadas &nbsp;❌ ${data.citasCanceladas ?? 0} canceladas`;
+    }
+
+    if ((data.alertasInventario ?? 0) > 0) {
+      const card = document.getElementById('cardAlertas');
+      if (card) card.style.borderColor = '#e74c3c';
+    }
+  } catch (e) {
+    console.error('HU14 cargarResumen:', e);
+  }
+}
+
+async function cargarInventarioCritico() {
+  const ids = ['bodyInventarioCritico'];
+  try {
+    const res   = await fetch('/api/metricas/alertas-inventario', { headers: H });
+    const lista = await res.json();
+
+    const badge = document.getElementById('badgeInventario');
+    if (badge) {
+      badge.textContent      = lista.length;
+      badge.style.background = lista.length > 0 ? '#c0392b' : '#27ae60';
+    }
+
+    const html = lista.length === 0
+      ? `<tr><td colspan="5" style="text-align:center;color:var(--text-soft);padding:20px;">✅ Sin alertas de inventario</td></tr>`
+      : lista.map(m => {
+          const agotado = m.stock_actual === 0;
+          const clase   = agotado ? 'stock-agotado' : 'stock-critico';
+          const estado  = agotado ? '🔴 Agotado' : '🟡 Crítico';
+          return `<tr>
+            <td>${m.nombre}</td>
+            <td class="${clase}">${m.stock_actual}</td>
+            <td>${m.stock_minimo}</td>
+            <td>${m.unidad_medida}</td>
+            <td class="${clase}">${estado}</td>
+          </tr>`;
+        }).join('');
+
+    ids.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.innerHTML = html;
+    });
+  } catch (e) {
+    console.error('HU14 cargarInventarioCritico:', e);
+  }
+}
+
+async function cargarInventarioCriticoLogs() {
+  try {
+    const res   = await fetch('/api/metricas/alertas-inventario', { headers: H });
+    const lista = await res.json();
+    const el    = document.getElementById('bodyInventarioCriticoLogs');
+    if (!el) return;
+
+    el.innerHTML = lista.length === 0
+      ? `<tr><td colspan="5" style="text-align:center;color:var(--text-soft);padding:20px;">✅ Sin alertas de inventario</td></tr>`
+      : lista.map(m => {
+          const agotado = m.stock_actual === 0;
+          const clase   = agotado ? 'stock-agotado' : 'stock-critico';
+          const estado  = agotado ? '🔴 Agotado' : '🟡 Crítico';
+          return `<tr>
+            <td>${m.nombre}</td>
+            <td class="${clase}">${m.stock_actual}</td>
+            <td>${m.stock_minimo}</td>
+            <td>${m.unidad_medida}</td>
+            <td class="${clase}">${estado}</td>
+          </tr>`;
+        }).join('');
+  } catch (e) {
+    console.error('HU14 cargarInventarioCriticoLogs:', e);
+  }
+}
+
+async function cargarActividad() {
+  const ids = ['logs-preview', 'logs-full'];
+  ids.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = '<li class="sin-datos">Cargando...</li>';
+  });
+  try {
+    const res   = await fetch('/api/metricas/actividad-reciente', { headers: H });
+    const lista = await res.json();
+
+    const html = lista.length === 0
+      ? '<li class="sin-datos">Sin actividad registrada aún.</li>'
+      : lista.map(a => `
+          <li>
+            <span class="feed-dot"></span>
+            <div>
+              <strong>${a.accion}</strong>${a.descripcion ? ' — ' + a.descripcion : ''}
+              <br><small style="color:#aaa">${a.nombreUsuario ?? 'Sistema'} · ${a.modulo ?? ''}</small>
+            </div>
+            <span class="feed-fecha">${_formatearFecha(a.fecha)}</span>
+          </li>`).join('');
+
+    ids.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.innerHTML = html;
+    });
+  } catch (e) {
+    console.error('HU14 cargarActividad:', e);
+  }
+}
+
+async function iniciarPanelMetricas() {
+  await Promise.all([
+    cargarResumen(),
+    cargarInventarioCritico(),
+    cargarActividad(),
+  ]);
+}
+
+// ── INIT ──────────────────────────────────────
+cargarStats();
+cargarUsuariosDoctores();
+iniciarPanelMetricas();
+setInterval(iniciarPanelMetricas, 60000);
