@@ -31,7 +31,7 @@ const detallesFacturaRoutes= require("./routes/detalles_factura.routes");
 const perfilRoutes         = require("./routes/perfil.routes");
 const medicamentosRoutes   = require("./routes/medicamentos.routes");
 const metricasRoutes       = require('./routes/metricas.routes');
-const reportesRoutes       = require('./routes/reportes.routes'); // ✅ línea agregada
+const reportesRoutes       = require('./routes/reportes.routes'); // 
 
 app.use('/api/metricas',         metricasRoutes);
 app.use("/api/consultas",        consultasRoutes);
@@ -47,7 +47,7 @@ app.use("/api/detalles-factura", detallesFacturaRoutes);
 app.use("/api/perfil",           perfilRoutes);
 app.use("/api/medicamentos",     medicamentosRoutes);
 app.use('/api/pdf',              pdfRoutes);
-app.use('/api/reportes',         reportesRoutes); // ✅
+app.use('/api/reportes',         reportesRoutes); // 
 
 const PORT = process.env.PORT || 3000;
 
