@@ -24,6 +24,7 @@
       <a href="#" class="nav-item" onclick="nav('roles',this);return false;"><span class="nav-icon">🔑</span> Roles y Accesos</a>
       <a href="#" class="nav-item" onclick="nav('logs',this);return false;"><span class="nav-icon">📋</span> Logs del Sistema</a>
       <a href="#" class="nav-item" onclick="nav('inventario',this);return false;"><span class="nav-icon">💊</span> Inventario</a>
+      <a href="#" class="nav-item" onclick="nav('reportes',this);return false;"><span class="nav-icon">📊</span> Reportes</a>
     </nav>
     <button class="sidebar__logout" onclick="cerrarSesion()"><span>⏻</span> Cerrar sesión</button>
   </aside>
@@ -274,6 +275,173 @@
         </div>
       </div>
     </div>
+
+    <!-- ══ REPORTES ══ HU12 -->
+    <div id="sec-reportes" style="display:none;">
+
+      <!-- Tabs: Citas | Inventario -->
+      <div class="rep-tabs">
+        <button class="rep-tab rep-tab--active" onclick="repSwitchTab('citas',this)">📅 Citas</button>
+        <button class="rep-tab"                 onclick="repSwitchTab('inventario',this)">💊 Inventario</button>
+      </div>
+
+      <!-- ════ PANEL CITAS ════ -->
+      <div id="rep-panel-citas">
+
+        <div class="panel" style="margin-bottom:20px;">
+          <div class="panel__header" style="margin-bottom:14px;">
+            <h2>Filtros del reporte</h2>
+          </div>
+          <div class="rep-filtros-grid">
+            <div class="form-group">
+              <label>Fecha inicio</label>
+              <input type="date" id="rep-fecha-inicio" class="rep-input"/>
+            </div>
+            <div class="form-group">
+              <label>Fecha fin</label>
+              <input type="date" id="rep-fecha-fin" class="rep-input"/>
+            </div>
+            <div class="form-group">
+              <label>Médico</label>
+              <select id="rep-doctor" class="rep-input">
+                <option value="">Todos</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Especialidad</label>
+              <select id="rep-especialidad" class="rep-input">
+                <option value="">Todas</option>
+              </select>
+            </div>
+            <div class="form-group rep-btn-wrap">
+              <button class="header-btn" style="width:100%;padding:11px;" onclick="repGenerarCitas()">
+                🔍 Generar reporte
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- KPI cards citas -->
+        <section class="stats-grid" id="rep-kpis-citas" style="display:none;margin-bottom:20px;">
+          <div class="stat-card stat-card--teal">
+            <div class="stat-icon">📋</div>
+            <div class="stat-info">
+              <div class="stat-num" id="rep-kpi-total">—</div>
+              <div class="stat-label">Total citas</div>
+            </div>
+          </div>
+          <div class="stat-card stat-card--soft">
+            <div class="stat-icon">✅</div>
+            <div class="stat-info">
+              <div class="stat-num" id="rep-kpi-atendidas">—</div>
+              <div class="stat-label">Atendidas</div>
+            </div>
+          </div>
+          <div class="stat-card stat-card--gold">
+            <div class="stat-icon">⏳</div>
+            <div class="stat-info">
+              <div class="stat-num" id="rep-kpi-pendientes">—</div>
+              <div class="stat-label">Pendientes</div>
+            </div>
+          </div>
+          <div class="stat-card stat-card--dark">
+            <div class="stat-icon">❌</div>
+            <div class="stat-info">
+              <div class="stat-num" id="rep-kpi-canceladas">—</div>
+              <div class="stat-label">Canceladas</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Tabla detalle por médico -->
+        <div class="panel" id="rep-tabla-citas-wrap" style="display:none;">
+          <div class="panel__header">
+            <h2>Detalle por médico</h2>
+            <span id="rep-periodo-label" style="font-size:12px;color:var(--text-soft);"></span>
+          </div>
+          <table class="tabla">
+            <thead>
+              <tr>
+                <th>Médico</th>
+                <th>Especialidad</th>
+                <th>Total</th>
+                <th>Atendidas</th>
+                <th>Canceladas</th>
+                <th>Pendientes</th>
+                <th>% Atendidas</th>
+              </tr>
+            </thead>
+            <tbody id="rep-tbody-citas"></tbody>
+          </table>
+          <p id="rep-citas-vacio" style="display:none;text-align:center;color:var(--text-soft);padding:24px;font-size:13px;">
+            No se encontraron citas para el período seleccionado.
+          </p>
+        </div>
+
+      </div><!-- /rep-panel-citas -->
+
+      <!-- ════ PANEL INVENTARIO ════ -->
+      <div id="rep-panel-inventario" style="display:none;">
+
+        <section class="stats-grid" style="margin-bottom:20px;">
+          <div class="stat-card stat-card--teal">
+            <div class="stat-icon">💊</div>
+            <div class="stat-info">
+              <div class="stat-num" id="inv-kpi-total">—</div>
+              <div class="stat-label">Medicamentos activos</div>
+            </div>
+          </div>
+          <div class="stat-card stat-card--soft">
+            <div class="stat-icon">✅</div>
+            <div class="stat-info">
+              <div class="stat-num" id="inv-kpi-stock">—</div>
+              <div class="stat-label">En stock</div>
+            </div>
+          </div>
+          <div class="stat-card stat-card--gold">
+            <div class="stat-icon">⚠️</div>
+            <div class="stat-info">
+              <div class="stat-num" id="inv-kpi-alerta">—</div>
+              <div class="stat-label">En alerta</div>
+            </div>
+          </div>
+          <div class="stat-card stat-card--dark">
+            <div class="stat-icon">🔴</div>
+            <div class="stat-info">
+              <div class="stat-num" id="inv-kpi-agotados">—</div>
+              <div class="stat-label">Agotados</div>
+            </div>
+          </div>
+        </section>
+
+        <div class="panel">
+          <div class="panel__header" style="margin-bottom:16px;">
+            <h2>Estado del inventario</h2>
+            <div class="tabs" style="margin-bottom:0;width:auto;gap:4px;">
+              <button class="tab-btn active" onclick="repFiltrarInv('todos',this)">Todos</button>
+              <button class="tab-btn"        onclick="repFiltrarInv('alerta',this)">⚠️ Alerta</button>
+              <button class="tab-btn"        onclick="repFiltrarInv('agotado',this)">🔴 Agotados</button>
+              <button class="tab-btn"        onclick="repFiltrarInv('normal',this)">✅ Stock OK</button>
+            </div>
+          </div>
+          <table class="tabla">
+            <thead>
+              <tr>
+                <th>Medicamento</th>
+                <th>Stock actual</th>
+                <th>Stock mínimo</th>
+                <th>Unidad</th>
+                <th>Precio unit.</th>
+                <th>Estado</th>
+              </tr>
+            </thead>
+            <tbody id="rep-tbody-inv"></tbody>
+          </table>
+        </div>
+
+      </div><!-- /rep-panel-inventario -->
+
+    </div><!-- /sec-reportes -->
 
     <!-- MODAL NUEVO / EDITAR MEDICAMENTO -->
     <div class="modal-overlay" id="modal-medicamento">

@@ -46,6 +46,8 @@ app.use("/api/detalles-factura",detallesFacturaRoutes);
 app.use("/api/perfil",          perfilRoutes);
 app.use("/api/medicamentos",    medicamentosRoutes);
 app.use('/api/pdf',             pdfRoutes);
+app.use('/api/reportes',         reportesRoutes);
+
 
 const PORT = process.env.PORT || 3000;
 

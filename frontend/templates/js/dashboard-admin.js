@@ -23,7 +23,7 @@ document.getElementById('fecha-actual').textContent =
 const token = localStorage.getItem('token');
 const H = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
 
-// ── NAVEGACIÓN ────────────────────────────────
+// ── NAVEGACIÓN — hook de reportes integrado ───
 function nav(seccion, linkEl) {
   document.querySelectorAll('[id^="sec-"]').forEach(s => s.style.display = 'none');
   document.getElementById('sec-' + seccion).style.display = 'block';
@@ -35,6 +35,7 @@ function nav(seccion, linkEl) {
   if (seccion === 'roles')      cargarRoles();
   if (seccion === 'logs')       { cargarLogs(); cargarInventarioCriticoLogs(); }
   if (seccion === 'inventario') cargarInventario();
+  if (seccion === 'reportes')  iniciarReportes(); // ← HU12
 }
 
 // ── STATS ─────────────────────────────────────
@@ -380,7 +381,6 @@ async function guardarMedico() {
     alert('La especialidad es obligatoria.');
     return;
   }
-
   if (horaInicio && horaFin && horaInicio >= horaFin) {
     alert('La hora de fin debe ser posterior a la hora de inicio.');
     return;
@@ -403,11 +403,7 @@ async function guardarMedico() {
   const res    = await fetch(url, { method, headers: H, body: JSON.stringify(payload) });
   const data   = await res.json();
 
-  if (res.status === 409) {
-    alert('⚠️ ' + data.error);
-    return;
-  }
-
+  if (res.status === 409) { alert('⚠️ ' + data.error); return; }
   if (data.message || data.id) {
     cerrarModalMedico();
     cargarMedicos();
@@ -423,15 +419,10 @@ async function toggleMedico(id, estaActivo) {
     ? '¿Desactivar este médico? No aparecerá disponible para nuevas citas.'
     : '¿Activar este médico?';
   if (!confirm(mensaje)) return;
-
   const res  = await fetch(`/api/doctores/${id}/${accion}`, { method: 'PATCH', headers: H });
   const data = await res.json();
-  if (data.message) {
-    cargarMedicos();
-    cargarStats();
-  } else {
-    alert('Error: ' + (data.error || ''));
-  }
+  if (data.message) { cargarMedicos(); cargarStats(); }
+  else alert('Error: ' + (data.error || ''));
 }
 
 // ── AUTOCOMPLETADO USUARIO DOCTOR ─────────────
@@ -442,8 +433,7 @@ async function cargarUsuariosDoctores() {
     const res   = await fetch('/api/usuarios', { headers: H });
     const todos = await res.json();
     listaUsuariosDoctores = Array.isArray(todos)
-      ? todos.filter(u => u.idRol === 30002)
-      : [];
+      ? todos.filter(u => u.idRol === 30002) : [];
   } catch { /* sin datos */ }
 }
 
@@ -451,14 +441,11 @@ function buscarUsuarioDoctor() {
   const input       = document.getElementById('md-usuario-nombre');
   const sugerencias = document.getElementById('sugerencias-usuario-doctor');
   const q = input.value.toLowerCase().trim();
-
   if (!q) { sugerencias.style.display = 'none'; return; }
-
   const lista = listaUsuariosDoctores.filter(u =>
     `${u.Nombres} ${u.Apellidos}`.toLowerCase().includes(q) ||
     (u.Email || '').toLowerCase().includes(q)
   );
-
   sugerencias.innerHTML = lista.length
     ? lista.map(u => `
         <div class="autocomplete-item"
@@ -467,7 +454,6 @@ function buscarUsuarioDoctor() {
           <span>${u.Email}</span>
         </div>`).join('')
     : '<div class="autocomplete-item">Sin resultados</div>';
-
   sugerencias.style.display = 'block';
 }
 
@@ -480,9 +466,8 @@ function seleccionarUsuarioDoctor(id, nombre) {
 document.addEventListener('click', (e) => {
   const input = document.getElementById('md-usuario-nombre');
   const sug   = document.getElementById('sugerencias-usuario-doctor');
-  if (input && sug && !input.contains(e.target) && !sug.contains(e.target)) {
+  if (input && sug && !input.contains(e.target) && !sug.contains(e.target))
     sug.style.display = 'none';
-  }
 });
 
 // ── CERRAR SESIÓN ─────────────────────────────
@@ -554,7 +539,6 @@ async function cargarAlertasStock() {
     const data = await res.json();
     const cont = document.getElementById('alertas-stock');
     if (!cont) return;
-
     if (Array.isArray(data) && data.length) {
       cont.style.display = 'block';
       cont.innerHTML = `
@@ -583,11 +567,8 @@ async function cargarMovimientos() {
     const data = await res.json();
     document.getElementById('tbody-movimientos').innerHTML = Array.isArray(data) && data.length
       ? data.map(m => {
-          const colorTipo = m.tipo_movimiento === 'ENTRADA'
-            ? 'color:var(--teal);'
-            : m.tipo_movimiento === 'SALIDA'
-              ? 'color:#c03030;'
-              : 'color:var(--gold);';
+          const colorTipo = m.tipo_movimiento === 'ENTRADA' ? 'color:var(--teal);'
+            : m.tipo_movimiento === 'SALIDA' ? 'color:#c03030;' : 'color:var(--gold);';
           const simbolo = m.tipo_movimiento === 'ENTRADA' ? '+' : m.tipo_movimiento === 'SALIDA' ? '-' : '±';
           return `
             <tr>
@@ -666,18 +647,12 @@ async function guardarMedicamento() {
     precio_unitario: parseFloat(document.getElementById('med-precio').value) || 0,
   };
   if (!payload.nombre) return alert('El nombre es requerido');
-
   const url    = id ? `/api/medicamentos/${id}` : '/api/medicamentos';
   const method = id ? 'PUT' : 'POST';
   const res    = await fetch(url, { method, headers: H, body: JSON.stringify(payload) });
   const data   = await res.json();
-
-  if (data.message || data.id) {
-    cerrarModalMed();
-    cargarInventario();
-  } else {
-    alert('Error: ' + (data.error?.sqlMessage || JSON.stringify(data.error)));
-  }
+  if (data.message || data.id) { cerrarModalMed(); cargarInventario(); }
+  else alert('Error: ' + (data.error?.sqlMessage || JSON.stringify(data.error)));
 }
 
 function abrirModalEntrada(idMedicamento, nombre) {
@@ -698,18 +673,12 @@ async function guardarEntrada() {
   const proveedor = document.getElementById('entrada-proveedor').value.trim();
 
   if (!cantidad || cantidad <= 0) return alert('Ingresa una cantidad válida');
-
   const res  = await fetch(`/api/medicamentos/${id}/entrada`, {
-    method: 'POST', headers: H,
-    body: JSON.stringify({ cantidad, proveedor })
+    method: 'POST', headers: H, body: JSON.stringify({ cantidad, proveedor })
   });
   const data = await res.json();
-  if (data.message) {
-    cerrarModalEntrada();
-    cargarInventario();
-  } else {
-    alert('Error: ' + (data.error?.sqlMessage || JSON.stringify(data.error)));
-  }
+  if (data.message) { cerrarModalEntrada(); cargarInventario(); }
+  else alert('Error: ' + (data.error?.sqlMessage || JSON.stringify(data.error)));
 }
 
 function abrirModalAjuste(idMedicamento, nombre, stockActual) {
@@ -737,20 +706,15 @@ async function guardarAjuste() {
     body: JSON.stringify({ cantidad_nueva, motivo: motivo || 'Ajuste manual' })
   });
   const data = await res.json();
-  if (data.message) {
-    cerrarModalAjuste();
-    cargarInventario();
-  } else {
-    alert('Error: ' + (data.error?.sqlMessage || JSON.stringify(data.error)));
-  }
+  if (data.message) { cerrarModalAjuste(); cargarInventario(); }
+  else alert('Error: ' + (data.error?.sqlMessage || JSON.stringify(data.error)));
 }
 
 async function toggleMedicamento(id, nuevoEstado) {
   const accion = nuevoEstado === 'ACTIVO' ? 'activar' : 'desactivar';
   if (!confirm(`¿Deseas ${accion} este medicamento?`)) return;
   const res  = await fetch(`/api/medicamentos/${id}/toggle`, {
-    method: 'PATCH', headers: H,
-    body: JSON.stringify({ estado: nuevoEstado })
+    method: 'PATCH', headers: H, body: JSON.stringify({ estado: nuevoEstado })
   });
   const data = await res.json();
   if (data.message) cargarInventario();
@@ -769,10 +733,45 @@ function abrirDesdeEditar(tipo) {
   const nombre = document.getElementById('med-nombre').value;
   const stock  = parseInt(document.getElementById('med-stock').value) || 0;
   cerrarModalMed();
-  if (tipo === 'entrada') {
-    abrirModalEntrada(id, nombre);
-  } else {
-    abrirModalAjuste(id, nombre, stock);
+  if (tipo === 'entrada') abrirModalEntrada(id, nombre);
+  else abrirModalAjuste(id, nombre, stock);
+}
+
+// ══════════════════════════════════════════════
+//  HU12 — REPORTES CONSOLIDADOS
+// ══════════════════════════════════════════════
+let _repInvData = [];
+
+async function iniciarReportes() {
+  _repSetDefaultDates();
+  await _repCargarFiltros();
+  await repCargarInventario();
+}
+
+function _repSetDefaultDates() {
+  const hoy    = new Date();
+  const hace30 = new Date(hoy - 30 * 24 * 60 * 60 * 1000);
+  document.getElementById('rep-fecha-inicio').value = hace30.toISOString().split('T')[0];
+  document.getElementById('rep-fecha-fin').value    = hoy.toISOString().split('T')[0];
+}
+
+async function _repCargarFiltros() {
+  try {
+    const res = await fetch('/api/reportes/filtros', { headers: H });
+    if (!res.ok) return;
+    const { doctores, especialidades } = await res.json();
+    const selDoc = document.getElementById('rep-doctor');
+    const selEsp = document.getElementById('rep-especialidad');
+    selDoc.innerHTML = '<option value="">Todos</option>';
+    selEsp.innerHTML = '<option value="">Todas</option>';
+    doctores.forEach(d => {
+      selDoc.innerHTML += `<option value="${d.idDoctor}">${d.nombre} — ${d.Especialidad}</option>`;
+    });
+    especialidades.forEach(e => {
+      selEsp.innerHTML += `<option value="${e}">${e}</option>`;
+    });
+  } catch (err) {
+    console.error('_repCargarFiltros:', err);
   }
 }
 
