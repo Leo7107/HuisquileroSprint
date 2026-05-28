@@ -23,6 +23,13 @@ exports.getDoctorById = (req, res) => {
   });
 };
 
+exports.getDoctorByUsuario = (req, res) => {
+  Doctor.getFullByUsuario(req.params.idUsuario, (err, result) => {
+    if (err) { console.error('[doctores]', err); return res.status(500).json({ message: 'Error interno del servidor.' }); }
+    res.json(result[0] || null);
+  });
+};
+
 // POST crear doctor
 // Criterio 1: registrar médico con datos y especialidad
 // Criterio 3: no permitir dos médicos con el mismo número de junta médica

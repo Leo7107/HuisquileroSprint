@@ -9,8 +9,9 @@ router.use(auth);
 router.get("/", doctoresController.getDoctores);
 
 // GET solo activos — criterio 4: para agendar citas
-// IMPORTANTE: debe ir antes de /:id para que Express no confunda "activos" con un ID
+// IMPORTANTE: rutas estáticas antes de /:id para que Express no las confunda con un ID
 router.get("/activos", doctoresController.getDoctoresActivos);
+router.get("/by-usuario/:idUsuario", doctoresController.getDoctorByUsuario);
 
 // GET por id
 router.get("/:id", doctoresController.getDoctorById);

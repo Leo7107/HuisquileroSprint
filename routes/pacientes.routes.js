@@ -5,6 +5,7 @@ const auth = require("../middleware/auth");
 
 router.use(auth);
 
+router.get("/by-usuario/:idUsuario", pacientesController.getPacienteByUsuario);
 router.get("/", pacientesController.getPacientes);
 router.get("/:id", pacientesController.getPacienteById);
 router.post("/", pacientesController.createPaciente);

@@ -69,11 +69,8 @@ function nav(seccion, linkEl) {
 async function obtenerMiPaciente() {
   if (miPaciente) return miPaciente;
   try {
-    const res      = await fetch('/api/pacientes', { headers: H });
-    const pacientes = await res.json();
-    miPaciente = Array.isArray(pacientes)
-      ? pacientes.find(p => p.idUsuario === usuario.id)
-      : null;
+    const res  = await fetch(`/api/pacientes/by-usuario/${usuario.id}`, { headers: H });
+    miPaciente = await res.json();
     return miPaciente;
   } catch { return null; }
 }

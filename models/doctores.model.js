@@ -75,7 +75,20 @@ const Doctor = {
     }
   },
 
-   create: (data, cb) => db.query("INSERT INTO tbl_doctores SET ?", data, cb),
+  getFullByUsuario: (idUsuario, cb) =>
+    db.query(
+      `SELECT d.idDoctor, d.Especialidad, d.Consultorio, d.Horario,
+              d.hora_inicio, d.hora_fin, d.numero_junta_medica,
+              d.Telefono, d.idUsuario, d.Estado,
+              u.Nombres, u.Apellidos, u.Email
+       FROM tbl_doctores d
+       LEFT JOIN tbl_usuarios u ON d.idUsuario = u.idUsuario
+       WHERE d.idUsuario = ?
+       LIMIT 1`,
+      [idUsuario], cb
+    ),
+
+  create: (data, cb) => db.query("INSERT INTO tbl_doctores SET ?", data, cb),
 
   update: (id, data, cb) =>
     db.query("UPDATE tbl_doctores SET ? WHERE idDoctor = ?", [data, id], cb),

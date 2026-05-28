@@ -14,6 +14,13 @@ exports.getPacienteById = (req, res) => {
     });
 };
 
+exports.getPacienteByUsuario = (req, res) => {
+    Paciente.getByUsuario(req.params.idUsuario, (err, result) => {
+        if (err) { console.error('[pacientes]', err); return res.status(500).json({ message: 'Error interno del servidor.' }); }
+        res.json(result[0] || null);
+    });
+};
+
 exports.createPaciente = (req, res) => {
     Paciente.create(req.body, (err, result) => {
         if (err) { console.error('[pacientes]', err); return res.status(500).json({ message: 'Error interno del servidor.' }); }

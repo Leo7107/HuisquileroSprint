@@ -75,9 +75,8 @@ function nombrePaciente(c) {
 async function obtenerMiDoctor() {
   if (miDoctor) return miDoctor;
   try {
-    const res  = await fetch('/api/doctores', { headers: H });
-    const data = await res.json();
-    miDoctor   = Array.isArray(data) ? data.find(d => d.idUsuario === usuario.id) : null;
+    const res = await fetch(`/api/doctores/by-usuario/${usuario.id}`, { headers: H });
+    miDoctor  = await res.json();
     return miDoctor;
   } catch { return null; }
 }

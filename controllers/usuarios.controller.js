@@ -15,7 +15,7 @@ const transporter = nodemailer.createTransport({
 });
 
 const BASE_URL = process.env.BASE_URL || 'http://localhost:3000';
-const ROLES = { ADMIN: 1, PACIENTE: 30001, DOCTOR: 30003 };
+const ROLES = { ADMIN: 1, PACIENTE: 30001, DOCTOR: 30002, RECEPCIONISTA: 30003 };
 
 exports.getUsuarios = (req, res) => {
     Usuario.getAll((err, results) => {

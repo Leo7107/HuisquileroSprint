@@ -17,30 +17,27 @@ exports.getHistorialById = (req, res) => {
 exports.createHistorial = (req, res) => {
     Historial.create(req.body, (err, result) => {
         if (err) { console.error('[historial]', err); return res.status(500).json({ message: 'Error interno del servidor.' }); }
-        res.json({ message: "Historial clÃ­nico creado", id: result.insertId });
+        res.json({ message: "Historial clínico creado", id: result.insertId });
     });
 };
 
 exports.updateHistorial = (req, res) => {
     Historial.update(req.params.id, req.body, (err) => {
         if (err) { console.error('[historial]', err); return res.status(500).json({ message: 'Error interno del servidor.' }); }
-        res.json({ message: "Historial clÃ­nico actualizado" });
+        res.json({ message: "Historial clínico actualizado" });
     });
 };
 
 exports.deleteHistorial = (req, res) => {
     Historial.delete(req.params.id, (err) => {
         if (err) { console.error('[historial]', err); return res.status(500).json({ message: 'Error interno del servidor.' }); }
-        res.json({ message: "Historial clÃ­nico eliminado" });
+        res.json({ message: "Historial clínico eliminado" });
     });
 };
 
 exports.getHistorialByPaciente = (req, res) => {
-    const Historial = require('../models/historial.model');
     Historial.getByPaciente(req.query.idPaciente, (err, result) => {
         if (err) { console.error('[historial]', err); return res.status(500).json({ message: 'Error interno del servidor.' }); }
         res.json(result);
     });
 };
-
-

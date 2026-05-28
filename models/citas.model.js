@@ -23,9 +23,8 @@ const Cita = {
     FROM tbl_citas c
     LEFT JOIN tbl_paciente   p     ON c.idPaciente = p.idPaciente
     LEFT JOIN tbl_usuarios   u_pac ON p.idUsuario  = u_pac.idUsuario
-    LEFT JOIN tbl_doctores   d     ON c.idDoctor   = d.idDoctor
-    LEFT JOIN tbl_usuarios   u_doc ON d.idUsuario  = u_doc.idUsuario
     LEFT JOIN tbl_doctores   doc   ON c.idDoctor   = doc.idDoctor
+    LEFT JOIN tbl_usuarios   u_doc ON doc.idUsuario = u_doc.idUsuario
     WHERE c.idcita = ?
   `, [id], cb),
 
@@ -72,9 +71,8 @@ const Cita = {
       u_doc.Apellidos AS ApellidosDoctor,
       doc.Especialidad
     FROM tbl_citas c
-    LEFT JOIN tbl_doctores   d     ON c.idDoctor  = d.idDoctor
-    LEFT JOIN tbl_usuarios   u_doc ON d.idUsuario = u_doc.idUsuario
     LEFT JOIN tbl_doctores   doc   ON c.idDoctor  = doc.idDoctor
+    LEFT JOIN tbl_usuarios   u_doc ON doc.idUsuario = u_doc.idUsuario
     WHERE c.idPaciente = ?
     ORDER BY c.fecha DESC, c.hora DESC
   `, [idPaciente], cb),
