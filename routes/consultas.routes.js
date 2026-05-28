@@ -1,6 +1,9 @@
 const express = require("express");
 const router = express.Router();
 const consultasController = require("../controllers/consultas.controller");
+const auth = require("../middleware/auth");
+
+router.use(auth);
 
 router.get("/by-cita/:idCita", consultasController.getConsultaByCita);
 router.get("/", consultasController.getConsultas);

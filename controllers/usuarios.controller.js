@@ -19,63 +19,60 @@ const ROLES = { ADMIN: 1, PACIENTE: 30001, DOCTOR: 30003 };
 
 exports.getUsuarios = (req, res) => {
     Usuario.getAll((err, results) => {
-        if (err) return res.status(500).json({ error: err });
+        if (err) { console.error('[getUsuarios]', err); return res.status(500).json({ message: 'Error interno del servidor.' }); }
         res.json(results);
     });
 };
 
 exports.getUsuarioById = (req, res) => {
     Usuario.getById(req.params.id, (err, result) => {
-        if (err) return res.status(500).json({ error: err });
+        if (err) { console.error('[getUsuarioById]', err); return res.status(500).json({ message: 'Error interno del servidor.' }); }
         res.json(result);
     });
 };
 
 exports.createUsuario = (req, res) => {
-    const data = req.body;
-    console.log("datos recibidos", data);
-    bcrypt.hash(data.Password_hash, 10, (err, hash) => {
-        if (err) return res.status(500).json({ error: err });
-        console.log("Hash generado:", hash);
-        data.Password_hash = hash;
+    const { Nombres, Apellidos, Sexo, Fecha_nacimiento, Telefono, Direccion, Email, Password_hash } = req.body;
+    if (!Email || !Password_hash || !Nombres)
+        return res.status(400).json({ message: 'Campos requeridos: Nombres, Email, Password_hash.' });
+    bcrypt.hash(Password_hash, 10, (err, hash) => {
+        if (err) { console.error('[createUsuario] bcrypt:', err); return res.status(500).json({ message: 'Error interno del servidor.' }); }
+        const data = { Nombres, Apellidos, Sexo, Fecha_nacimiento, Telefono, Direccion,
+                       Email, Password_hash: hash, Estado: 'ACTIVO', idRol: 30001 };
         Usuario.create(data, (err, result) => {
-            if (err) {
-                console.log("Error BD:", err);
-                return res.status(500).json({ error: err });
-            }
+            if (err) { console.error('[createUsuario] BD:', err); return res.status(500).json({ message: 'Error interno del servidor.' }); }
             res.json({ message: "Usuario creado", id: result.insertId });
         });
     });
 };
 
 exports.updateUsuario = (req, res) => {
-    Usuario.update(req.params.id, req.body, (err) => {
-        if (err) return res.status(500).json({ error: err });
+    const { Nombres, Apellidos, Sexo, Fecha_nacimiento, Telefono, Direccion, Email, Estado } = req.body;
+    const data = { Nombres, Apellidos, Sexo, Fecha_nacimiento, Telefono, Direccion, Email, Estado };
+    Object.keys(data).forEach(k => data[k] === undefined && delete data[k]);
+    Usuario.update(req.params.id, data, (err) => {
+        if (err) { console.error('[updateUsuario]', err); return res.status(500).json({ message: 'Error interno del servidor.' }); }
         res.json({ message: "Usuario actualizado" });
     });
 };
 
 exports.deleteUsuario = (req, res) => {
     Usuario.delete(req.params.id, (err) => {
-        if (err) return res.status(500).json({ error: err });
+        if (err) { console.error('[deleteUsuario]', err); return res.status(500).json({ message: 'Error interno del servidor.' }); }
         res.json({ message: "Usuario eliminado" });
     });
 };
 
 exports.login = (req, res) => {
     const { Email, Password_hash } = req.body;
+    if (!Email || !Password_hash)
+        return res.status(400).json({ message: 'Email y contraseña son requeridos.' });
     Usuario.getByEmail(Email, (err, results) => {
-        if (err) {
-            console.error("Error login BD:", err);
-            return res.status(500).json({ error: err });
-        }
+        if (err) { console.error('[login] BD:', err); return res.status(500).json({ message: 'Error interno del servidor.' }); }
         if (results.length === 0) return res.status(401).json({ message: "Usuario no encontrado" });
         const usuario = results[0];
         bcrypt.compare(Password_hash, usuario.Password_hash, (err, coincide) => {
-            if (err) {
-                console.error("Error bcrypt:", err);
-                return res.status(500).json({ error: err });
-            }
+            if (err) { console.error('[login] bcrypt:', err); return res.status(500).json({ message: 'Error interno del servidor.' }); }
             if (!coincide) return res.status(401).json({ message: "Contraseña incorrecta" });
             const token = jwt.sign(
                 { id: usuario.idUsuario, rol: usuario.idRol },
@@ -94,7 +91,7 @@ exports.forgotPassword = (req, res) => {
         return res.status(400).json({ message: "Correo invalido." });
     }
     Usuario.getByEmail(Email, (err, results) => {
-        if (err) return res.status(500).json({ error: err });
+        if (err) { console.error('[forgotPassword] BD:', err); return res.status(500).json({ message: 'Error interno del servidor.' }); }
         if (results.length === 0) {
             return res.status(200).json({ message: "Si el correo existe, recibiras un enlace." });
         }
@@ -102,7 +99,7 @@ exports.forgotPassword = (req, res) => {
         const token = crypto.randomBytes(32).toString('hex');
         const expiry = new Date(Date.now() + 15 * 60 * 1000).toISOString().slice(0, 19).replace("T", " ");
         Usuario.saveResetToken(Email, token, expiry, (err) => {
-            if (err) return res.status(500).json({ error: err });
+            if (err) { console.error('[forgotPassword] saveToken:', err); return res.status(500).json({ message: 'Error interno del servidor.' }); }
             const resetLink = `${BASE_URL}/html/forgot-password.html?token=${token}`;
             let rolTexto = "";
             if (usuario.idRol === ROLES.DOCTOR) rolTexto = "Dr(a).";
@@ -156,15 +153,15 @@ exports.resetPassword = (req, res) => {
         return res.status(400).json({ message: "La contraseña debe tener al menos 8 caracteres." });
     }
     Usuario.getByResetToken(token, (err, results) => {
-        if (err) return res.status(500).json({ error: err });
+        if (err) { console.error('[resetPassword] BD:', err); return res.status(500).json({ message: 'Error interno del servidor.' }); }
         if (results.length === 0) {
             return res.status(400).json({ message: "El enlace no es valido o ya expiro. Solicita uno nuevo." });
         }
         const usuario = results[0];
         bcrypt.hash(password, 10, (err, hash) => {
-            if (err) return res.status(500).json({ error: err });
+            if (err) { console.error('[resetPassword] bcrypt:', err); return res.status(500).json({ message: 'Error interno del servidor.' }); }
             Usuario.updatePassword(usuario.idUsuario, hash, (err) => {
-                if (err) return res.status(500).json({ error: err });
+                if (err) { console.error('[resetPassword] update:', err); return res.status(500).json({ message: 'Error interno del servidor.' }); }
                 res.json({ message: "Contraseña actualizada correctamente." });
             });
         });

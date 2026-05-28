@@ -1,7 +1,7 @@
 const Perfil = require("../models/perfil.model");
 exports.getPerfil = (req, res) => {
   Perfil.getPerfil(req.params.idUsuario, (err, result) => {
-    if (err) return res.status(500).json({ error: err });
+    if (err) { console.error('[perfil]', err); return res.status(500).json({ message: 'Error interno del servidor.' }); }
     if (!result.length) return res.status(404).json({ error: "Usuario no encontrado" });
     res.json(result[0]);
   });
@@ -19,7 +19,7 @@ exports.updatePerfil = (req, res) => {
   if (Direccion !== undefined) dataUsuario.Direccion = Direccion;
   const procesarPaciente = () => {
     Perfil.getPacienteByUsuario(idUsuario, (err, rows) => {
-      if (err) return res.status(500).json({ error: err });
+      if (err) { console.error('[perfil]', err); return res.status(500).json({ message: 'Error interno del servidor.' }); }
       const dataPac = {
         tipo_sangre:           tipo_sangre           || null,
         contacto_emergencia:   contacto_emergencia   || null,
@@ -29,7 +29,7 @@ exports.updatePerfil = (req, res) => {
       if (rows.length > 0) {
         const idPaciente = rows[0].idPaciente;
         Perfil.updatePaciente(idPaciente, dataPac, (err) => {
-          if (err) return res.status(500).json({ error: err });
+          if (err) { console.error('[perfil]', err); return res.status(500).json({ message: 'Error interno del servidor.' }); }
           procesarHistorial(idPaciente);
         });
       } else {
@@ -38,7 +38,7 @@ exports.updatePerfil = (req, res) => {
         dataPac.fecha_registro    = new Date();
         dataPac.estado_paciente   = 'ACTIVO';
         Perfil.createPaciente(dataPac, (err, result) => {
-          if (err) return res.status(500).json({ error: err });
+          if (err) { console.error('[perfil]', err); return res.status(500).json({ message: 'Error interno del servidor.' }); }
           procesarHistorial(result.insertId);
         });
       }
@@ -46,7 +46,7 @@ exports.updatePerfil = (req, res) => {
   };
   const procesarHistorial = (idPaciente) => {
     Perfil.getHistorialByPaciente(idPaciente, (err, rows) => {
-      if (err) return res.status(500).json({ error: err });
+      if (err) { console.error('[perfil]', err); return res.status(500).json({ message: 'Error interno del servidor.' }); }
       const dataHist = {
         antecedentes_familiares: antecedentes_familiares || null,
         antecedentes_personales: antecedentes_personales || null,
@@ -57,14 +57,14 @@ exports.updatePerfil = (req, res) => {
       };
       if (rows.length > 0) {
         Perfil.updateHistorial(rows[0].idHistorial, dataHist, (err) => {
-          if (err) return res.status(500).json({ error: err });
+          if (err) { console.error('[perfil]', err); return res.status(500).json({ message: 'Error interno del servidor.' }); }
           res.json({ message: "Perfil actualizado correctamente" });
         });
       } else {
         dataHist.idPaciente     = idPaciente;
         dataHist.fecha_apertura = new Date();
         Perfil.createHistorial(dataHist, (err) => {
-          if (err) return res.status(500).json({ error: err });
+          if (err) { console.error('[perfil]', err); return res.status(500).json({ message: 'Error interno del servidor.' }); }
           res.json({ message: "Perfil actualizado correctamente" });
         });
       }
@@ -72,7 +72,7 @@ exports.updatePerfil = (req, res) => {
   };
   if (Object.keys(dataUsuario).length > 0) {
     Perfil.updateUsuario(idUsuario, dataUsuario, (err) => {
-      if (err) return res.status(500).json({ error: err });
+      if (err) { console.error('[perfil]', err); return res.status(500).json({ message: 'Error interno del servidor.' }); }
       procesarPaciente();
     });
   } else {

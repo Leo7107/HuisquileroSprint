@@ -20,9 +20,9 @@ exports.getFiltros = (req, res) => {
     return res.status(403).json({ error: 'Solo administradores.' });
 
   Reportes.getDoctoresActivos((err, doctores) => {
-    if (err) return res.status(500).json({ error: err });
+    if (err) { console.error('[reportes]', err); return res.status(500).json({ message: 'Error interno del servidor.' }); }
     Reportes.getEspecialidades((err2, rows) => {
-      if (err2) return res.status(500).json({ error: err2 });
+      if (err2) { console.error('[reportes]', err2); return res.status(500).json({ message: 'Error interno del servidor.' }); }
       res.json({ doctores, especialidades: rows.map(r => r.Especialidad) });
     });
   });
@@ -36,10 +36,10 @@ exports.getReporteCitas = (req, res) => {
   const filtros = parseFiltros(req.query);
 
   Reportes.getCitasKPIs(filtros, (err, rows) => {
-    if (err) return res.status(500).json({ error: err });
+    if (err) { console.error('[reportes]', err); return res.status(500).json({ message: 'Error interno del servidor.' }); }
     const kpis = rows[0];
     Reportes.getCitasPorMedico(filtros, (err2, detalle) => {
-      if (err2) return res.status(500).json({ error: err2 });
+      if (err2) { console.error('[reportes]', err2); return res.status(500).json({ message: 'Error interno del servidor.' }); }
       res.json({ kpis, detalle, filtros });
     });
   });
@@ -54,17 +54,17 @@ exports.getReporteConsultasMedico = (req, res) => {
   const idUsuario = req.user.id;
 
   db.query('SELECT idDoctor FROM tbl_doctores WHERE idUsuario = ?', [idUsuario], (err, rows) => {
-    if (err)          return res.status(500).json({ error: err });
-    if (!rows.length) return res.status(404).json({ error: 'Médico no encontrado.' });
+    if (err) { console.error('[reportes]', err); return res.status(500).json({ message: 'Error interno del servidor.' }); }
+    if (!rows.length) return res.status(404).json({ message: 'Médico no encontrado.' });
 
     const idDoctor = rows[0].idDoctor;
 
     Reportes.getConsultasKPIsMedico(idDoctor, filtros, (e1, kpiRows) => {
-      if (e1) return res.status(500).json({ error: e1 });
+      if (e1) { console.error('[reportes]', e1); return res.status(500).json({ message: 'Error interno del servidor.' }); }
       Reportes.getDiagnosticosFrecuentes(idDoctor, filtros, (e2, diagnosticos) => {
-        if (e2) return res.status(500).json({ error: e2 });
+        if (e2) { console.error('[reportes]', e2); return res.status(500).json({ message: 'Error interno del servidor.' }); }
         Reportes.getRecetasMedico(idDoctor, filtros, (e3, recetas) => {
-          if (e3) return res.status(500).json({ error: e3 });
+          if (e3) { console.error('[reportes]', e3); return res.status(500).json({ message: 'Error interno del servidor.' }); }
           res.json({ resumen: kpiRows[0], diagnosticos, recetas, filtros });
         });
       });
@@ -81,12 +81,12 @@ exports.getReporteInventario = (req, res) => {
 
   // 1. Obtener los KPIs del Inventario desde tu modelo existente
   Reportes.getInventarioKPIs((err, rows) => {
-    if (err) return res.status(500).json({ error: err });
+    if (err) { console.error('[reportes]', err); return res.status(500).json({ message: 'Error interno del servidor.' }); }
     const kpis = rows[0];
 
     // 2. Obtener el detalle de los medicamentos en stock, alerta y agotados
     Reportes.getInventarioDetalle((err2, medicamentos) => {
-      if (err2) return res.status(500).json({ error: err2 });
+      if (err2) { console.error('[reportes]', err2); return res.status(500).json({ message: 'Error interno del servidor.' }); }
 
       // Si el cliente pide explícitamente el PDF (ej: /api/reportes/inventario?format=pdf)
       if (req.query.format === 'pdf') {

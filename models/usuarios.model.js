@@ -23,7 +23,10 @@ const Usuario = {
         db.query('UPDATE tbl_usuarios SET reset_token = ?, reset_token_expiry = ? WHERE Email = ?', [token, expiry, email], callback);
     },
     getByResetToken: (token, callback) => {
-        db.query('SELECT * FROM tbl_usuarios WHERE reset_token = ?', [token], callback);
+        db.query(
+            'SELECT * FROM tbl_usuarios WHERE reset_token = ? AND reset_token_expiry > NOW()',
+            [token], callback
+        );
     },
     updatePassword: (id, hash, callback) => {
         db.query('UPDATE tbl_usuarios SET Password_hash = ?, reset_token = NULL, reset_token_expiry = NULL WHERE idUsuario = ?', [hash, id], callback);

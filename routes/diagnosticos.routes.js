@@ -1,6 +1,9 @@
 const express = require("express");
 const router = express.Router();
 const diagnosticosController = require("../controllers/diagnosticos.controller");
+const auth = require("../middleware/auth");
+
+router.use(auth);
 
 router.get("/", diagnosticosController.getDiagnosticos);
 router.get("/:id", diagnosticosController.getDiagnosticoById);

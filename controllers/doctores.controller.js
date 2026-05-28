@@ -3,7 +3,7 @@ const Doctor = require("../models/doctores.model");
 // GET todos los doctores — para admin y recepcionista
 exports.getDoctores = (req, res) => {
   Doctor.getAll((err, results) => {
-    if (err) return res.status(500).json({ error: err });
+    if (err) { console.error('[doctores]', err); return res.status(500).json({ message: 'Error interno del servidor.' }); }
     res.json(results);
   });
 };
@@ -11,14 +11,14 @@ exports.getDoctores = (req, res) => {
 // GET solo activos — criterio 4: médico desactivado no aparece para agendar citas
 exports.getDoctoresActivos = (req, res) => {
   Doctor.getAllActivos((err, results) => {
-    if (err) return res.status(500).json({ error: err });
+    if (err) { console.error('[doctores]', err); return res.status(500).json({ message: 'Error interno del servidor.' }); }
     res.json(results);
   });
 };
 
 exports.getDoctorById = (req, res) => {
   Doctor.getById(req.params.id, (err, result) => {
-    if (err) return res.status(500).json({ error: err });
+    if (err) { console.error('[doctores]', err); return res.status(500).json({ message: 'Error interno del servidor.' }); }
     res.json(result[0] || null);
   });
 };
@@ -42,7 +42,7 @@ exports.createDoctor = (req, res) => {
   // Criterio 3: verificar que el número de junta médica no esté duplicado
   if (numero_junta_medica) {
     Doctor.getByJunta(numero_junta_medica, null, (err, existing) => {
-      if (err) return res.status(500).json({ error: err });
+      if (err) { console.error('[doctores]', err); return res.status(500).json({ message: 'Error interno del servidor.' }); }
       if (existing.length > 0) {
         return res.status(409).json({
           error: "Ya existe un médico registrado con ese número de junta médica.",
@@ -50,14 +50,14 @@ exports.createDoctor = (req, res) => {
       }
       // Verificar que el usuario no esté ya registrado como doctor
       Doctor.getByUsuario(idUsuario, null, (err, existingUser) => {
-        if (err) return res.status(500).json({ error: err });
+        if (err) { console.error('[doctores]', err); return res.status(500).json({ message: 'Error interno del servidor.' }); }
         if (existingUser.length > 0) {
           return res.status(409).json({
             error: "Ya existe un médico registrado con ese usuario.",
           });
         }
         Doctor.create(req.body, (err, result) => {
-          if (err) return res.status(500).json({ error: err });
+          if (err) { console.error('[doctores]', err); return res.status(500).json({ message: 'Error interno del servidor.' }); }
           res.json({ message: "Doctor creado", id: result.insertId });
         });
       });
@@ -65,14 +65,14 @@ exports.createDoctor = (req, res) => {
   } else {
     // Sin número de junta médica, solo verificar usuario
     Doctor.getByUsuario(idUsuario, null, (err, existingUser) => {
-      if (err) return res.status(500).json({ error: err });
+      if (err) { console.error('[doctores]', err); return res.status(500).json({ message: 'Error interno del servidor.' }); }
       if (existingUser.length > 0) {
         return res.status(409).json({
           error: "Ya existe un médico registrado con ese usuario.",
         });
       }
       Doctor.create(req.body, (err, result) => {
-        if (err) return res.status(500).json({ error: err });
+        if (err) { console.error('[doctores]', err); return res.status(500).json({ message: 'Error interno del servidor.' }); }
         res.json({ message: "Doctor creado", id: result.insertId });
       });
     });
@@ -95,20 +95,20 @@ exports.updateDoctor = (req, res) => {
   // Criterio 3: verificar junta médica única excluyendo al doctor actual
   if (numero_junta_medica) {
     Doctor.getByJunta(numero_junta_medica, id, (err, existing) => {
-      if (err) return res.status(500).json({ error: err });
+      if (err) { console.error('[doctores]', err); return res.status(500).json({ message: 'Error interno del servidor.' }); }
       if (existing.length > 0) {
         return res.status(409).json({
           error: "Ya existe otro médico con ese número de junta médica.",
         });
       }
       Doctor.update(id, req.body, (err) => {
-        if (err) return res.status(500).json({ error: err });
+        if (err) { console.error('[doctores]', err); return res.status(500).json({ message: 'Error interno del servidor.' }); }
         res.json({ message: "Doctor actualizado" });
       });
     });
   } else {
     Doctor.update(id, req.body, (err) => {
-      if (err) return res.status(500).json({ error: err });
+      if (err) { console.error('[doctores]', err); return res.status(500).json({ message: 'Error interno del servidor.' }); }
       res.json({ message: "Doctor actualizado" });
     });
   }
@@ -117,7 +117,7 @@ exports.updateDoctor = (req, res) => {
 // PATCH desactivar — criterio 1 y 4
 exports.desactivarDoctor = (req, res) => {
   Doctor.desactivar(req.params.id, (err) => {
-    if (err) return res.status(500).json({ error: err });
+    if (err) { console.error('[doctores]', err); return res.status(500).json({ message: 'Error interno del servidor.' }); }
     res.json({ message: "Doctor desactivado" });
   });
 };
@@ -125,14 +125,14 @@ exports.desactivarDoctor = (req, res) => {
 // PATCH activar — criterio 1
 exports.activarDoctor = (req, res) => {
   Doctor.activar(req.params.id, (err) => {
-    if (err) return res.status(500).json({ error: err });
+    if (err) { console.error('[doctores]', err); return res.status(500).json({ message: 'Error interno del servidor.' }); }
     res.json({ message: "Doctor activado" });
   });
 };
 
 exports.deleteDoctor = (req, res) => {
   Doctor.delete(req.params.id, (err) => {
-    if (err) return res.status(500).json({ error: err });
+    if (err) { console.error('[doctores]', err); return res.status(500).json({ message: 'Error interno del servidor.' }); }
     res.json({ message: "Doctor eliminado" });
   });
 };

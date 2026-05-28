@@ -1,6 +1,9 @@
 const express = require("express");
 const router = express.Router();
 const detallesFacturaController = require("../controllers/detalles_factura.controller");
+const auth = require("../middleware/auth");
+
+router.use(auth);
 
 router.get("/", detallesFacturaController.getDetallesFactura);
 router.get("/:id", detallesFacturaController.getDetalleFacturaById);

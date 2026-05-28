@@ -1,6 +1,9 @@
 const express = require("express");
 const router = express.Router();
 const recetasController = require("../controllers/recetas.controller");
+const auth = require("../middleware/auth");
+
+router.use(auth);
 
 // ── FIX orden de rutas ────────────────────────────────────────────────────────
 // ANTES: /paciente/:idPaciente estaba DESPUÉS de /:id — Express interpretaba

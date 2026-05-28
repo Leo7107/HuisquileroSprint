@@ -13,8 +13,20 @@ app.get("/", (req, res) => {
     res.sendFile(path.join(__dirname, "frontend/templates/html", "login.html"));
 });
 
+const PAGINAS_PERMITIDAS = new Set([
+    'dashboard-admin.html',
+    'dashboard-medico.html',
+    'dashboard-paciente.html',
+    'dashboard-recepcionista.html',
+    'agendar.html',
+    'forgot-password.html'
+]);
+
 app.get("/html/:pagina", (req, res) => {
-    res.sendFile(path.join(__dirname, "frontend/templates/html", req.params.pagina));
+    const pagina = req.params.pagina;
+    if (!PAGINAS_PERMITIDAS.has(pagina))
+        return res.status(404).send('Not found');
+    res.sendFile(path.join(__dirname, "frontend/templates/html", pagina));
 });
 
 const pdfRoutes            = require('./routes/pdf.routes.js');

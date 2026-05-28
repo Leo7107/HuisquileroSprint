@@ -1,6 +1,9 @@
 const express = require("express");
 const router = express.Router();
 const doctoresController = require("../controllers/doctores.controller");
+const auth = require("../middleware/auth");
+
+router.use(auth);
 
 // GET todos — admin y recepcionista
 router.get("/", doctoresController.getDoctores);
