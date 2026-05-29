@@ -3,7 +3,13 @@
   "version": "1.0.0",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "test": "jest"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "testMatch": ["**/tests/**/*.test.js"],
+    "forceExit": true
   },
   "dependencies": {
     "bcrypt": "^6.0.0",
@@ -17,5 +23,8 @@
     "nodemailer": "^8.0.5",
     "pdfkit": "^0.18.0",
     "ssl-root-cas": "^1.3.1"
+  },
+  "devDependencies": {
+    "jest": "^30.4.2"
   }
 }
