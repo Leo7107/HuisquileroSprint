@@ -1,170 +1,151 @@
 const Usuario = require("../models/usuarios.model");
-const bcrypt = require("bcrypt");
-const jwt = require('jsonwebtoken');
-const crypto = require('crypto');
+const bcrypt  = require("bcrypt");
+const jwt     = require('jsonwebtoken');
+const crypto  = require('crypto');
 const nodemailer = require('nodemailer');
+const { logFailedAuth, logSuccessAuth } = require('../middleware/auditLogger');
 
-const transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST || 'smtp.gmail.com',
-    port: Number(process.env.SMTP_PORT) || 587,
-    secure: false,
-    auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
-    },
-});
-
+const BCRYPT_ROUNDS = 10;
 const BASE_URL = process.env.BASE_URL || 'http://localhost:3000';
 const ROLES = { ADMIN: 1, PACIENTE: 30001, DOCTOR: 30002, RECEPCIONISTA: 30003 };
 
+const transporter = nodemailer.createTransport({
+  host: process.env.SMTP_HOST || 'smtp.gmail.com',
+  port: Number(process.env.SMTP_PORT) || 587,
+  secure: false,
+  auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
+});
+
 exports.getUsuarios = (req, res) => {
-    Usuario.getAll((err, results) => {
-        if (err) { console.error('[getUsuarios]', err); return res.status(500).json({ message: 'Error interno del servidor.' }); }
-        res.json(results);
-    });
+  Usuario.getAll((err, results) => {
+    if (err) { console.error('[getUsuarios]', err); return res.status(500).json({ message: 'Error interno.' }); }
+    res.json(results);
+  });
 };
 
 exports.getUsuarioById = (req, res) => {
-    Usuario.getById(req.params.id, (err, result) => {
-        if (err) { console.error('[getUsuarioById]', err); return res.status(500).json({ message: 'Error interno del servidor.' }); }
-        res.json(result);
-    });
+  Usuario.getById(req.params.id, (err, result) => {
+    if (err) { console.error('[getUsuarioById]', err); return res.status(500).json({ message: 'Error interno.' }); }
+    res.json(result);
+  });
 };
 
 exports.createUsuario = (req, res) => {
-    const { Nombres, Apellidos, Sexo, Fecha_nacimiento, Telefono, Direccion, Email, Password_hash } = req.body;
-    if (!Email || !Password_hash || !Nombres)
-        return res.status(400).json({ message: 'Campos requeridos: Nombres, Email, Password_hash.' });
-    bcrypt.hash(Password_hash, 10, (err, hash) => {
-        if (err) { console.error('[createUsuario] bcrypt:', err); return res.status(500).json({ message: 'Error interno del servidor.' }); }
-        const data = { Nombres, Apellidos, Sexo, Fecha_nacimiento, Telefono, Direccion,
-                       Email, Password_hash: hash, Estado: 'ACTIVO', idRol: 30001 };
-        Usuario.create(data, (err, result) => {
-            if (err) { console.error('[createUsuario] BD:', err); return res.status(500).json({ message: 'Error interno del servidor.' }); }
-            res.json({ message: "Usuario creado", id: result.insertId });
-        });
+  const { Nombres, Apellidos, Sexo, Fecha_nacimiento, Telefono, Direccion, Email, Password_hash } = req.body;
+  if (!Email || !Password_hash || !Nombres)
+    return res.status(400).json({ message: 'Campos requeridos: Nombres, Email, Password_hash.' });
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(Email))
+    return res.status(400).json({ message: 'Formato de email inválido.' });
+  if (Password_hash.length < 8)
+    return res.status(400).json({ message: 'Contraseña mínimo 8 caracteres.' });
+
+  bcrypt.hash(Password_hash, BCRYPT_ROUNDS, (err, hash) => {
+    if (err) return res.status(500).json({ message: 'Error interno.' });
+    Usuario.create({ Nombres, Apellidos, Sexo, Fecha_nacimiento, Telefono, Direccion,
+                     Email, Password_hash: hash, Estado: 'ACTIVO', idRol: 30001 }, (err, result) => {
+      if (err) return res.status(500).json({ message: 'Error interno.' });
+      res.json({ message: "Usuario creado", id: result.insertId });
     });
+  });
 };
 
 exports.updateUsuario = (req, res) => {
-    const { Nombres, Apellidos, Sexo, Fecha_nacimiento, Telefono, Direccion, Email, Estado } = req.body;
-    const data = { Nombres, Apellidos, Sexo, Fecha_nacimiento, Telefono, Direccion, Email, Estado };
-    Object.keys(data).forEach(k => data[k] === undefined && delete data[k]);
-    Usuario.update(req.params.id, data, (err) => {
-        if (err) { console.error('[updateUsuario]', err); return res.status(500).json({ message: 'Error interno del servidor.' }); }
-        res.json({ message: "Usuario actualizado" });
-    });
+  const { Nombres, Apellidos, Sexo, Fecha_nacimiento, Telefono, Direccion, Email, Estado } = req.body;
+  const data = { Nombres, Apellidos, Sexo, Fecha_nacimiento, Telefono, Direccion, Email, Estado };
+  Object.keys(data).forEach(k => data[k] === undefined && delete data[k]);
+  Usuario.update(req.params.id, data, (err) => {
+    if (err) return res.status(500).json({ message: 'Error interno.' });
+    res.json({ message: "Usuario actualizado" });
+  });
 };
 
 exports.deleteUsuario = (req, res) => {
-    Usuario.delete(req.params.id, (err) => {
-        if (err) { console.error('[deleteUsuario]', err); return res.status(500).json({ message: 'Error interno del servidor.' }); }
-        res.json({ message: "Usuario eliminado" });
-    });
+  Usuario.delete(req.params.id, (err) => {
+    if (err) return res.status(500).json({ message: 'Error interno.' });
+    res.json({ message: "Usuario eliminado" });
+  });
 };
 
 exports.login = (req, res) => {
-    const { Email, Password_hash } = req.body;
-    if (!Email || !Password_hash)
-        return res.status(400).json({ message: 'Email y contraseña son requeridos.' });
-    Usuario.getByEmail(Email, (err, results) => {
-        if (err) { console.error('[login] BD:', err); return res.status(500).json({ message: 'Error interno del servidor.' }); }
-        if (results.length === 0) return res.status(401).json({ message: "Usuario no encontrado" });
-        const usuario = results[0];
-        bcrypt.compare(Password_hash, usuario.Password_hash, (err, coincide) => {
-            if (err) { console.error('[login] bcrypt:', err); return res.status(500).json({ message: 'Error interno del servidor.' }); }
-            if (!coincide) return res.status(401).json({ message: "Contraseña incorrecta" });
-            const token = jwt.sign(
-                { id: usuario.idUsuario, rol: usuario.idRol },
-                process.env.JWT_SECRET,
-                { expiresIn: "8h" }
-            );
-            res.json({ token, usuario: { id: usuario.idUsuario, nombre: usuario.Nombres, rol: usuario.idRol } });
-        });
+  const { Email, Password_hash } = req.body;
+  const ip = req.ip || req.headers['x-forwarded-for'] || 'desconocida';
+  if (!Email || !Password_hash)
+    return res.status(400).json({ message: 'Email y contraseña requeridos.' });
+
+  Usuario.getByEmail(Email, (err, results) => {
+    if (err) return res.status(500).json({ message: 'Error interno.' });
+    if (results.length === 0) {
+      logFailedAuth(Email, ip, 'Usuario no encontrado');
+      return res.status(401).json({ message: "Credenciales inválidas." });
+    }
+    const usuario = results[0];
+    bcrypt.compare(Password_hash, usuario.Password_hash, (err, coincide) => {
+      if (err) return res.status(500).json({ message: 'Error interno.' });
+      if (!coincide) {
+        logFailedAuth(Email, ip, 'Contraseña incorrecta');
+        return res.status(401).json({ message: "Credenciales inválidas." });
+      }
+      const token = jwt.sign(
+        { id: usuario.idUsuario, rol: usuario.idRol },
+        process.env.JWT_SECRET,
+        { expiresIn: "30m" }
+      );
+      logSuccessAuth({ id: usuario.idUsuario, nombre: usuario.Nombres }, ip);
+      res.json({ token, usuario: { id: usuario.idUsuario, nombre: usuario.Nombres, rol: usuario.idRol } });
     });
+  });
 };
 
 exports.forgotPassword = (req, res) => {
-    const { Email } = req.body;
+  const { Email } = req.body;
+  if (!Email || !/\S+@\S+\.\S+/.test(Email))
+    return res.status(400).json({ message: "Correo inválido." });
 
-    if (!Email || !/\S+@\S+\.\S+/.test(Email)) {
-        return res.status(400).json({ message: "Correo invalido." });
-    }
-    Usuario.getByEmail(Email, (err, results) => {
-        if (err) { console.error('[forgotPassword] BD:', err); return res.status(500).json({ message: 'Error interno del servidor.' }); }
-        if (results.length === 0) {
-            return res.status(200).json({ message: "Si el correo existe, recibiras un enlace." });
-        }
-        const usuario = results[0];
-        const token = crypto.randomBytes(32).toString('hex');
-        const expiry = new Date(Date.now() + 15 * 60 * 1000).toISOString().slice(0, 19).replace("T", " ");
-        Usuario.saveResetToken(Email, token, expiry, (err) => {
-            if (err) { console.error('[forgotPassword] saveToken:', err); return res.status(500).json({ message: 'Error interno del servidor.' }); }
-            const resetLink = `${BASE_URL}/html/forgot-password.html?token=${token}`;
-            let rolTexto = "";
-            if (usuario.idRol === ROLES.DOCTOR) rolTexto = "Dr(a).";
-            const mailOptions = {
-                from: `"Cli­nica" <${process.env.SMTP_USER}>`,
-                to: usuario.Email,
-                subject: 'Restablecer tu contraseña',
-                html: `
-                    <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 32px; background: #f9fafb; border-radius: 12px;">
-                        <h2 style="color: #111827; margin-bottom: 8px;">Restablecer contraseña</h2>
-                        <p style="color: #374151; margin-bottom: 4px;">
-                            Hola, <strong>${rolTexto} ${usuario.Nombres} ${usuario.Apellidos}</strong>.
-                        </p>
-                        <p style="color: #6b7280; margin-bottom: 24px;">
-                            Recibimos una solicitud para restablecer la contraseña de tu cuenta.
-                            Este enlace expira en <strong>15 minutos</strong>.
-                        </p>
-                        <a href="${resetLink}"
-                            style="display: inline-block; background: #4f8ef7; color: #fff;
-                                   padding: 13px 28px; border-radius: 8px; text-decoration: none;
-                                   font-weight: 600; font-size: 15px; margin-bottom: 24px;">
-                            Restablecer contraseña
-                        </a>
-                        <p style="color: #9ca3af; font-size: 13px;">
-                            Si no solicitaste esto, puedes ignorar este correo. Tu contraseña no cambiara¡.
-                        </p>
-                        <p style="color: #d1d5db; font-size: 12px; margin-top: 24px; border-top: 1px solid #e5e7eb; padding-top: 16px;">
-                            O copia este enlace en tu navegador:<br/>
-                            <span style="color: #6b7280; word-break: break-all;">${resetLink}</span>
-                        </p>
-                    </div>
-                `,
-            };
-            transporter.sendMail(mailOptions, (err) => {
-                if (err) {
-                    console.error("[forgot-password] Error enviando email:", err.message);
-                    return res.status(500).json({ message: "No se pudo enviar el correo." });
-                }
-                res.status(200).json({ message: "Si el correo existe, recibiras un enlace." });
-            });
-        });
+  Usuario.getByEmail(Email, (err, results) => {
+    if (err) return res.status(500).json({ message: 'Error interno.' });
+    if (results.length === 0)
+      return res.status(200).json({ message: "Si el correo existe, recibirás un enlace." });
+
+    const usuario = results[0];
+    const token  = crypto.randomBytes(32).toString('hex');
+    const expiry = new Date(Date.now() + 15 * 60 * 1000).toISOString().slice(0, 19).replace("T", " ");
+
+    Usuario.saveResetToken(Email, token, expiry, (err) => {
+      if (err) return res.status(500).json({ message: 'Error interno.' });
+      const resetLink = `${BASE_URL}/html/forgot-password.html?token=${token}`;
+      const rolTexto  = usuario.idRol === ROLES.DOCTOR ? "Dr(a)." : "";
+      transporter.sendMail({
+        from: `"Clínica" <${process.env.SMTP_USER}>`,
+        to: usuario.Email,
+        subject: 'Restablecer tu contraseña',
+        html: `<p>Hola <strong>${rolTexto} ${usuario.Nombres}</strong>.</p>
+               <p>Enlace válido por 15 minutos: <a href="${resetLink}">Restablecer contraseña</a></p>`,
+      }, (err) => {
+        if (err) { console.error("[forgotPassword]", err.message); return res.status(500).json({ message: "No se pudo enviar el correo." }); }
+        res.status(200).json({ message: "Si el correo existe, recibirás un enlace." });
+      });
     });
+  });
 };
 
 exports.resetPassword = (req, res) => {
-    const { token, password } = req.body;
-    if (!token || !password) {
-        return res.status(400).json({ message: "Datos incompletos." });
-    }
-    if (password.length < 8) {
-        return res.status(400).json({ message: "La contraseña debe tener al menos 8 caracteres." });
-    }
-    Usuario.getByResetToken(token, (err, results) => {
-        if (err) { console.error('[resetPassword] BD:', err); return res.status(500).json({ message: 'Error interno del servidor.' }); }
-        if (results.length === 0) {
-            return res.status(400).json({ message: "El enlace no es valido o ya expiro. Solicita uno nuevo." });
-        }
-        const usuario = results[0];
-        bcrypt.hash(password, 10, (err, hash) => {
-            if (err) { console.error('[resetPassword] bcrypt:', err); return res.status(500).json({ message: 'Error interno del servidor.' }); }
-            Usuario.updatePassword(usuario.idUsuario, hash, (err) => {
-                if (err) { console.error('[resetPassword] update:', err); return res.status(500).json({ message: 'Error interno del servidor.' }); }
-                res.json({ message: "Contraseña actualizada correctamente." });
-            });
-        });
-    });
-};
+  const { token, password } = req.body;
+  if (!token || !password)
+    return res.status(400).json({ message: "Datos incompletos." });
+  if (password.length < 8)
+    return res.status(400).json({ message: "Contraseña mínimo 8 caracteres." });
 
+  Usuario.getByResetToken(token, (err, results) => {
+    if (err) return res.status(500).json({ message: 'Error interno.' });
+    if (results.length === 0)
+      return res.status(400).json({ message: "Enlace inválido o expirado." });
+
+    bcrypt.hash(password, BCRYPT_ROUNDS, (err, hash) => {
+      if (err) return res.status(500).json({ message: 'Error interno.' });
+      Usuario.updatePassword(results[0].idUsuario, hash, (err) => {
+        if (err) return res.status(500).json({ message: 'Error interno.' });
+        res.json({ message: "Contraseña actualizada correctamente." });
+      });
+    });
+  });
+};

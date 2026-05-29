@@ -139,8 +139,10 @@ formularioInicio.addEventListener('submit', (ev) => {
 
     .then(data => {
         if (data.token) {
-            localStorage.setItem('token', data.token);
-            localStorage.setItem('usuario', JSON.stringify(data.usuario));
+        window._token = data.token;
+        window._usuario = data.usuario;
+        sessionStorage.setItem('token', data.token);
+        sessionStorage.setItem('usuario', JSON.stringify(data.usuario));
             
             if(data.usuario.rol === 1){
                 window.location.href = '/html/dashboard-admin.html'

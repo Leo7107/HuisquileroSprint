@@ -10,7 +10,7 @@
  * 6. HU12: reportes médico integrados en nav()
  */
 
-const usuario = JSON.parse(localStorage.getItem('usuario') || 'null');
+const usuario = JSON.parse(sessionStorage.getItem('usuario') || 'null');
 if (!usuario || usuario.rol !== 30002) {
   window.location.href = '/';
 }
@@ -25,7 +25,7 @@ if (usuario) {
 document.getElementById('fecha-actual').textContent =
   new Date().toLocaleDateString('es-SV', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
 
-const token = localStorage.getItem('token');
+const token = sessionStorage.getItem('token');
 const H = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
 
 // ── UTILIDADES ────────────────────────────────────────────────────────────────
@@ -1311,8 +1311,8 @@ async function guardarEdicionPaciente(idPaciente) {
 
 // ── CERRAR SESIÓN ─────────────────────────────────────────────────────────────
 function cerrarSesion() {
-  localStorage.removeItem('token');
-  localStorage.removeItem('usuario');
+  sessionStorage.removeItem('token');
+  sessionStorage.removeItem('usuario');
   window.location.href = '/';
 }
 
