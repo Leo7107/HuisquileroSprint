@@ -14,7 +14,6 @@
 // ─── Autenticación ────────────────────────────────────────────────────────────
 const usuario = JSON.parse(localStorage.getItem('usuario') || 'null');
 if (!usuario || usuario.rol !== 30001) {
-  alert('Acceso denegado.');
   window.location.href = '/';
 }
 
@@ -31,9 +30,10 @@ document.getElementById('fecha-actual').textContent =
 const token = localStorage.getItem('token');
 const H = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
 
-// ─── Estado global de paciente ────────────────────────────────────────────────
-let miPaciente    = null;   // objeto paciente con idPaciente
-let listaDoctores = [];
+// ─── Util: HTML escape ────────────────────────────────────────────────────────
+function esc(s) {
+  return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
 
 // ─── Util: Toast ──────────────────────────────────────────────────────────────
 let _toastTimer = null;
@@ -64,6 +64,14 @@ function nav(seccion, linkEl) {
   if (seccion === 'documentos')  cargarDocumentos();
   if (seccion === 'perfil')      cargarPerfil();
 }
+
+// ─── Estado global de paciente ────────────────────────────────────────────────
+let miPaciente    = null;
+let listaDoctores = [];
+
+// ─── Maps para onclick seguro ─────────────────────────────────────────────────
+const _mapCitasPac = new Map();
+const _mapDocSugPac = new Map();
 
 // ─── Obtener idPaciente del paciente logueado ─────────────────────────────────
 async function obtenerMiPaciente() {
@@ -96,7 +104,6 @@ async function cargarEstadisticas() {
     if (Array.isArray(recetas))
       document.getElementById('stat-recetas').textContent = recetas.length;
 
-    // Cargar tabla de citas del inicio (3 más próximas activas)
     cargarCitasInicio(Array.isArray(citas) ? citas : []);
   } catch { /* silencioso */ }
 }
@@ -123,23 +130,26 @@ function badgeEstado(estado) {
     'EN_ATENCION':  'en-atencion',
   };
   const cls = mapa[estado] || 'pendiente';
-  return `<span class="badge badge--${cls}">${estado}</span>`;
+  return `<span class="badge badge--${cls}">${esc(estado)}</span>`;
 }
 
 // ─── Fila de cita reutilizable ────────────────────────────────────────────────
 function filaCita(c, compact = false) {
-  const esCancelable   = ['PENDIENTE','CONFIRMADA'].includes(c.estado);
+  _mapCitasPac.set(c.idCita, c);
+  const esCancelable    = ['PENDIENTE','CONFIRMADA'].includes(c.estado);
   const esReprogramable = esCancelable;
   const fechaStr = c.fecha ? c.fecha.split('T')[0] : '—';
   const horaStr  = c.hora  ? c.hora.substring(0,5)  : '—';
-  const doctor   = c.NombreDoctor ? `${c.NombreDoctor} ${c.ApellidosDoctor}` : `#${c.idDoctor}`;
+  const doctor   = c.NombreDoctor
+    ? `${esc(c.NombreDoctor)} ${esc(c.ApellidosDoctor)}`
+    : `#${c.idDoctor}`;
 
   const acciones = `
     <div class="action-icons">
       <button class="icon-btn icon-btn--edit" title="Ver detalle"
         onclick="verDetalleCita(${c.idCita})">🔍</button>
       ${esReprogramable ? `<button class="icon-btn icon-btn--toggle" title="Reprogramar"
-        onclick="abrirReprogramar(${c.idCita}, '${fechaStr}', '${horaStr}', '${doctor.replace(/'/g,"\\'")}', ${c.idDoctor})">📅</button>` : ''}
+        onclick="abrirReprogramar(${c.idCita})">📅</button>` : ''}
       ${esCancelable ? `<button class="icon-btn icon-btn--cancel" title="Cancelar cita"
         onclick="abrirCancelar(${c.idCita}, '${fechaStr}', '${horaStr}')">✕</button>` : ''}
     </div>`;
@@ -159,7 +169,7 @@ function filaCita(c, compact = false) {
     <td>${fechaStr}</td>
     <td>${horaStr}</td>
     <td>${doctor}</td>
-    <td>${c.motivo || '—'}</td>
+    <td>${esc(c.motivo || '—')}</td>
     <td>${badgeEstado(c.estado)}</td>
     <td>${acciones}</td>
   </tr>`;
@@ -216,16 +226,16 @@ async function verDetalleCita(idCita) {
       <div class="detalle-item">
         <div class="detalle-item__label">Doctor</div>
         <div class="detalle-item__value">
-          ${c.NombreDoctor ? `Dr/Dra. ${c.NombreDoctor} ${c.ApellidosDoctor}` : `#${c.idDoctor}`}
+          ${c.NombreDoctor ? `Dr/Dra. ${esc(c.NombreDoctor)} ${esc(c.ApellidosDoctor)}` : `#${c.idDoctor}`}
         </div>
       </div>
       <div class="detalle-item">
         <div class="detalle-item__label">Especialidad</div>
-        <div class="detalle-item__value">${c.Especialidad || '—'}</div>
+        <div class="detalle-item__value">${esc(c.Especialidad || '—')}</div>
       </div>
       <div class="detalle-item detalle-item--full">
         <div class="detalle-item__label">Motivo de la Cita</div>
-        <div class="detalle-item__value" style="font-size:13px;font-weight:400;">${c.motivo || '—'}</div>
+        <div class="detalle-item__value" style="font-size:13px;font-weight:400;">${esc(c.motivo || '—')}</div>
       </div>
     `;
 
@@ -271,19 +281,23 @@ async function confirmarCancelacion() {
 // ─── REPROGRAMAR CITA ─────────────────────────────────────────────────────────
 let _reprogramarIdCita = null;
 
-function abrirReprogramar(idCita, fechaActual, horaActual, doctorNombre, idDoctor) {
+function abrirReprogramar(idCita) {
+  const c = _mapCitasPac.get(Number(idCita));
+  if (!c) return;
   _reprogramarIdCita = idCita;
 
-  // Reutilizar el modal de cita en modo "reprogramar"
+  const fechaActual  = c.fecha ? c.fecha.split('T')[0] : '';
+  const horaActual   = c.hora  ? c.hora.substring(0,5)  : '';
+  const doctorNombre = c.NombreDoctor ? `${c.NombreDoctor} ${c.ApellidosDoctor}` : '';
+
   document.getElementById('modal-cita-titulo').textContent = `Reprogramar Cita #${idCita}`;
   document.getElementById('btn-guardar-cita').textContent  = 'Reprogramar';
   document.getElementById('cita-fecha').value        = fechaActual;
   document.getElementById('cita-hora').value         = horaActual;
   document.getElementById('cita-motivo').value       = '';
-  document.getElementById('cita-doctor').value       = idDoctor;
+  document.getElementById('cita-doctor').value       = c.idDoctor;
   document.getElementById('cita-doctor-nombre').value = doctorNombre;
 
-  // En modo reprogramar: ocultar campo doctor y motivo (no cambian)
   document.getElementById('doctor-wrap').style.display = 'none';
   document.getElementById('motivo-wrap').style.display  = 'none';
   document.getElementById('horario-info').style.display = 'none';
@@ -414,12 +428,13 @@ function buscarDoctor() {
         (d.Especialidad || '').toLowerCase().includes(q))
     : [];
 
+  lista.forEach(d => _mapDocSugPac.set(d.idDoctor, d));
   sugerencias.innerHTML = lista.length
     ? lista.map(d => `
         <div class="autocomplete-item"
-          onclick="seleccionarDoctor(${d.idDoctor}, '${d.Nombres} ${d.Apellidos}', '${d.hora_inicio || ''}', '${d.hora_fin || ''}')">
-          <strong>${d.Nombres} ${d.Apellidos}</strong>
-          <span>${d.Especialidad || 'Sin especialidad'} · ${d.hora_inicio && d.hora_fin
+          onclick="seleccionarDoctor(${d.idDoctor})">
+          <strong>${esc(d.Nombres)} ${esc(d.Apellidos)}</strong>
+          <span>${esc(d.Especialidad || 'Sin especialidad')} · ${d.hora_inicio && d.hora_fin
             ? d.hora_inicio.substring(0,5) + ' – ' + d.hora_fin.substring(0,5)
             : 'Sin horario'}</span>
         </div>`).join('')
@@ -428,15 +443,17 @@ function buscarDoctor() {
   sugerencias.style.display = 'block';
 }
 
-function seleccionarDoctor(id, nombre, horaInicio, horaFin) {
-  document.getElementById('cita-doctor-nombre').value = nombre;
+function seleccionarDoctor(id) {
+  const d = _mapDocSugPac.get(Number(id));
+  if (!d) return;
+  document.getElementById('cita-doctor-nombre').value = `${d.Nombres} ${d.Apellidos}`;
   document.getElementById('cita-doctor').value        = id;
   document.getElementById('sugerencias-doctor').style.display = 'none';
 
   const horarioInfo = document.getElementById('horario-info');
-  if (horaInicio && horaFin) {
+  if (d.hora_inicio && d.hora_fin) {
     document.getElementById('horario-texto').textContent =
-      `${horaInicio.substring(0,5)} – ${horaFin.substring(0,5)}`;
+      `${d.hora_inicio.substring(0,5)} – ${d.hora_fin.substring(0,5)}`;
     horarioInfo.style.display = 'block';
   } else {
     horarioInfo.style.display = 'none';
@@ -462,8 +479,8 @@ async function cargarConsultas() {
       ? comp.map(c => `
           <tr>
             <td>${c.fecha ? c.fecha.split('T')[0] : '—'}</td>
-            <td>${c.NombreDoctor ? `${c.NombreDoctor} ${c.ApellidosDoctor}` : `#${c.idDoctor}`}</td>
-            <td>${c.motivo || '—'}</td>
+            <td>${c.NombreDoctor ? `${esc(c.NombreDoctor)} ${esc(c.ApellidosDoctor)}` : `#${c.idDoctor}`}</td>
+            <td>${esc(c.motivo || '—')}</td>
             <td>${c.hora  ? c.hora.substring(0,5) : '—'}</td>
             <td><span class="badge badge--completada">Completada</span></td>
           </tr>`).join('')
@@ -488,11 +505,11 @@ async function cargarRecetas() {
     document.getElementById('tbody-recetas').innerHTML = Array.isArray(data) && data.length
       ? data.map(r => `
           <tr>
-            <td>${r.medicamento  || '—'}</td>
-            <td>${r.dosis        || '—'}</td>
-            <td>${r.frecuencia   || '—'}</td>
-            <td>${r.duracion     || '—'}</td>
-            <td>${r.indicaciones || '—'}</td>
+            <td>${esc(r.medicamento  || '—')}</td>
+            <td>${esc(r.dosis        || '—')}</td>
+            <td>${esc(r.frecuencia   || '—')}</td>
+            <td>${esc(r.duracion     || '—')}</td>
+            <td>${esc(r.indicaciones || '—')}</td>
             <td>
               <button class="btn-pdf" onclick="descargarReceta(${r.idReceta})">
                 ⬇ PDF
@@ -518,10 +535,10 @@ async function cargarDocumentos() {
     document.getElementById('tbody-recetas-docs').innerHTML = Array.isArray(data) && data.length
       ? data.map(r => `
           <tr>
-            <td>${r.medicamento || '—'}</td>
-            <td>${r.dosis       || '—'}</td>
-            <td>${r.frecuencia  || '—'}</td>
-            <td>${r.duracion    || '—'}</td>
+            <td>${esc(r.medicamento || '—')}</td>
+            <td>${esc(r.dosis       || '—')}</td>
+            <td>${esc(r.frecuencia  || '—')}</td>
+            <td>${esc(r.duracion    || '—')}</td>
             <td>
               <button class="btn-pdf" onclick="descargarReceta(${r.idReceta})">
                 ⬇ Descargar PDF
@@ -536,12 +553,6 @@ async function cargarDocumentos() {
 }
 
 // ─── DESCARGAS PDF ────────────────────────────────────────────────────────────
-
-/**
- * Descarga un PDF autenticado abriendo una URL con token en query param.
- * El backend debe leer el token de query param cuando viene de descarga directa.
- * Alternativa: crear un blob desde fetch con header.
- */
 async function descargarPDF(url, nombreArchivo) {
   try {
     toast('⏳ Generando PDF...', 'success');

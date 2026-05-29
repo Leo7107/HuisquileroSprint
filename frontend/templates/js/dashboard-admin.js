@@ -5,7 +5,6 @@
 // ── AUTH ──────────────────────────────────────
 const usuario = JSON.parse(localStorage.getItem('usuario') || 'null');
 if (!usuario || usuario.rol !== 1) {
-  alert('Acceso denegado.');
   window.location.href = '/';
 }
 
@@ -22,6 +21,40 @@ document.getElementById('fecha-actual').textContent =
 // ── TOKEN ─────────────────────────────────────
 const token = localStorage.getItem('token');
 const H = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
+
+// ── TOAST ─────────────────────────────────────
+function toast(msg, tipo = 'info') {
+  let el = document.getElementById('_toast_notif');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = '_toast_notif';
+    Object.assign(el.style, {
+      position:'fixed', bottom:'28px', right:'28px', zIndex:'9999',
+      padding:'13px 22px', borderRadius:'12px', fontSize:'14px',
+      fontWeight:'600', boxShadow:'0 4px 18px rgba(0,0,0,0.18)',
+      transition:'opacity .3s', maxWidth:'380px', lineHeight:'1.4',
+    });
+    document.body.appendChild(el);
+  }
+  const colores = { info:'#2a6b5e', error:'#c03030', warn:'#b07800', ok:'#2a6b5e' };
+  el.style.background = colores[tipo] || colores.info;
+  el.style.color = '#fff';
+  el.style.opacity = '1';
+  el.textContent = msg;
+  clearTimeout(el._t);
+  el._t = setTimeout(() => { el.style.opacity = '0'; }, 3500);
+}
+
+// ── ESC ───────────────────────────────────────
+function esc(s) {
+  return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+// ── MAPS ──────────────────────────────────────
+const _mapUsuarios   = new Map();
+const _mapMedicosAdm = new Map();
+const _mapMedsAdm    = new Map();
+const _mapDocUsrAdm  = new Map();
 
 // ── NAVEGACIÓN — hook de reportes integrado ───
 function nav(seccion, linkEl) {
@@ -48,15 +81,7 @@ async function cargarStats() {
       fetch('/api/usuarios',  { headers: H }),
     ]);
     const pacientes = await pRes.json();
-    const citas     = await cRes.json();
-    const doctores  = await dRes.json();
     const usuarios  = await uRes.json();
-
-    const mes = new Date().getMonth();
-    const citasMes = Array.isArray(citas)
-      ? citas.filter(c => c.fecha && new Date(c.fecha).getMonth() === mes) : [];
-    const doctoresActivos = Array.isArray(doctores)
-      ? doctores.filter(d => d.Estado === 'ACTIVO') : [];
 
     document.getElementById('s-pacientes').textContent = Array.isArray(pacientes) ? pacientes.length : '—';
     document.getElementById('s-usuarios').textContent  = Array.isArray(usuarios)  ? usuarios.length  : '—';
@@ -94,16 +119,17 @@ function renderUsuarios(lista) {
       '<tr><td colspan="6" style="text-align:center;color:var(--text-soft);padding:20px;">Sin usuarios</td></tr>';
     return;
   }
+  lista.forEach(u => _mapUsuarios.set(u.idUsuario, u));
   document.getElementById('tbody-usuarios').innerHTML = lista.map(u => `
     <tr>
       <td>#${u.idUsuario}</td>
-      <td>${u.Nombres || ''} ${u.Apellidos || ''}</td>
-      <td>${u.Email || ''}</td>
+      <td>${esc(u.Nombres || '')} ${esc(u.Apellidos || '')}</td>
+      <td>${esc(u.Email || '')}</td>
       <td><span class="badge-rol badge-rol--${rolClass(u.idRol)}">${rolLabel(u.idRol)}</span></td>
       <td><span class="badge badge--${u.Estado === 'ACTIVO' ? 'activo' : 'inactivo'}">${u.Estado || '—'}</span></td>
       <td>
         <div class="action-icons">
-          <button class="icon-btn icon-btn--edit" title="Editar" onclick='abrirModalEditar(${JSON.stringify(u)})'>✏️</button>
+          <button class="icon-btn icon-btn--edit" title="Editar" onclick="abrirModalEditar(${u.idUsuario})">✏️</button>
           <button class="icon-btn icon-btn--del"  title="Eliminar" onclick="eliminarUsuario(${u.idUsuario})">🗑</button>
         </div>
       </td>
@@ -143,7 +169,9 @@ function abrirModal() {
   document.getElementById('modal-usuario').classList.add('active');
 }
 
-function abrirModalEditar(u) {
+function abrirModalEditar(id) {
+  const u = _mapUsuarios.get(id);
+  if (!u) return;
   document.getElementById('modal-titulo').textContent = 'Editar Usuario';
   document.getElementById('m-id').value        = u.idUsuario;
   document.getElementById('m-nombres').value   = u.Nombres   || '';
@@ -189,7 +217,7 @@ async function guardarUsuario() {
     cargarStats();
     cargarUsuariosDoctores();
   } else {
-    alert('Error: ' + (data.error?.sqlMessage || data.error || 'Revisa los datos'));
+    toast('Error: ' + (data.error?.sqlMessage || data.error || 'Revisa los datos'), 'error');
   }
 }
 
@@ -208,8 +236,8 @@ async function cargarRoles() {
     if (!Array.isArray(lista)) return;
     document.getElementById('tbody-roles').innerHTML = lista.map(u => `
       <tr>
-        <td><strong>${u.Nombres || ''} ${u.Apellidos || ''}</strong></td>
-        <td style="font-size:12.5px;color:var(--text-soft);">${u.Email || ''}</td>
+        <td><strong>${esc(u.Nombres || '')} ${esc(u.Apellidos || '')}</strong></td>
+        <td style="font-size:12.5px;color:var(--text-soft);">${esc(u.Email || '')}</td>
         <td><span class="badge-rol badge-rol--${rolClass(u.idRol)}">${rolLabel(u.idRol)}</span></td>
         <td>
           <select class="rol-select" onchange="cambiarRol(${u.idUsuario}, this.value)">
@@ -290,6 +318,7 @@ function renderMedicos(lista) {
       '<tr><td colspan="7" style="text-align:center;color:var(--text-soft);padding:20px;">Sin médicos registrados</td></tr>';
     return;
   }
+  lista.forEach(d => _mapMedicosAdm.set(d.idDoctor, d));
   document.getElementById('tbody-medicos').innerHTML = lista.map(d => {
     const esActivo = d.Estado === 'ACTIVO';
     const horario = (d.hora_inicio && d.hora_fin)
@@ -298,15 +327,15 @@ function renderMedicos(lista) {
     return `
       <tr>
         <td>#${d.idDoctor}</td>
-        <td><strong>${d.Nombres || '—'} ${d.Apellidos || ''}</strong></td>
-        <td>${d.Especialidad || '—'}</td>
-        <td style="font-size:12.5px;font-family:monospace;">${d.numero_junta_medica || '—'}</td>
+        <td><strong>${esc(d.Nombres || '—')} ${esc(d.Apellidos || '')}</strong></td>
+        <td>${esc(d.Especialidad || '—')}</td>
+        <td style="font-size:12.5px;font-family:monospace;">${esc(d.numero_junta_medica || '—')}</td>
         <td>${horario}</td>
         <td><span class="badge-estado--${esActivo ? 'activo' : 'inactivo'}">${d.Estado}</span></td>
         <td>
           <div class="action-icons">
             <button class="icon-btn icon-btn--edit" title="Editar"
-              onclick='abrirModalEditarMedico(${JSON.stringify(d)})'>✏️</button>
+              onclick="abrirModalEditarMedico(${d.idDoctor})">✏️</button>
             <button class="icon-btn icon-btn--toggle"
               title="${esActivo ? 'Desactivar' : 'Activar'}"
               onclick="toggleMedico(${d.idDoctor}, ${esActivo})">
@@ -353,7 +382,9 @@ function abrirModalMedico() {
   document.getElementById('modal-medico').classList.add('active');
 }
 
-function abrirModalEditarMedico(d) {
+function abrirModalEditarMedico(id) {
+  const d = _mapMedicosAdm.get(id);
+  if (!d) return;
   document.getElementById('modal-medico-titulo').textContent  = 'Editar Médico';
   document.getElementById('md-id').value                      = d.idDoctor;
   document.getElementById('md-especialidad').value            = d.Especialidad        || '';
@@ -378,11 +409,11 @@ async function guardarMedico() {
   const horaFin    = document.getElementById('md-hora-fin').value;
 
   if (!document.getElementById('md-especialidad').value) {
-    alert('La especialidad es obligatoria.');
+    toast('La especialidad es obligatoria.', 'warn');
     return;
   }
   if (horaInicio && horaFin && horaInicio >= horaFin) {
-    alert('La hora de fin debe ser posterior a la hora de inicio.');
+    toast('La hora de fin debe ser posterior a la hora de inicio.', 'warn');
     return;
   }
 
@@ -403,13 +434,13 @@ async function guardarMedico() {
   const res    = await fetch(url, { method, headers: H, body: JSON.stringify(payload) });
   const data   = await res.json();
 
-  if (res.status === 409) { alert('⚠️ ' + data.error); return; }
+  if (res.status === 409) { toast('⚠️ ' + data.error, 'warn'); return; }
   if (data.message || data.id) {
     cerrarModalMedico();
     cargarMedicos();
     cargarStats();
   } else {
-    alert('Error: ' + (data.error?.sqlMessage || data.error || 'Revisa los datos'));
+    toast('Error: ' + (data.error?.sqlMessage || data.error || 'Revisa los datos'), 'error');
   }
 }
 
@@ -422,7 +453,7 @@ async function toggleMedico(id, estaActivo) {
   const res  = await fetch(`/api/doctores/${id}/${accion}`, { method: 'PATCH', headers: H });
   const data = await res.json();
   if (data.message) { cargarMedicos(); cargarStats(); }
-  else alert('Error: ' + (data.error || ''));
+  else toast('Error: ' + (data.error || ''), 'error');
 }
 
 // ── AUTOCOMPLETADO USUARIO DOCTOR ─────────────
@@ -446,18 +477,21 @@ function buscarUsuarioDoctor() {
     `${u.Nombres} ${u.Apellidos}`.toLowerCase().includes(q) ||
     (u.Email || '').toLowerCase().includes(q)
   );
+  lista.forEach(u => _mapDocUsrAdm.set(u.idUsuario, u));
   sugerencias.innerHTML = lista.length
     ? lista.map(u => `
         <div class="autocomplete-item"
-          onclick="seleccionarUsuarioDoctor(${u.idUsuario}, '${u.Nombres} ${u.Apellidos}')">
-          <strong>${u.Nombres} ${u.Apellidos}</strong>
-          <span>${u.Email}</span>
+          onclick="seleccionarUsuarioDoctor(${u.idUsuario})">
+          <strong>${esc(u.Nombres || '')} ${esc(u.Apellidos || '')}</strong>
+          <span>${esc(u.Email || '')}</span>
         </div>`).join('')
     : '<div class="autocomplete-item">Sin resultados</div>';
   sugerencias.style.display = 'block';
 }
 
-function seleccionarUsuarioDoctor(id, nombre) {
+function seleccionarUsuarioDoctor(id) {
+  const u = _mapDocUsrAdm.get(id);
+  const nombre = u ? `${u.Nombres || ''} ${u.Apellidos || ''}`.trim() : '';
   document.getElementById('md-usuario-nombre').value = nombre;
   document.getElementById('md-usuario').value        = id;
   document.getElementById('sugerencias-usuario-doctor').style.display = 'none';
@@ -498,6 +532,7 @@ async function cargarTablaInventario() {
 }
 
 function renderTablaInventario(lista) {
+  lista.forEach(m => _mapMedsAdm.set(m.idMedicamento, m));
   document.getElementById('tbody-inventario').innerHTML = Array.isArray(lista) && lista.length
     ? lista.map(m => {
         const bajo = m.stock_actual === 0;
@@ -505,21 +540,21 @@ function renderTablaInventario(lista) {
           ? '<span class="badge badge--activo">ACTIVO</span>'
           : '<span class="badge badge--inactivo">INACTIVO</span>';
         const stockColor = bajo ? 'color:#c03030;font-weight:700;' : 'color:var(--teal);font-weight:700;';
-        const stockTexto = `<span style="${stockColor}">${m.stock_actual} ${m.unidad_medida}</span>`;
+        const stockTexto = `<span style="${stockColor}">${m.stock_actual} ${esc(m.unidad_medida || '')}</span>`;
         const esActivo = m.estado === 'ACTIVO';
         return `
           <tr>
             <td>#${m.idMedicamento}</td>
-            <td><strong>${m.nombre}</strong><br/><span style="font-size:11px;color:var(--text-soft);">${m.descripcion || ''}</span></td>
+            <td><strong>${esc(m.nombre || '')}</strong><br/><span style="font-size:11px;color:var(--text-soft);">${esc(m.descripcion || '')}</span></td>
             <td>${stockTexto}</td>
             <td>${m.stock_minimo}</td>
-            <td>${m.unidad_medida}</td>
+            <td>${esc(m.unidad_medida || '')}</td>
             <td>$${parseFloat(m.precio_unitario || 0).toFixed(2)}</td>
             <td>${estadoBadge}</td>
             <td>
               <div class="action-icons">
                 <button class="icon-btn icon-btn--edit" title="Editar"
-                  onclick='abrirModalEditarMed(${JSON.stringify(m)})'>✏️</button>
+                  onclick="abrirModalEditarMed(${m.idMedicamento})">✏️</button>
                 <button class="icon-btn"
                   style="background:${esActivo ? 'rgba(200,50,50,0.15)' : 'rgba(42,107,94,0.15)'};"
                   title="${esActivo ? 'Desactivar' : 'Activar'}"
@@ -550,7 +585,7 @@ async function cargarAlertasStock() {
           <div style="display:flex;flex-wrap:wrap;gap:8px;">
             ${data.map(m => `
               <div style="background:white;border:1px solid rgba(200,50,50,0.2);border-radius:10px;padding:8px 14px;font-size:12.5px;">
-                <strong style="color:var(--deep);">${m.nombre}</strong>
+                <strong style="color:var(--deep);">${esc(m.nombre || '')}</strong>
                 <span style="color:#c03030;margin-left:6px;">Stock: ${m.stock_actual} / Mín: ${m.stock_minimo}</span>
               </div>`).join('')}
           </div>
@@ -573,12 +608,12 @@ async function cargarMovimientos() {
           return `
             <tr>
               <td>${m.fecha_movimiento ? m.fecha_movimiento.split('T')[0] : '–'}</td>
-              <td><strong>${m.nombreMedicamento || '–'}</strong></td>
+              <td><strong>${esc(m.nombreMedicamento || '–')}</strong></td>
               <td style="${colorTipo}font-weight:700;">${m.tipo_movimiento}</td>
               <td>${simbolo}${m.cantidad}</td>
               <td>${m.stock_anterior} → ${m.stock_nuevo}</td>
-              <td>${m.motivo || '–'}</td>
-              <td>${m.proveedor || '–'}</td>
+              <td>${esc(m.motivo || '–')}</td>
+              <td>${esc(m.proveedor || '–')}</td>
             </tr>`;
         }).join('')
       : '<tr><td colspan="7" style="text-align:center;color:var(--text-soft);padding:20px;">Sin movimientos registrados</td></tr>';
@@ -589,7 +624,7 @@ function buscarInventario() {
   const q = document.getElementById('q-inventario').value.toLowerCase().trim();
   if (!q) return renderTablaInventario(listaMedicamentos);
   renderTablaInventario(listaMedicamentos.filter(m =>
-    m.nombre.toLowerCase().includes(q) ||
+    (m.nombre || '').toLowerCase().includes(q) ||
     (m.descripcion || '').toLowerCase().includes(q)
   ));
 }
@@ -613,13 +648,15 @@ function abrirModalNuevoMed() {
   document.getElementById('modal-medicamento').classList.add('active');
 }
 
-function abrirModalEditarMed(m) {
+function abrirModalEditarMed(id) {
+  const m = _mapMedsAdm.get(id);
+  if (!m) return;
   document.getElementById('med-id').value          = m.idMedicamento;
-  document.getElementById('med-nombre').value      = m.nombre;
-  document.getElementById('med-descripcion').value = m.descripcion || '';
+  document.getElementById('med-nombre').value      = m.nombre        || '';
+  document.getElementById('med-descripcion').value = m.descripcion   || '';
   document.getElementById('med-stock').value       = m.stock_actual;
   document.getElementById('med-stock-min').value   = m.stock_minimo;
-  document.getElementById('med-unidad').value      = m.unidad_medida;
+  document.getElementById('med-unidad').value      = m.unidad_medida || 'tableta';
   document.getElementById('med-precio').value      = m.precio_unitario || '';
   document.getElementById('modal-med-titulo').textContent = 'Editar Medicamento';
   document.getElementById('med-stock').setAttribute('readonly', true);
@@ -646,13 +683,13 @@ async function guardarMedicamento() {
     unidad_medida:   document.getElementById('med-unidad').value,
     precio_unitario: parseFloat(document.getElementById('med-precio').value) || 0,
   };
-  if (!payload.nombre) return alert('El nombre es requerido');
+  if (!payload.nombre) { toast('El nombre es requerido', 'warn'); return; }
   const url    = id ? `/api/medicamentos/${id}` : '/api/medicamentos';
   const method = id ? 'PUT' : 'POST';
   const res    = await fetch(url, { method, headers: H, body: JSON.stringify(payload) });
   const data   = await res.json();
   if (data.message || data.id) { cerrarModalMed(); cargarInventario(); }
-  else alert('Error: ' + (data.error?.sqlMessage || JSON.stringify(data.error)));
+  else toast('Error: ' + (data.error?.sqlMessage || JSON.stringify(data.error)), 'error');
 }
 
 function abrirModalEntrada(idMedicamento, nombre) {
@@ -672,21 +709,21 @@ async function guardarEntrada() {
   const cantidad  = parseInt(document.getElementById('entrada-cantidad').value);
   const proveedor = document.getElementById('entrada-proveedor').value.trim();
 
-  if (!cantidad || cantidad <= 0) return alert('Ingresa una cantidad válida');
+  if (!cantidad || cantidad <= 0) { toast('Ingresa una cantidad válida', 'warn'); return; }
   const res  = await fetch(`/api/medicamentos/${id}/entrada`, {
     method: 'POST', headers: H, body: JSON.stringify({ cantidad, proveedor })
   });
   const data = await res.json();
   if (data.message) { cerrarModalEntrada(); cargarInventario(); }
-  else alert('Error: ' + (data.error?.sqlMessage || JSON.stringify(data.error)));
+  else toast('Error: ' + (data.error?.sqlMessage || JSON.stringify(data.error)), 'error');
 }
 
 function abrirModalAjuste(idMedicamento, nombre, stockActual) {
-  document.getElementById('ajuste-id-med').value           = idMedicamento;
-  document.getElementById('ajuste-nombre').textContent     = nombre;
+  document.getElementById('ajuste-id-med').value            = idMedicamento;
+  document.getElementById('ajuste-nombre').textContent      = nombre;
   document.getElementById('ajuste-stock-actual').textContent = stockActual;
-  document.getElementById('ajuste-cantidad').value         = stockActual;
-  document.getElementById('ajuste-motivo').value           = '';
+  document.getElementById('ajuste-cantidad').value          = stockActual;
+  document.getElementById('ajuste-motivo').value            = '';
   document.getElementById('modal-ajuste').classList.add('active');
 }
 
@@ -699,7 +736,7 @@ async function guardarAjuste() {
   const cantidad_nueva = parseInt(document.getElementById('ajuste-cantidad').value);
   const motivo         = document.getElementById('ajuste-motivo').value.trim();
 
-  if (isNaN(cantidad_nueva)) return alert('Ingresa una cantidad válida');
+  if (isNaN(cantidad_nueva)) { toast('Ingresa una cantidad válida', 'warn'); return; }
 
   const res  = await fetch(`/api/medicamentos/${id}/ajuste`, {
     method: 'POST', headers: H,
@@ -707,7 +744,7 @@ async function guardarAjuste() {
   });
   const data = await res.json();
   if (data.message) { cerrarModalAjuste(); cargarInventario(); }
-  else alert('Error: ' + (data.error?.sqlMessage || JSON.stringify(data.error)));
+  else toast('Error: ' + (data.error?.sqlMessage || JSON.stringify(data.error)), 'error');
 }
 
 async function toggleMedicamento(id, nuevoEstado) {
@@ -718,7 +755,7 @@ async function toggleMedicamento(id, nuevoEstado) {
   });
   const data = await res.json();
   if (data.message) cargarInventario();
-  else alert('Error: ' + (data.error?.sqlMessage || JSON.stringify(data.error)));
+  else toast('Error: ' + (data.error?.sqlMessage || JSON.stringify(data.error)), 'error');
 }
 
 function switchTabInv(tab) {
@@ -765,10 +802,10 @@ async function _repCargarFiltros() {
     selDoc.innerHTML = '<option value="">Todos</option>';
     selEsp.innerHTML = '<option value="">Todas</option>';
     doctores.forEach(d => {
-      selDoc.innerHTML += `<option value="${d.idDoctor}">${d.nombre} — ${d.Especialidad}</option>`;
+      selDoc.innerHTML += `<option value="${d.idDoctor}">${esc(d.nombre)} — ${esc(d.Especialidad)}</option>`;
     });
     especialidades.forEach(e => {
-      selEsp.innerHTML += `<option value="${e}">${e}</option>`;
+      selEsp.innerHTML += `<option value="${esc(e)}">${esc(e)}</option>`;
     });
   } catch (err) {
     console.error('_repCargarFiltros:', err);
@@ -831,10 +868,10 @@ async function cargarInventarioCritico() {
           const clase   = agotado ? 'stock-agotado' : 'stock-critico';
           const estado  = agotado ? '🔴 Agotado' : '🟡 Crítico';
           return `<tr>
-            <td>${m.nombre}</td>
+            <td>${esc(m.nombre || '')}</td>
             <td class="${clase}">${m.stock_actual}</td>
             <td>${m.stock_minimo}</td>
-            <td>${m.unidad_medida}</td>
+            <td>${esc(m.unidad_medida || '')}</td>
             <td class="${clase}">${estado}</td>
           </tr>`;
         }).join('');
@@ -862,10 +899,10 @@ async function cargarInventarioCriticoLogs() {
           const clase   = agotado ? 'stock-agotado' : 'stock-critico';
           const estado  = agotado ? '🔴 Agotado' : '🟡 Crítico';
           return `<tr>
-            <td>${m.nombre}</td>
+            <td>${esc(m.nombre || '')}</td>
             <td class="${clase}">${m.stock_actual}</td>
             <td>${m.stock_minimo}</td>
-            <td>${m.unidad_medida}</td>
+            <td>${esc(m.unidad_medida || '')}</td>
             <td class="${clase}">${estado}</td>
           </tr>`;
         }).join('');
@@ -890,8 +927,8 @@ async function cargarActividad() {
           <li>
             <span class="feed-dot"></span>
             <div>
-              <strong>${a.accion}</strong>${a.descripcion ? ' — ' + a.descripcion : ''}
-              <br><small style="color:#aaa">${a.nombreUsuario ?? 'Sistema'} · ${a.modulo ?? ''}</small>
+              <strong>${esc(a.accion || '')}</strong>${a.descripcion ? ' — ' + esc(a.descripcion) : ''}
+              <br><small style="color:#aaa">${esc(a.nombreUsuario ?? 'Sistema')} · ${esc(a.modulo ?? '')}</small>
             </div>
             <span class="feed-fecha">${_formatearFecha(a.fecha)}</span>
           </li>`).join('');

@@ -5,7 +5,6 @@
 // ── AUTH ──────────────────────────────────────
 const usuario = JSON.parse(localStorage.getItem('usuario') || 'null');
 if (!usuario || usuario.rol !== 30003) {
-  alert('Acceso denegado.');
   window.location.href = '/';
 }
 
@@ -22,6 +21,44 @@ document.getElementById('fecha-actual').textContent =
 // ── TOKEN ─────────────────────────────────────
 const token = localStorage.getItem('token');
 const H = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
+
+// ── TOAST ─────────────────────────────────────
+function toast(msg, tipo = 'info') {
+  let el = document.getElementById('_toast_notif');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = '_toast_notif';
+    Object.assign(el.style, {
+      position:'fixed', bottom:'28px', right:'28px', zIndex:'9999',
+      padding:'13px 22px', borderRadius:'12px', fontSize:'14px',
+      fontWeight:'600', boxShadow:'0 4px 18px rgba(0,0,0,0.18)',
+      transition:'opacity .3s', maxWidth:'380px', lineHeight:'1.4',
+    });
+    document.body.appendChild(el);
+  }
+  const colores = { info:'#2a6b5e', error:'#c03030', warn:'#b07800', ok:'#2a6b5e' };
+  el.style.background = colores[tipo] || colores.info;
+  el.style.color = '#fff';
+  el.style.opacity = '1';
+  el.textContent = msg;
+  clearTimeout(el._t);
+  el._t = setTimeout(() => { el.style.opacity = '0'; }, 3500);
+}
+
+// ── ESC ───────────────────────────────────────
+function esc(s) {
+  return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+// ── MAPS ──────────────────────────────────────
+const _mapCitasRec   = new Map();
+const _mapMedicosRec = new Map();
+const _mapUsuPacRec  = new Map();
+const _mapPacAutoRec = new Map();
+const _mapDocAutoRec = new Map();
+const _mapDocUsrRec  = new Map();
+const _mapPrePacRec  = new Map();
+const _mapPreCitaRec = new Map();
 
 // ── NAVEGACIÓN ────────────────────────────────
 function nav(seccion, linkEl) {
@@ -68,8 +105,12 @@ async function cargarStats() {
 
     document.getElementById('citas-preview').innerHTML = citasHoy.length
       ? citasHoy.slice(0,4).map(c => {
-          const paciente = c.NombrePaciente ? `${c.NombrePaciente} ${c.ApellidosPaciente}` : `#${c.idPaciente}`;
-          const doctor   = c.NombreDoctor   ? `${c.NombreDoctor} ${c.ApellidosDoctor}`     : `#${c.idDoctor}`;
+          const paciente = c.NombrePaciente
+            ? `${esc(c.NombrePaciente)} ${esc(c.ApellidosPaciente || '')}`.trim()
+            : `#${c.idPaciente}`;
+          const doctor = c.NombreDoctor
+            ? `${esc(c.NombreDoctor)} ${esc(c.ApellidosDoctor || '')}`.trim()
+            : `#${c.idDoctor}`;
           const tienePre = idsConPreconsulta.includes(String(c.idCita));
           return `
             <tr>
@@ -107,9 +148,14 @@ function renderCitas(lista) {
       '<tr><td colspan="7" style="text-align:center;color:var(--text-soft);padding:20px;">Sin citas</td></tr>';
     return;
   }
+  lista.forEach(c => _mapCitasRec.set(c.idCita, c));
   document.getElementById('tbody-citas').innerHTML = lista.map(c => {
-    const paciente = c.NombrePaciente ? `${c.NombrePaciente} ${c.ApellidosPaciente}` : `#${c.idPaciente}`;
-    const doctor   = c.NombreDoctor   ? `${c.NombreDoctor} ${c.ApellidosDoctor}`     : `#${c.idDoctor}`;
+    const paciente = c.NombrePaciente
+      ? `${esc(c.NombrePaciente)} ${esc(c.ApellidosPaciente || '')}`.trim()
+      : `#${c.idPaciente}`;
+    const doctor = c.NombreDoctor
+      ? `${esc(c.NombreDoctor)} ${esc(c.ApellidosDoctor || '')}`.trim()
+      : `#${c.idDoctor}`;
     return `
       <tr>
         <td>#${c.idCita}</td>
@@ -120,7 +166,7 @@ function renderCitas(lista) {
         <td><span class="badge badge--${['CONFIRMADA','FINALIZADA'].includes(c.estado) ? 'activo' : 'pendiente'}">${c.estado}</span></td>
         <td>
           <div class="action-icons">
-            <button class="icon-btn icon-btn--edit"   title="Editar"   onclick='abrirModalEditarCita(${JSON.stringify(c)})'>✏️</button>
+            <button class="icon-btn icon-btn--edit"   title="Editar"   onclick="abrirModalEditarCita(${c.idCita})">✏️</button>
             <button class="icon-btn icon-btn--cancel" title="Cancelar" onclick="cancelarCita(${c.idCita})">✕</button>
           </div>
         </td>
@@ -147,15 +193,17 @@ function abrirModalCita() {
   document.getElementById('modal-cita-titulo').textContent = 'Nueva Cita';
   document.getElementById('cita-id').value                 = '';
   ['fecha','hora','motivo'].forEach(f => document.getElementById('cita-' + f).value = '');
-  document.getElementById('cita-paciente').value       = '';
+  document.getElementById('cita-paciente').value        = '';
   document.getElementById('cita-paciente-nombre').value = '';
-  document.getElementById('cita-doctor').value         = '';
-  document.getElementById('cita-doctor-nombre').value  = '';
-  document.getElementById('cita-estado').value         = 'PENDIENTE';
+  document.getElementById('cita-doctor').value          = '';
+  document.getElementById('cita-doctor-nombre').value   = '';
+  document.getElementById('cita-estado').value          = 'PENDIENTE';
   document.getElementById('modal-cita').classList.add('active');
 }
 
-function abrirModalEditarCita(c) {
+function abrirModalEditarCita(id) {
+  const c = _mapCitasRec.get(id);
+  if (!c) return;
   document.getElementById('modal-cita-titulo').textContent = 'Editar Cita';
   document.getElementById('cita-id').value       = c.idCita;
   document.getElementById('cita-fecha').value    = c.fecha ? c.fecha.split('T')[0] : '';
@@ -186,9 +234,9 @@ async function guardarCita() {
   const res    = await fetch(url, { method, headers:H, body:JSON.stringify(payload) });
   const data   = await res.json();
 
-  if (res.status === 409) { alert('⚠️ ' + data.error); return; }
+  if (res.status === 409) { toast('⚠️ ' + data.error, 'warn'); return; }
   if (data.id || data.message) { cerrarModalCita(); cargarCitas(); }
-  else alert('Error al guardar cita: ' + (data.error?.sqlMessage || data.error || 'Revisa los datos'));
+  else toast('Error al guardar cita: ' + (data.error?.sqlMessage || data.error || 'Revisa los datos'), 'error');
 }
 
 // ── PACIENTES ─────────────────────────────────
@@ -200,34 +248,35 @@ async function cargarPacientesRecientes() {
     document.getElementById('lista-recientes').innerHTML = recientes.length
       ? recientes.map(p => `
           <div style="padding:10px 0;border-bottom:1px solid rgba(0,0,0,0.05);">
-            <strong>${p.Nombres || ''} ${p.Apellidos || ''}</strong><br>
-            <span style="font-size:12px;color:#666;">Expediente: ${p.numero_expediente} | ID: ${p.idPaciente}</span>
+            <strong>${esc(p.Nombres || '')} ${esc(p.Apellidos || '')}</strong><br>
+            <span style="font-size:12px;color:#666;">Expediente: ${esc(p.numero_expediente || '')} | ID: ${p.idPaciente}</span>
           </div>`).join('')
       : '<p>Sin pacientes registrados.</p>';
   } catch (e) { console.error(e); }
 }
 
 async function buscarUsuarioPaciente() {
-  const input     = document.getElementById('pac-usuario-nombre');
+  const input       = document.getElementById('pac-usuario-nombre');
   const sugerencias = document.getElementById('sugerencias-usuario-paciente');
   const q = input.value.toLowerCase().trim();
   document.getElementById('pac-usuario').value = '';
   if (!q) { sugerencias.style.display = 'none'; return; }
   try {
-    const res     = await fetch('/api/usuarios', { headers: H });
-    const usuarios = await res.json();
-    const soloPacientes = usuarios.filter(u => u.idRol === 30001);
-    const resPac  = await fetch('/api/pacientes', { headers: H });
+    const res             = await fetch('/api/usuarios', { headers: H });
+    const usuarios        = await res.json();
+    const soloPacientes   = usuarios.filter(u => u.idRol === 30001);
+    const resPac          = await fetch('/api/pacientes', { headers: H });
     const pacientesConExp = await resPac.json();
-    const idsConExp  = pacientesConExp.map(p => p.idUsuario);
-    const disponibles = soloPacientes.filter(u => !idsConExp.includes(u.idUsuario));
-    const filtrados   = disponibles.filter(u =>
+    const idsConExp       = pacientesConExp.map(p => p.idUsuario);
+    const disponibles     = soloPacientes.filter(u => !idsConExp.includes(u.idUsuario));
+    const filtrados       = disponibles.filter(u =>
       (`${u.Nombres || ''} ${u.Apellidos || ''}`).toLowerCase().includes(q));
+    filtrados.forEach(u => _mapUsuPacRec.set(u.idUsuario, u));
     sugerencias.innerHTML = filtrados.length
       ? filtrados.map(u => `
           <div class="autocomplete-item"
-            onclick="seleccionarUsuarioParaPaciente(${u.idUsuario}, '${(u.Nombres+' '+u.Apellidos).replace(/'/g,"\\'")}')">
-            <strong>${u.Nombres} ${u.Apellidos}</strong>
+            onclick="seleccionarUsuarioParaPaciente(${u.idUsuario})">
+            <strong>${esc(u.Nombres || '')} ${esc(u.Apellidos || '')}</strong>
             <span>Sin expediente</span>
           </div>`).join('')
       : '<div class="autocomplete-item">Sin resultados</div>';
@@ -235,8 +284,10 @@ async function buscarUsuarioPaciente() {
   } catch (e) { console.error(e); }
 }
 
-function seleccionarUsuarioParaPaciente(id, nombreCompleto) {
-  document.getElementById('pac-usuario-nombre').value = nombreCompleto;
+function seleccionarUsuarioParaPaciente(id) {
+  const u = _mapUsuPacRec.get(id);
+  const nombre = u ? `${u.Nombres || ''} ${u.Apellidos || ''}`.trim() : '';
+  document.getElementById('pac-usuario-nombre').value = nombre;
   document.getElementById('pac-usuario').value        = id;
   document.getElementById('sugerencias-usuario-paciente').style.display = 'none';
 }
@@ -256,7 +307,7 @@ async function registrarPaciente() {
   const res  = await fetch('/api/pacientes', { method:'POST', headers:H, body:JSON.stringify(payload) });
   const data = await res.json();
   if (data.id) {
-    alert('✅ Paciente registrado correctamente');
+    toast('✅ Paciente registrado correctamente');
     ['exp','contacto','parentesco','obs','usuario','usuario-nombre'].forEach(f =>
       document.getElementById('pac-' + f).value = '');
     document.getElementById('pac-sangre').value = '';
@@ -264,7 +315,7 @@ async function registrarPaciente() {
     iniciarBuscador();
     cargarListasAutocompletado();
   } else {
-    alert('Error: ' + (data.message || data.error?.sqlMessage || 'No se pudo registrar'));
+    toast('Error: ' + (data.message || data.error?.sqlMessage || 'No se pudo registrar'), 'error');
   }
 }
 
@@ -290,10 +341,10 @@ function buscarPaciente() {
   cont.innerHTML = resultados.length
     ? resultados.map(p => `
         <div class="resultado-item">
-          <strong>${p.Nombres} ${p.Apellidos}</strong><br>
-          <span>Exp: ${p.numero_expediente} | ID: ${p.idPaciente}</span>
+          <strong>${esc(p.Nombres || '')} ${esc(p.Apellidos || '')}</strong><br>
+          <span>Exp: ${esc(p.numero_expediente || '')} | ID: ${p.idPaciente}</span>
         </div>`).join('')
-    : `<p style="text-align:center;color:gray;">No se encontró "${q}"</p>`;
+    : `<p style="text-align:center;color:gray;">No se encontró "${esc(q)}"</p>`;
 }
 
 // ── AUTOCOMPLETADO CITAS ──────────────────────
@@ -317,42 +368,51 @@ function buscarAutocompletado(tipo) {
   const q = inputNombre.value.toLowerCase().trim();
   if (!q) { sugerencias.style.display = 'none'; return; }
 
-  let lista = [];
   if (tipo === 'paciente') {
-    lista = Array.isArray(listaPacientes)
+    const lista = Array.isArray(listaPacientes)
       ? listaPacientes.filter(p =>
           (p.numero_expediente || '').toLowerCase().includes(q) ||
           (`${p.Nombres || ''} ${p.Apellidos || ''}`).toLowerCase().includes(q) ||
           String(p.idPaciente).includes(q))
       : [];
+    lista.forEach(p => _mapPacAutoRec.set(p.idPaciente, p));
     sugerencias.innerHTML = lista.length
       ? lista.map(p => `
-          <div class="autocomplete-item" onclick="seleccionar('paciente', ${p.idPaciente}, '${p.Nombres || ''} ${p.Apellidos || ''}')">
-            <strong>${p.Nombres || ''} ${p.Apellidos || ''}</strong>
-            <span>Exp: ${p.numero_expediente} · ${p.estado_paciente}</span>
+          <div class="autocomplete-item" onclick="seleccionar('paciente', ${p.idPaciente})">
+            <strong>${esc(p.Nombres || '')} ${esc(p.Apellidos || '')}</strong>
+            <span>Exp: ${esc(p.numero_expediente || '')} · ${esc(p.estado_paciente || '')}</span>
           </div>`).join('')
       : '<div class="autocomplete-item">Sin resultados</div>';
   }
 
   if (tipo === 'doctor') {
-    lista = Array.isArray(listaDoctores)
+    const lista = Array.isArray(listaDoctores)
       ? listaDoctores.filter(d =>
           (`${d.Nombres || ''} ${d.Apellidos || ''}`).toLowerCase().includes(q) ||
           (d.Especialidad || '').toLowerCase().includes(q))
       : [];
+    lista.forEach(d => _mapDocAutoRec.set(d.idDoctor, d));
     sugerencias.innerHTML = lista.length
       ? lista.map(d => `
-          <div class="autocomplete-item" onclick="seleccionar('doctor', ${d.idDoctor}, '${d.Nombres || ''} ${d.Apellidos || ''}')">
-            <strong>${d.Nombres || ''} ${d.Apellidos || ''}</strong>
-            <span>${d.Especialidad}</span>
+          <div class="autocomplete-item" onclick="seleccionar('doctor', ${d.idDoctor})">
+            <strong>${esc(d.Nombres || '')} ${esc(d.Apellidos || '')}</strong>
+            <span>${esc(d.Especialidad || '')}</span>
           </div>`).join('')
       : '<div class="autocomplete-item">Sin resultados</div>';
   }
   sugerencias.style.display = 'block';
 }
 
-function seleccionar(tipo, id, nombre) {
-  document.getElementById(`cita-${tipo}-nombre`).value = nombre.trim();
+function seleccionar(tipo, id) {
+  let nombre = '';
+  if (tipo === 'paciente') {
+    const p = _mapPacAutoRec.get(id);
+    nombre = p ? `${p.Nombres || ''} ${p.Apellidos || ''}`.trim() : '';
+  } else if (tipo === 'doctor') {
+    const d = _mapDocAutoRec.get(id);
+    nombre = d ? `${d.Nombres || ''} ${d.Apellidos || ''}`.trim() : '';
+  }
+  document.getElementById(`cita-${tipo}-nombre`).value = nombre;
   document.getElementById(`cita-${tipo}`).value        = id;
   document.getElementById(`sugerencias-${tipo}`).style.display = 'none';
 }
@@ -369,7 +429,7 @@ async function cargarUsuariosDoctores() {
 }
 
 function buscarUsuarioDoctor() {
-  const input     = document.getElementById('md-usuario-nombre');
+  const input       = document.getElementById('md-usuario-nombre');
   const sugerencias = document.getElementById('sugerencias-usuario-doctor');
   const q = input.value.toLowerCase().trim();
   if (!q) { sugerencias.style.display = 'none'; return; }
@@ -377,18 +437,21 @@ function buscarUsuarioDoctor() {
     (`${u.Nombres || ''} ${u.Apellidos || ''}`).toLowerCase().includes(q) ||
     (u.Email || '').toLowerCase().includes(q)
   );
+  lista.forEach(u => _mapDocUsrRec.set(u.idUsuario, u));
   sugerencias.innerHTML = lista.length
     ? lista.map(u => `
-        <div class="autocomplete-item" onclick="seleccionarUsuarioDoctor(${u.idUsuario}, '${u.Nombres || ''} ${u.Apellidos || ''}')">
-          <strong>${u.Nombres || ''} ${u.Apellidos || ''}</strong>
-          <span>${u.Email}</span>
+        <div class="autocomplete-item" onclick="seleccionarUsuarioDoctor(${u.idUsuario})">
+          <strong>${esc(u.Nombres || '')} ${esc(u.Apellidos || '')}</strong>
+          <span>${esc(u.Email || '')}</span>
         </div>`).join('')
     : '<div class="autocomplete-item">Sin resultados</div>';
   sugerencias.style.display = 'block';
 }
 
-function seleccionarUsuarioDoctor(id, nombre) {
-  document.getElementById('md-usuario-nombre').value = nombre.trim();
+function seleccionarUsuarioDoctor(id) {
+  const u = _mapDocUsrRec.get(id);
+  const nombre = u ? `${u.Nombres || ''} ${u.Apellidos || ''}`.trim() : '';
+  document.getElementById('md-usuario-nombre').value = nombre;
   document.getElementById('md-usuario').value        = id;
   document.getElementById('sugerencias-usuario-doctor').style.display = 'none';
 }
@@ -431,6 +494,7 @@ function renderMedicos(lista) {
       '<tr><td colspan="7" style="text-align:center;color:var(--text-soft);padding:20px;">Sin médicos registrados</td></tr>';
     return;
   }
+  lista.forEach(d => _mapMedicosRec.set(d.idDoctor, d));
   document.getElementById('tbody-medicos').innerHTML = lista.map(d => {
     const esActivo = d.Estado === 'ACTIVO';
     const horario  = (d.hora_inicio && d.hora_fin)
@@ -439,14 +503,14 @@ function renderMedicos(lista) {
     return `
       <tr>
         <td>#${d.idDoctor}</td>
-        <td><strong>${d.Nombres || '—'} ${d.Apellidos || ''}</strong></td>
-        <td>${d.Especialidad || '—'}</td>
-        <td style="font-size:12.5px;font-family:monospace;">${d.numero_junta_medica || '—'}</td>
+        <td><strong>${esc(d.Nombres || '—')} ${esc(d.Apellidos || '')}</strong></td>
+        <td>${esc(d.Especialidad || '—')}</td>
+        <td style="font-size:12.5px;font-family:monospace;">${esc(d.numero_junta_medica || '—')}</td>
         <td>${horario}</td>
         <td><span class="badge-estado--${esActivo ? 'activo' : 'inactivo'}">${d.Estado}</span></td>
         <td>
           <div class="action-icons">
-            <button class="icon-btn icon-btn--edit" title="Editar" onclick='abrirModalEditarMedico(${JSON.stringify(d)})'>✏️</button>
+            <button class="icon-btn icon-btn--edit" title="Editar" onclick="abrirModalEditarMedico(${d.idDoctor})">✏️</button>
             <button class="icon-btn icon-btn--toggle" title="${esActivo ? 'Desactivar' : 'Activar'}" onclick="toggleMedico(${d.idDoctor}, ${esActivo})">
               ${esActivo ? '🔴' : '🟢'}
             </button>
@@ -476,7 +540,7 @@ function filtrarMedicos() {
 
 function abrirModalMedico() {
   document.getElementById('modal-medico-titulo').textContent = 'Nuevo Médico';
-  document.getElementById('md-id').value          = '';
+  document.getElementById('md-id').value           = '';
   document.getElementById('md-especialidad').value = '';
   document.getElementById('md-junta').value        = '';
   document.getElementById('md-consultorio').value  = '';
@@ -489,7 +553,9 @@ function abrirModalMedico() {
   document.getElementById('modal-medico').classList.add('active');
 }
 
-function abrirModalEditarMedico(d) {
+function abrirModalEditarMedico(id) {
+  const d = _mapMedicosRec.get(id);
+  if (!d) return;
   document.getElementById('modal-medico-titulo').textContent = 'Editar Médico';
   document.getElementById('md-id').value           = d.idDoctor;
   document.getElementById('md-especialidad').value = d.Especialidad        || '';
@@ -509,11 +575,11 @@ function cerrarModalMedico() {
 }
 
 async function guardarMedico() {
-  const id        = document.getElementById('md-id').value;
+  const id         = document.getElementById('md-id').value;
   const horaInicio = document.getElementById('md-hora-inicio').value;
-  const horaFin   = document.getElementById('md-hora-fin').value;
-  if (!document.getElementById('md-especialidad').value) { alert('La especialidad es obligatoria.'); return; }
-  if (horaInicio && horaFin && horaInicio >= horaFin) { alert('La hora de fin debe ser posterior a la hora de inicio.'); return; }
+  const horaFin    = document.getElementById('md-hora-fin').value;
+  if (!document.getElementById('md-especialidad').value) { toast('La especialidad es obligatoria.', 'warn'); return; }
+  if (horaInicio && horaFin && horaInicio >= horaFin) { toast('La hora de fin debe ser posterior a la hora de inicio.', 'warn'); return; }
   const payload = {
     Especialidad:        document.getElementById('md-especialidad').value,
     numero_junta_medica: document.getElementById('md-junta').value      || null,
@@ -528,9 +594,9 @@ async function guardarMedico() {
   const method = id ? 'PUT' : 'POST';
   const res    = await fetch(url, { method, headers:H, body:JSON.stringify(payload) });
   const data   = await res.json();
-  if (res.status === 409) { alert('⚠️ ' + data.error); return; }
+  if (res.status === 409) { toast('⚠️ ' + data.error, 'warn'); return; }
   if (data.message || data.id) { cerrarModalMedico(); cargarMedicos(); cargarListasAutocompletado(); }
-  else alert('Error: ' + (data.error?.sqlMessage || data.error || 'Revisa los datos'));
+  else toast('Error: ' + (data.error?.sqlMessage || data.error || 'Revisa los datos'), 'error');
 }
 
 async function toggleMedico(id, estaActivo) {
@@ -542,7 +608,7 @@ async function toggleMedico(id, estaActivo) {
   const res  = await fetch(`/api/doctores/${id}/${accion}`, { method:'PATCH', headers:H });
   const data = await res.json();
   if (data.message) { cargarMedicos(); cargarListasAutocompletado(); }
-  else alert('Error: ' + (data.error || ''));
+  else toast('Error: ' + (data.error || ''), 'error');
 }
 
 // ── PRECONSULTA ───────────────────────────────────────────────────────────────
@@ -559,15 +625,15 @@ async function preIniciarSeccion() {
 function preLimpiarFormulario() {
   _prePaciente = null;
   _preCita     = null;
-  document.getElementById('pre-buscar-paciente').value             = '';
-  document.getElementById('pre-sug-paciente').style.display        = 'none';
-  document.getElementById('pre-bloque-citas').style.display        = 'none';
-  document.getElementById('pre-cita-badge').style.display          = 'none';
-  document.getElementById('pre-bloque-vitales').style.display      = 'none';
-  document.getElementById('pre-panel-historial').style.display     = 'none';
-  document.getElementById('pre-alerta-alergias').style.display     = 'none';
-  document.getElementById('pre-lista-citas').innerHTML             = '';
-  document.getElementById('pre-datos-paciente').innerHTML          = '';
+  document.getElementById('pre-buscar-paciente').value         = '';
+  document.getElementById('pre-sug-paciente').style.display    = 'none';
+  document.getElementById('pre-bloque-citas').style.display    = 'none';
+  document.getElementById('pre-cita-badge').style.display      = 'none';
+  document.getElementById('pre-bloque-vitales').style.display  = 'none';
+  document.getElementById('pre-panel-historial').style.display = 'none';
+  document.getElementById('pre-alerta-alergias').style.display = 'none';
+  document.getElementById('pre-lista-citas').innerHTML         = '';
+  document.getElementById('pre-datos-paciente').innerHTML      = '';
   ['pre-peso','pre-altura','pre-presion','pre-temp',
    'pre-fc','pre-sat','pre-motivo','pre-obs',
    'pre-id-cita','pre-id-historial'].forEach(id => {
@@ -592,49 +658,53 @@ function _preDoBuscar() {
         `${p.Nombres} ${p.Apellidos}`.toLowerCase().includes(q) ||
         (p.numero_expediente || '').toLowerCase().includes(q))
     : [];
+  pacs.slice(0,8).forEach(p => _mapPrePacRec.set(p.idPaciente, p));
   lista.innerHTML = pacs.length
     ? pacs.slice(0,8).map(p => `
         <div class="autocomplete-item"
-          onclick="preSeleccionarPaciente(${p.idPaciente}, '${(p.Nombres+' '+p.Apellidos).replace(/'/g,"\\'")}', ${p.idUsuario})">
-          <strong>${p.Nombres} ${p.Apellidos}</strong>
-          <span>Exp: ${p.numero_expediente || '–'} · ${p.tipo_sangre || 'N/A'}</span>
+          onclick="preSeleccionarPaciente(${p.idPaciente})">
+          <strong>${esc(p.Nombres || '')} ${esc(p.Apellidos || '')}</strong>
+          <span>Exp: ${esc(p.numero_expediente || '–')} · ${esc(p.tipo_sangre || 'N/A')}</span>
         </div>`).join('')
     : '<div class="autocomplete-item" style="color:var(--text-soft);">Sin resultados</div>';
   lista.style.display = 'block';
 }
 
-async function preSeleccionarPaciente(idPaciente, nombre, idUsuario) {
-  _prePaciente = { idPaciente, nombre, idUsuario };
-  document.getElementById('pre-buscar-paciente').value          = nombre;
-  document.getElementById('pre-sug-paciente').style.display     = 'none';
-  document.getElementById('pre-bloque-citas').style.display     = 'block';
-  document.getElementById('pre-lista-citas').innerHTML          =
+async function preSeleccionarPaciente(idPaciente) {
+  const p = _mapPrePacRec.get(idPaciente);
+  if (!p) return;
+  const nombre = `${p.Nombres || ''} ${p.Apellidos || ''}`.trim();
+  _prePaciente = { idPaciente, nombre, idUsuario: p.idUsuario };
+  document.getElementById('pre-buscar-paciente').value        = nombre;
+  document.getElementById('pre-sug-paciente').style.display   = 'none';
+  document.getElementById('pre-bloque-citas').style.display   = 'block';
+  document.getElementById('pre-lista-citas').innerHTML        =
     '<p style="font-size:12.5px;color:var(--text-soft);">Cargando citas...</p>';
-  document.getElementById('pre-cita-badge').style.display       = 'none';
-  document.getElementById('pre-bloque-vitales').style.display   = 'none';
+  document.getElementById('pre-cita-badge').style.display     = 'none';
+  document.getElementById('pre-bloque-vitales').style.display = 'none';
 
-  const pac = listaPacientes.find(p => p.idPaciente === idPaciente);
-  preRenderDatosPaciente(pac);
+  preRenderDatosPaciente(p);
 
   const alertEl = document.getElementById('pre-alerta-alergias');
-  if (pac?.alergias) {
-    alertEl.innerHTML     = `⚠️ Alergias registradas: <strong>${pac.alergias}</strong>`;
+  if (p.alergias) {
+    alertEl.innerHTML     = `⚠️ Alergias registradas: <strong>${esc(p.alergias)}</strong>`;
     alertEl.style.display = 'block';
   } else {
     alertEl.style.display = 'none';
   }
 
   try {
-    const res   = await fetch(`/api/citas/paciente/${idUsuario}`, { headers: H });
+    const res   = await fetch(`/api/citas/paciente/${p.idUsuario}`, { headers: H });
     const citas = await res.json();
     const activas = Array.isArray(citas)
       ? citas.filter(c => ['PENDIENTE','CONFIRMADA'].includes(c.estado)) : [];
+    activas.forEach(c => _mapPreCitaRec.set(c.idCita, c));
     document.getElementById('pre-lista-citas').innerHTML = activas.length
       ? activas.map(c => `
           <div class="pre-cita-item"
-            onclick="preElegirCita(${c.idCita}, '${c.fecha ? c.fecha.split('T')[0] : ''}', '${c.hora ? c.hora.substring(0,5) : ''}', '${(c.motivo||'').replace(/'/g,"\\'")}')">
-            <strong>${c.fecha ? c.fecha.split('T')[0] : '–'} · ${c.hora ? c.hora.substring(0,5) : '–'}</strong>
-            <span>${c.motivo || 'Sin motivo especificado'} · ${c.estado}</span>
+            onclick="preElegirCita(${c.idCita})">
+            <strong>${esc(c.fecha ? c.fecha.split('T')[0] : '–')} · ${esc(c.hora ? c.hora.substring(0,5) : '–')}</strong>
+            <span>${esc(c.motivo || 'Sin motivo especificado')} · ${esc(c.estado || '')}</span>
           </div>`).join('')
       : '<p style="font-size:12.5px;color:var(--text-soft);">No hay citas activas (PENDIENTE/CONFIRMADA) para este paciente</p>';
   } catch {
@@ -643,7 +713,12 @@ async function preSeleccionarPaciente(idPaciente, nombre, idUsuario) {
   }
 }
 
-async function preElegirCita(idCita, fecha, hora, motivo) {
+async function preElegirCita(idCita) {
+  const c      = _mapPreCitaRec.get(idCita);
+  const fecha  = c?.fecha  ? c.fecha.split('T')[0]   : '';
+  const hora   = c?.hora   ? c.hora.substring(0,5)   : '';
+  const motivo = c?.motivo || '';
+
   let idHistorial = null;
   try {
     const res  = await fetch(`/api/historial/by-paciente?idPaciente=${_prePaciente.idPaciente}`, { headers: H });
@@ -662,8 +737,8 @@ async function preElegirCita(idCita, fecha, hora, motivo) {
   const badge = document.getElementById('pre-cita-badge');
   badge.style.display = 'block';
   badge.innerHTML = `
-    ✅ Cita seleccionada: <strong>${_prePaciente.nombre}</strong>
-    · ${fecha} ${hora} · Cita #${idCita}
+    ✅ Cita seleccionada: <strong>${esc(_prePaciente.nombre)}</strong>
+    · ${esc(fecha)} ${esc(hora)} · Cita #${idCita}
     <button onclick="preCambiarCita()"
       style="margin-left:10px;padding:3px 10px;border:1px solid var(--border);
         border-radius:7px;background:transparent;font-size:11px;cursor:pointer;color:var(--text-soft);">
@@ -688,43 +763,43 @@ function preRenderDatosPaciente(p) {
   cont.innerHTML = `
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
       <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,var(--teal),var(--teal-light));color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:17px;flex-shrink:0;">
-        ${(p.Nombres || 'P')[0]}
+        ${esc((p.Nombres || 'P')[0])}
       </div>
       <div>
-        <strong style="display:block;font-size:14px;color:var(--deep);">${p.Nombres || ''} ${p.Apellidos || ''}</strong>
-        <span style="font-size:12px;color:var(--text-soft);">Exp: ${p.numero_expediente || '–'}</span>
+        <strong style="display:block;font-size:14px;color:var(--deep);">${esc(p.Nombres || '')} ${esc(p.Apellidos || '')}</strong>
+        <span style="font-size:12px;color:var(--text-soft);">Exp: ${esc(p.numero_expediente || '–')}</span>
       </div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:13px;">
       <div style="padding:8px 10px;background:var(--cream);border-radius:10px;">
         <span style="font-size:10.5px;color:var(--text-soft);display:block;">Tipo de Sangre</span>
-        <strong style="color:var(--deep);">${p.tipo_sangre || 'N/A'}</strong>
+        <strong style="color:var(--deep);">${esc(p.tipo_sangre || 'N/A')}</strong>
       </div>
       <div style="padding:8px 10px;background:var(--cream);border-radius:10px;">
         <span style="font-size:10.5px;color:var(--text-soft);display:block;">Estado</span>
-        <strong style="color:var(--deep);">${p.estado_paciente || '–'}</strong>
+        <strong style="color:var(--deep);">${esc(p.estado_paciente || '–')}</strong>
       </div>
       <div style="padding:8px 10px;background:var(--cream);border-radius:10px;grid-column:1/-1;">
         <span style="font-size:10.5px;color:var(--text-soft);display:block;">Contacto Emergencia</span>
-        <strong style="color:var(--deep);">${p.contacto_emergencia || 'No registrado'}</strong>
-        ${p.telefono_emergencia ? `<span style="font-size:11.5px;color:var(--text-soft);"> · ${p.telefono_emergencia}</span>` : ''}
+        <strong style="color:var(--deep);">${esc(p.contacto_emergencia || 'No registrado')}</strong>
+        ${p.telefono_emergencia ? `<span style="font-size:11.5px;color:var(--text-soft);"> · ${esc(p.telefono_emergencia)}</span>` : ''}
       </div>
       ${p.alergias ? `
       <div style="padding:8px 10px;background:rgba(200,50,50,0.06);border:1.5px solid rgba(200,50,50,0.15);border-radius:10px;grid-column:1/-1;">
         <span style="font-size:10.5px;color:#c03030;display:block;font-weight:700;">⚠️ Alergias</span>
-        <strong style="color:#c03030;">${p.alergias}</strong>
+        <strong style="color:#c03030;">${esc(p.alergias)}</strong>
       </div>` : ''}
       ${p.padecimientos_cronicos ? `
       <div style="padding:8px 10px;background:var(--cream);border-radius:10px;grid-column:1/-1;">
         <span style="font-size:10.5px;color:var(--text-soft);display:block;">Padecimientos Crónicos</span>
-        <strong style="color:var(--deep);">${p.padecimientos_cronicos}</strong>
+        <strong style="color:var(--deep);">${esc(p.padecimientos_cronicos)}</strong>
       </div>` : ''}
     </div>`;
 }
 
 async function guardarPreconsulta() {
-  if (!_prePaciente) { alert('⚠️ Selecciona un paciente primero.'); return; }
-  if (!_preCita)     { alert('⚠️ Selecciona la cita a atender.'); return; }
+  if (!_prePaciente) { toast('⚠️ Selecciona un paciente primero.', 'warn'); return; }
+  if (!_preCita)     { toast('⚠️ Selecciona la cita a atender.', 'warn'); return; }
 
   const peso    = parseFloat(document.getElementById('pre-peso').value)    || null;
   const altura  = parseFloat(document.getElementById('pre-altura').value)  || null;
@@ -736,7 +811,7 @@ async function guardarPreconsulta() {
   const obs     = document.getElementById('pre-obs').value.trim();
 
   if (!presion && !peso && !temp) {
-    alert('⚠️ Ingresa al menos un signo vital (presión, peso o temperatura).');
+    toast('⚠️ Ingresa al menos un signo vital (presión, peso o temperatura).', 'warn');
     return;
   }
 
@@ -745,43 +820,42 @@ async function guardarPreconsulta() {
 
   if (peso !== null) {
     if (peso < 0.5 || peso > 500)
-      erroresClinico.push(`Peso fuera de rango clínico: ${peso} kg (rango válido: 0.5 – 500 kg)`);
+      erroresClinico.push(`Peso fuera de rango: ${peso} kg (0.5–500 kg)`);
   }
   if (altura !== null) {
     if (altura < 20 || altura > 250)
-      erroresClinico.push(`Talla fuera de rango clínico: ${altura} cm (rango válido: 20 – 250 cm)`);
+      erroresClinico.push(`Talla fuera de rango: ${altura} cm (20–250 cm)`);
   }
   if (temp !== null) {
     if (temp < 32 || temp > 43)
-      erroresClinico.push(`Temperatura fuera de rango clínico: ${temp}°C (rango válido: 32 – 43°C)`);
+      erroresClinico.push(`Temperatura fuera de rango: ${temp}°C (32–43°C)`);
   }
   if (fc !== null) {
     if (fc < 30 || fc > 250)
-      erroresClinico.push(`Frecuencia cardíaca fuera de rango: ${fc} lpm (rango válido: 30 – 250 lpm)`);
+      erroresClinico.push(`FC fuera de rango: ${fc} lpm (30–250 lpm)`);
   }
   if (sat !== null) {
     if (sat < 50 || sat > 100)
-      erroresClinico.push(`Saturación O₂ fuera de rango: ${sat}% (rango válido: 50 – 100%)`);
+      erroresClinico.push(`SpO₂ fuera de rango: ${sat}% (50–100%)`);
   }
   if (presion) {
-    // Validar formato NNN/NNN y rangos sistólica/diastólica
     const matchPres = presion.match(/^(\d{2,3})\/(\d{2,3})$/);
     if (!matchPres) {
-      erroresClinico.push(`Formato de presión arterial inválido: "${presion}". Use el formato 120/80`);
+      erroresClinico.push(`Formato de presión inválido: "${presion}". Use 120/80`);
     } else {
       const sistolica  = parseInt(matchPres[1]);
       const diastolica = parseInt(matchPres[2]);
       if (sistolica < 50 || sistolica > 300)
-        erroresClinico.push(`Presión sistólica fuera de rango: ${sistolica} mmHg (rango válido: 50 – 300)`);
+        erroresClinico.push(`Presión sistólica fuera de rango: ${sistolica} (50–300)`);
       if (diastolica < 30 || diastolica > 200)
-        erroresClinico.push(`Presión diastólica fuera de rango: ${diastolica} mmHg (rango válido: 30 – 200)`);
+        erroresClinico.push(`Presión diastólica fuera de rango: ${diastolica} (30–200)`);
       if (diastolica >= sistolica)
-        erroresClinico.push(`La presión diastólica (${diastolica}) no puede ser mayor o igual a la sistólica (${sistolica})`);
+        erroresClinico.push(`Diastólica (${diastolica}) ≥ sistólica (${sistolica})`);
     }
   }
 
   if (erroresClinico.length) {
-    alert('⚠️ Datos fuera de rango clínico:\n\n' + erroresClinico.join('\n'));
+    toast('⚠️ Datos fuera de rango: ' + erroresClinico.join(' | '), 'warn');
     return;
   }
   // ── Fin validaciones ───────────────────────────────────────────────────────
@@ -801,13 +875,13 @@ async function guardarPreconsulta() {
       };
       const res  = await fetch(`/api/consultas/${yaExiste.idConsulta}`, { method:'PUT', headers:H, body:JSON.stringify(payload) });
       const data = await res.json();
-      if (data.message) { alert('✅ Preconsulta actualizada correctamente.'); preLimpiarFormulario(); preCargarUltimas(); cargarStats(); }
-      else alert('Error: ' + (data.error?.sqlMessage || data.error || 'No se pudo actualizar'));
+      if (data.message) { toast('✅ Preconsulta actualizada correctamente.'); preLimpiarFormulario(); preCargarUltimas(); cargarStats(); }
+      else toast('Error: ' + (data.error?.sqlMessage || data.error || 'No se pudo actualizar'), 'error');
       return;
     }
 
     if (!_preCita.idHistorial) {
-      alert('⚠️ Este paciente no tiene historial clínico registrado. Debe registrarse antes de la preconsulta.');
+      toast('⚠️ Este paciente no tiene historial clínico registrado. Debe registrarse antes de la preconsulta.', 'warn');
       return;
     }
 
@@ -828,15 +902,15 @@ async function guardarPreconsulta() {
     const data = await res.json();
 
     if (data.id) {
-      alert(`✅ Preconsulta registrada correctamente para ${_prePaciente.nombre}.`);
+      toast(`✅ Preconsulta registrada para ${_prePaciente.nombre}.`);
       preLimpiarFormulario();
       preCargarUltimas();
       cargarStats();
     } else {
-      alert('Error: ' + (data.error?.sqlMessage || data.error || 'No se pudo registrar'));
+      toast('Error: ' + (data.error?.sqlMessage || data.error || 'No se pudo registrar'), 'error');
     }
   } catch (err) {
-    alert('Error de conexión.');
+    toast('Error de conexión.', 'error');
     console.error(err);
   }
 }
@@ -850,11 +924,11 @@ async function preCargarUltimas() {
     cont.innerHTML = Array.isArray(data) && data.length
       ? data.slice(0,6).map(c => `
           <div class="pre-historial-item">
-            <strong>${c.NombrePaciente ? `${c.NombrePaciente} ${c.ApellidosPaciente || ''}` : `Cita #${c.idCita}`}</strong>
+            <strong>${c.NombrePaciente ? `${esc(c.NombrePaciente)} ${esc(c.ApellidosPaciente || '')}` : `Cita #${c.idCita}`}</strong>
             <span>
               ${c.fecha_consulta ? c.fecha_consulta.split('T')[0] : '–'}
               ${c.peso ? '· ' + c.peso + ' kg' : ''}
-              ${c.presion_arterial ? '· ' + c.presion_arterial : ''}
+              ${c.presion_arterial ? '· ' + esc(c.presion_arterial) : ''}
               ${c.temperatura ? '· ' + c.temperatura + '°C' : ''}
             </span>
           </div>`).join('')
