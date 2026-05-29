@@ -4,7 +4,7 @@
 
 // ── AUTH ──────────────────────────────────────
 const usuario = JSON.parse(localStorage.getItem('usuario') || 'null');
-if (!usuario || usuario.rol !== 30003) {
+if (!usuario || usuario.rol !== ROLES.RECEPCIONISTA) {
   window.location.href = '/';
 }
 
@@ -17,38 +17,6 @@ if (usuario) {
 
 document.getElementById('fecha-actual').textContent =
   new Date().toLocaleDateString('es-SV', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
-
-// ── TOKEN ─────────────────────────────────────
-const token = localStorage.getItem('token');
-const H = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
-
-// ── TOAST ─────────────────────────────────────
-function toast(msg, tipo = 'info') {
-  let el = document.getElementById('_toast_notif');
-  if (!el) {
-    el = document.createElement('div');
-    el.id = '_toast_notif';
-    Object.assign(el.style, {
-      position:'fixed', bottom:'28px', right:'28px', zIndex:'9999',
-      padding:'13px 22px', borderRadius:'12px', fontSize:'14px',
-      fontWeight:'600', boxShadow:'0 4px 18px rgba(0,0,0,0.18)',
-      transition:'opacity .3s', maxWidth:'380px', lineHeight:'1.4',
-    });
-    document.body.appendChild(el);
-  }
-  const colores = { info:'#2a6b5e', error:'#c03030', warn:'#b07800', ok:'#2a6b5e' };
-  el.style.background = colores[tipo] || colores.info;
-  el.style.color = '#fff';
-  el.style.opacity = '1';
-  el.textContent = msg;
-  clearTimeout(el._t);
-  el._t = setTimeout(() => { el.style.opacity = '0'; }, 3500);
-}
-
-// ── ESC ───────────────────────────────────────
-function esc(s) {
-  return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
-}
 
 // ── MAPS ──────────────────────────────────────
 const _mapCitasRec   = new Map();
@@ -942,13 +910,6 @@ document.addEventListener('click', (e) => {
   if (inp && sug && !inp.contains(e.target) && !sug.contains(e.target))
     sug.style.display = 'none';
 });
-
-// ── CERRAR SESIÓN ─────────────────────────────
-function cerrarSesion() {
-  localStorage.removeItem('token');
-  localStorage.removeItem('usuario');
-  window.location.href = '/';
-}
 
 // ── INIT ──────────────────────────────────────
 cargarStats();

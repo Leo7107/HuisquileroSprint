@@ -4,7 +4,7 @@
 
 // ── AUTH ──────────────────────────────────────
 const usuario = JSON.parse(localStorage.getItem('usuario') || 'null');
-if (!usuario || usuario.rol !== 1) {
+if (!usuario || usuario.rol !== ROLES.ADMIN) {
   window.location.href = '/';
 }
 
@@ -17,38 +17,6 @@ if (usuario) {
 
 document.getElementById('fecha-actual').textContent =
   new Date().toLocaleDateString('es-SV', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
-
-// ── TOKEN ─────────────────────────────────────
-const token = localStorage.getItem('token');
-const H = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
-
-// ── TOAST ─────────────────────────────────────
-function toast(msg, tipo = 'info') {
-  let el = document.getElementById('_toast_notif');
-  if (!el) {
-    el = document.createElement('div');
-    el.id = '_toast_notif';
-    Object.assign(el.style, {
-      position:'fixed', bottom:'28px', right:'28px', zIndex:'9999',
-      padding:'13px 22px', borderRadius:'12px', fontSize:'14px',
-      fontWeight:'600', boxShadow:'0 4px 18px rgba(0,0,0,0.18)',
-      transition:'opacity .3s', maxWidth:'380px', lineHeight:'1.4',
-    });
-    document.body.appendChild(el);
-  }
-  const colores = { info:'#2a6b5e', error:'#c03030', warn:'#b07800', ok:'#2a6b5e' };
-  el.style.background = colores[tipo] || colores.info;
-  el.style.color = '#fff';
-  el.style.opacity = '1';
-  el.textContent = msg;
-  clearTimeout(el._t);
-  el._t = setTimeout(() => { el.style.opacity = '0'; }, 3500);
-}
-
-// ── ESC ───────────────────────────────────────
-function esc(s) {
-  return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
-}
 
 // ── MAPS ──────────────────────────────────────
 const _mapUsuarios   = new Map();
@@ -66,25 +34,19 @@ function nav(seccion, linkEl) {
   if (seccion === 'usuarios')   cargarUsuarios();
   if (seccion === 'medicos')    cargarMedicos();
   if (seccion === 'roles')      cargarRoles();
-  if (seccion === 'logs')       { cargarLogs(); cargarInventarioCriticoLogs(); }
+  if (seccion === 'logs')       { cargarLogs(); cargarInventarioCritico(); }
   if (seccion === 'inventario') cargarInventario();
   if (seccion === 'reportes')  iniciarReportes(); // ← HU12
 }
 
 // ── STATS ─────────────────────────────────────
 async function cargarStats() {
+  cargarResumen(); // cubre s-pacientes, citasHoy, médicos, alertas via /api/metricas/resumen
   try {
-    const [pRes, cRes, dRes, uRes] = await Promise.all([
-      fetch('/api/pacientes', { headers: H }),
-      fetch('/api/citas',     { headers: H }),
-      fetch('/api/doctores',  { headers: H }),
-      fetch('/api/usuarios',  { headers: H }),
-    ]);
-    const pacientes = await pRes.json();
-    const usuarios  = await uRes.json();
-
-    document.getElementById('s-pacientes').textContent = Array.isArray(pacientes) ? pacientes.length : '—';
-    document.getElementById('s-usuarios').textContent  = Array.isArray(usuarios)  ? usuarios.length  : '—';
+    const res     = await fetch('/api/usuarios', { headers: H });
+    const usuarios = await res.json();
+    const el = document.getElementById('s-usuarios');
+    if (el) el.textContent = Array.isArray(usuarios) ? usuarios.length : '—';
   } catch { /* sin datos */ }
 }
 
@@ -504,13 +466,6 @@ document.addEventListener('click', (e) => {
     sug.style.display = 'none';
 });
 
-// ── CERRAR SESIÓN ─────────────────────────────
-function cerrarSesion() {
-  localStorage.removeItem('token');
-  localStorage.removeItem('usuario');
-  window.location.href = '/';
-}
-
 // ── INVENTARIO ────────────────────────────────
 let listaMedicamentos = [];
 
@@ -850,7 +805,6 @@ async function cargarResumen() {
 }
 
 async function cargarInventarioCritico() {
-  const ids = ['bodyInventarioCritico'];
   try {
     const res   = await fetch('/api/metricas/alertas-inventario', { headers: H });
     const lista = await res.json();
@@ -876,38 +830,13 @@ async function cargarInventarioCritico() {
           </tr>`;
         }).join('');
 
-    ids.forEach(id => {
+    // Actualiza el panel de inicio Y el panel de logs con un solo fetch
+    ['bodyInventarioCritico', 'bodyInventarioCriticoLogs'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.innerHTML = html;
     });
   } catch (e) {
-    console.error('HU14 cargarInventarioCritico:', e);
-  }
-}
-
-async function cargarInventarioCriticoLogs() {
-  try {
-    const res   = await fetch('/api/metricas/alertas-inventario', { headers: H });
-    const lista = await res.json();
-    const el    = document.getElementById('bodyInventarioCriticoLogs');
-    if (!el) return;
-
-    el.innerHTML = lista.length === 0
-      ? `<tr><td colspan="5" style="text-align:center;color:var(--text-soft);padding:20px;">✅ Sin alertas de inventario</td></tr>`
-      : lista.map(m => {
-          const agotado = m.stock_actual === 0;
-          const clase   = agotado ? 'stock-agotado' : 'stock-critico';
-          const estado  = agotado ? '🔴 Agotado' : '🟡 Crítico';
-          return `<tr>
-            <td>${esc(m.nombre || '')}</td>
-            <td class="${clase}">${m.stock_actual}</td>
-            <td>${m.stock_minimo}</td>
-            <td>${esc(m.unidad_medida || '')}</td>
-            <td class="${clase}">${estado}</td>
-          </tr>`;
-        }).join('');
-  } catch (e) {
-    console.error('HU14 cargarInventarioCriticoLogs:', e);
+    console.error('cargarInventarioCritico:', e);
   }
 }
 

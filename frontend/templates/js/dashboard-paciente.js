@@ -13,7 +13,7 @@
 
 // ─── Autenticación ────────────────────────────────────────────────────────────
 const usuario = JSON.parse(localStorage.getItem('usuario') || 'null');
-if (!usuario || usuario.rol !== 30001) {
+if (!usuario || usuario.rol !== ROLES.PACIENTE) {
   window.location.href = '/';
 }
 
@@ -26,25 +26,6 @@ if (usuario) {
 
 document.getElementById('fecha-actual').textContent =
   new Date().toLocaleDateString('es-SV', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
-
-const token = localStorage.getItem('token');
-const H = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
-
-// ─── Util: HTML escape ────────────────────────────────────────────────────────
-function esc(s) {
-  return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
-}
-
-// ─── Util: Toast ──────────────────────────────────────────────────────────────
-let _toastTimer = null;
-function toast(msg, tipo = 'success') {
-  const el = document.getElementById('toast');
-  el.textContent = msg;
-  el.className   = tipo;
-  el.style.display = 'block';
-  clearTimeout(_toastTimer);
-  _toastTimer = setTimeout(() => { el.style.display = 'none'; }, 3500);
-}
 
 // ─── Util: abrir / cerrar modales ────────────────────────────────────────────
 function cerrarModal(id) {
@@ -661,13 +642,6 @@ async function guardarPerfil() {
   } catch {
     toast('Error de conexión', 'error');
   }
-}
-
-// ─── CERRAR SESIÓN ────────────────────────────────────────────────────────────
-function cerrarSesion() {
-  localStorage.removeItem('token');
-  localStorage.removeItem('usuario');
-  window.location.href = '/';
 }
 
 // ─── INIT ─────────────────────────────────────────────────────────────────────
