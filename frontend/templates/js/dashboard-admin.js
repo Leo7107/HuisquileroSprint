@@ -65,25 +65,19 @@ function nav(seccion, linkEl) {
   if (seccion === 'usuarios')   cargarUsuarios();
   if (seccion === 'medicos')    cargarMedicos();
   if (seccion === 'roles')      cargarRoles();
-  if (seccion === 'logs')       { cargarLogs(); cargarInventarioCriticoLogs(); }
+  if (seccion === 'logs')       { cargarLogs(); cargarInventarioCritico(); }
   if (seccion === 'inventario') cargarInventario();
   if (seccion === 'reportes')  iniciarReportes(); // ← HU12
 }
 
 // ── STATS ─────────────────────────────────────
 async function cargarStats() {
+  cargarResumen(); // cubre s-pacientes, citasHoy, médicos, alertas via /api/metricas/resumen
   try {
-    const [pRes, cRes, dRes, uRes] = await Promise.all([
-      fetch('/api/pacientes', { headers: H }),
-      fetch('/api/citas',     { headers: H }),
-      fetch('/api/doctores',  { headers: H }),
-      fetch('/api/usuarios',  { headers: H }),
-    ]);
-    const pacientes = await pRes.json();
-    const usuarios  = await uRes.json();
-
-    document.getElementById('s-pacientes').textContent = Array.isArray(pacientes) ? pacientes.length : '—';
-    document.getElementById('s-usuarios').textContent  = Array.isArray(usuarios)  ? usuarios.length  : '—';
+    const res     = await fetch('/api/usuarios', { headers: H });
+    const usuarios = await res.json();
+    const el = document.getElementById('s-usuarios');
+    if (el) el.textContent = Array.isArray(usuarios) ? usuarios.length : '—';
   } catch { /* sin datos */ }
 }
 
@@ -849,7 +843,6 @@ async function cargarResumen() {
 }
 
 async function cargarInventarioCritico() {
-  const ids = ['bodyInventarioCritico'];
   try {
     const res   = await fetch('/api/metricas/alertas-inventario', { headers: H });
     const lista = await res.json();
@@ -875,38 +868,13 @@ async function cargarInventarioCritico() {
           </tr>`;
         }).join('');
 
-    ids.forEach(id => {
+    // Actualiza el panel de inicio Y el panel de logs con un solo fetch
+    ['bodyInventarioCritico', 'bodyInventarioCriticoLogs'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.innerHTML = html;
     });
   } catch (e) {
-    console.error('HU14 cargarInventarioCritico:', e);
-  }
-}
-
-async function cargarInventarioCriticoLogs() {
-  try {
-    const res   = await fetch('/api/metricas/alertas-inventario', { headers: H });
-    const lista = await res.json();
-    const el    = document.getElementById('bodyInventarioCriticoLogs');
-    if (!el) return;
-
-    el.innerHTML = lista.length === 0
-      ? `<tr><td colspan="5" style="text-align:center;color:var(--text-soft);padding:20px;">✅ Sin alertas de inventario</td></tr>`
-      : lista.map(m => {
-          const agotado = m.stock_actual === 0;
-          const clase   = agotado ? 'stock-agotado' : 'stock-critico';
-          const estado  = agotado ? '🔴 Agotado' : '🟡 Crítico';
-          return `<tr>
-            <td>${esc(m.nombre || '')}</td>
-            <td class="${clase}">${m.stock_actual}</td>
-            <td>${m.stock_minimo}</td>
-            <td>${esc(m.unidad_medida || '')}</td>
-            <td class="${clase}">${estado}</td>
-          </tr>`;
-        }).join('');
-  } catch (e) {
-    console.error('HU14 cargarInventarioCriticoLogs:', e);
+    console.error('cargarInventarioCritico:', e);
   }
 }
 

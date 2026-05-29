@@ -14,7 +14,6 @@ const usuario = JSON.parse(sessionStorage.getItem('usuario') || 'null');
 if (!usuario || usuario.rol !== 30002) {
   window.location.href = '/';
 }
-
 if (usuario) {
   const nombre = usuario.nombre || 'Doctor';
   document.getElementById('nombre-medico').textContent  = nombre;
@@ -71,21 +70,18 @@ let fechaSemana     = new Date();
 let diaSeleccionado = null;
 let todosPacientes  = [];
 
-// ── NAVEGACIÓN — HU12: hook reportes integrado ────────────────────────────────
+// ── NAVEGACIÓN ────────────────────────────────────────────────────────────────
 function nav(seccion, linkEl) {
   document.querySelectorAll('[id^="sec-"]').forEach(s => s.style.display = 'none');
-  document.getElementById('sec-' + seccion).style.display = 'block';
+  const sec = document.getElementById('sec-' + seccion);
+  if (sec) sec.style.display = 'block';
   document.querySelectorAll('.nav-item').forEach(a => a.classList.remove('active'));
   if (linkEl) linkEl.classList.add('active');
 
-  if (seccion === 'citas')               cargarCitas();
-  if (seccion === 'consulta')            iniciarSeccionConsulta();
-  if (seccion === 'historial-consultas') cargarHistorialConsultas();
-  if (seccion === 'receta')              iniciarSeccionReceta();
-  if (seccion === 'diagnostico')         iniciarSeccionDiagnostico();
-  if (seccion === 'expediente')          iniciarBuscador();
-  if (seccion === 'horario')             iniciarHorario();
-  if (seccion === 'reportes')            iniciarReportesMedico(); // ← HU12
+  if (seccion === 'citas')      cargarCitas();
+  if (seccion === 'expediente') iniciarBuscador();
+  if (seccion === 'horario')    iniciarHorario();
+  if (seccion === 'reportes')   iniciarReportesMedico();
 }
 
 // ── HELPERS ───────────────────────────────────────────────────────────────────
@@ -281,165 +277,152 @@ function cerrarModalHistorial() {
   document.getElementById('modal-historial-paciente').classList.remove('active');
 }
 
-// ── ACCESO RÁPIDO DESDE MODAL ─────────────────────────────────────────────────
+// ── ACCESO RÁPIDO DESDE MODAL HISTORIAL ──────────────────────────────────────
 function accesoCitaRapido(idCita, idPaciente) {
-  nav('consulta', document.querySelector('[onclick*="consulta"]'));
-  setTimeout(async () => {
-    try {
-      const res  = await fetch(`/api/historial/by-paciente?idPaciente=${idPaciente}`, { headers: H });
-      const data = await res.json();
-      const h    = Array.isArray(data) ? data[0] : data;
-      if (h?.idHistorial) {
-        _citaSeleccionada = { idCita, idPaciente, idHistorial: h.idHistorial };
-        renderCitaSeleccionada();
-      }
-    } catch {}
-    cargarPreconsulta(idCita);
-  }, 150);
+  cerrarModalHistorial();
+  nav('citas', document.querySelector('.nav-item[onclick*="citas"]'));
+  setTimeout(() => abrirAtencion(idCita, idPaciente), 200);
 }
 
-// ── SECCIÓN CONSULTAS ─────────────────────────────────────────────────────────
+// ── PANEL DE ATENCIÓN CLÍNICA ─────────────────────────────────────────────────
 let _citaSeleccionada = null;
 
-async function iniciarSeccionConsulta() {
-  await cargarPacientes();
-  cargarConsultasRecientes();
-  if (!_citaSeleccionada) limpiarSeleccionCita();
-}
+async function abrirAtencion(idCita, idPaciente) {
+  const cita    = todasLasCitas.find(c => c.idCita === idCita);
+  const nombre  = cita ? nombrePaciente(cita) : `Paciente #${idPaciente}`;
+  const fechaStr = cita?.fecha ? cita.fecha.split('T')[0] : '';
+  const horaStr  = cita?.hora  ? cita.hora.substring(0,5)  : '';
 
-function limpiarSeleccionCita() {
-  _citaSeleccionada = null;
-  document.getElementById('con-cita').value      = '';
-  document.getElementById('con-historial').value = '';
-  document.getElementById('con-peso').value      = '';
-  document.getElementById('con-altura').value    = '';
-  document.getElementById('con-presion').value   = '';
-  document.getElementById('con-temp').value      = '';
-  document.getElementById('con-obs').value       = '';
-  document.getElementById('bloque-preconsulta').style.display = 'none';
-  renderCitaSeleccionada();
-}
+  // Mostrar panel y cabecera
+  document.getElementById('panel-atencion').style.display = 'block';
+  document.getElementById('atencion-paciente-info').innerHTML =
+    `👤 <strong>${esc(nombre)}</strong> · Cita #${idCita} · ${fechaStr} ${horaStr ? '— ' + horaStr : ''}`;
 
-function renderCitaSeleccionada() {
-  if (_citaSeleccionada) {
-    document.getElementById('con-cita').value      = _citaSeleccionada.idCita      || '';
-    document.getElementById('con-historial').value = _citaSeleccionada.idHistorial || '';
-  }
-  const info = document.getElementById('cita-seleccionada-info');
-  if (!info) return;
-  if (_citaSeleccionada) {
-    info.style.display = 'block';
-    info.innerHTML = `
-      <span style="font-size:12px;color:var(--teal);font-weight:600;">
-        ✅ Cita seleccionada: <strong>${esc(_citaSeleccionada.nombre || '')}</strong>
-        · ${esc(_citaSeleccionada.fecha || '')} ${esc(_citaSeleccionada.hora || '')}
-        · Cita #${_citaSeleccionada.idCita}
-      </span>
-      <button onclick="limpiarSeleccionCita()" style="margin-left:10px;padding:3px 10px;border:1px solid var(--border);border-radius:7px;background:transparent;font-size:11px;cursor:pointer;color:var(--text-soft);">✕ Cambiar</button>`;
-  } else {
-    info.style.display = 'none';
-    info.innerHTML = '';
-  }
-}
+  // Resetear accordions
+  _setAccordion('consulta',    true,  '', '');
+  _setAccordion('diagnostico', false, '· opcional', '');
+  _setAccordion('receta',      false, '· opcional', '');
 
-let _sugTimeoutConsulta = null;
-function buscarPacienteConsulta() {
-  clearTimeout(_sugTimeoutConsulta);
-  _sugTimeoutConsulta = setTimeout(_doBuscarPacienteConsulta, 250);
-}
+  // Limpiar formularios
+  ['con-peso','con-altura','con-presion','con-temp','con-obs'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  document.getElementById('diag-descripcion').value = '';
+  document.getElementById('diag-fecha').value       = '';
 
-async function _doBuscarPacienteConsulta() {
-  const input = document.getElementById('buscar-paciente-consulta');
-  const lista = document.getElementById('sug-paciente-consulta');
-  const q     = input.value.toLowerCase().trim();
-  if (!q) { lista.style.display = 'none'; return; }
-
-  const pacs = Array.isArray(todosPacientes) ? todosPacientes.filter(p =>
-    `${p.Nombres} ${p.Apellidos}`.toLowerCase().includes(q) ||
-    (p.numero_expediente || '').toLowerCase().includes(q)
-  ) : [];
-
-  pacs.forEach(p => _mapPacCon.set(p.idPaciente, p));
-  lista.innerHTML = pacs.length
-    ? pacs.slice(0, 8).map(p => `
-        <div class="autocomplete-item" onclick="seleccionarPacienteConsulta(${p.idPaciente})">
-          <strong>${esc(p.Nombres)} ${esc(p.Apellidos)}</strong>
-          <span>Exp: ${esc(p.numero_expediente || '–')}</span>
-        </div>`).join('')
-    : '<div class="autocomplete-item" style="color:var(--text-soft);">Sin resultados</div>';
-  lista.style.display = 'block';
-}
-
-async function seleccionarPacienteConsulta(idPaciente) {
-  const pac = _mapPacCon.get(Number(idPaciente)) || todosPacientes.find(p => p.idPaciente === Number(idPaciente));
-  if (!pac) return;
-  const nombre = `${pac.Nombres} ${pac.Apellidos}`;
-  document.getElementById('buscar-paciente-consulta').value = nombre;
-  document.getElementById('sug-paciente-consulta').style.display = 'none';
-  document.getElementById('lista-citas-paciente').innerHTML =
-    '<p style="font-size:12.5px;color:var(--text-soft);">Cargando citas...</p>';
-  document.getElementById('bloque-citas-paciente').style.display = 'block';
-
+  // Obtener historial del paciente
+  let idHistorial = null;
   try {
-    const res  = await fetch(`/api/citas/paciente/${pac.idUsuario || idPaciente}`, { headers: H });
-    const citas = await res.json();
-    const activas = Array.isArray(citas)
-      ? citas.filter(c => ['PENDIENTE','CONFIRMADA'].includes(c.estado))
-      : [];
-
-    const hRes  = await fetch(`/api/historial/by-paciente?idPaciente=${idPaciente}`, { headers: H });
+    const hRes = await fetch(`/api/historial/by-paciente?idPaciente=${idPaciente}`, { headers: H });
     const hData = await hRes.json();
-    const historial = Array.isArray(hData) ? hData[0] : hData;
+    const h = Array.isArray(hData) ? hData[0] : hData;
+    idHistorial = h?.idHistorial || null;
+  } catch {}
 
-    activas.forEach(c => _mapCitaCon.set(c.idCita, { ...c, nombre, idPaciente: Number(idPaciente), idHistorial: historial?.idHistorial || null }));
+  // Configurar estado para guardarConsulta()
+  _citaSeleccionada = { idCita, idPaciente, nombre, fecha: fechaStr, hora: horaStr, idHistorial };
+  document.getElementById('con-cita').value     = idCita;
+  document.getElementById('con-historial').value = idHistorial || '';
 
-    document.getElementById('lista-citas-paciente').innerHTML = activas.length
-      ? activas.map(c => `
-          <div onclick="elegirCita(${c.idCita})"
-               style="padding:10px 14px;border:1.5px solid var(--border);border-radius:10px;cursor:pointer;transition:all 0.2s;margin-bottom:8px;"
-               onmouseover="this.style.borderColor='var(--teal)';this.style.background='rgba(42,107,94,0.04)'"
-               onmouseout="this.style.borderColor='var(--border)';this.style.background='transparent'">
-            <strong style="font-size:13px;color:var(--deep);">${c.fecha ? c.fecha.split('T')[0] : '–'} · ${c.hora ? c.hora.substring(0,5) : '–'}</strong>
-            <span style="display:block;font-size:11.5px;color:var(--text-soft);">${esc(c.motivo || 'Sin motivo')} · ${esc(c.estado)}</span>
-          </div>`).join('')
-      : '<p style="font-size:12.5px;color:var(--text-soft);">Este paciente no tiene citas activas (PENDIENTE/CONFIRMADA)</p>';
-  } catch {
-    document.getElementById('lista-citas-paciente').innerHTML =
-      '<p style="font-size:12.5px;color:#c03030;">Error al cargar citas</p>';
-  }
-}
+  // Configurar estado para diagnóstico
+  _consultaSeleccionada = null;
+  document.getElementById('diag-consulta').value = '';
+  document.getElementById('diagnostico-consulta-info').style.display = 'none';
 
-async function elegirCita(idCita) {
-  const c = _mapCitaCon.get(Number(idCita));
-  if (!c) return;
-  _citaSeleccionada = {
-    idCita:     c.idCita,
-    idPaciente: c.idPaciente,
-    nombre:     c.nombre,
-    fecha:      c.fecha ? c.fecha.split('T')[0] : '',
-    hora:       c.hora  ? c.hora.substring(0,5)  : '',
-    idHistorial: c.idHistorial,
-  };
-  if (!_citaSeleccionada.idHistorial) {
-    try {
-      const res  = await fetch(`/api/historial/by-paciente?idPaciente=${c.idPaciente}`, { headers: H });
-      const data = await res.json();
-      const h    = Array.isArray(data) ? data[0] : data;
-      _citaSeleccionada.idHistorial = h?.idHistorial || null;
-    } catch {}
-  }
-  document.getElementById('bloque-citas-paciente').style.display = 'none';
-  document.getElementById('buscar-paciente-consulta').value = '';
-  renderCitaSeleccionada();
+  // Verificar si ya existe una consulta para esta cita
+  try {
+    const conRes = await fetch(`/api/consultas/by-cita/${idCita}`, { headers: H });
+    const con    = await conRes.json();
+    if (con?.idConsulta) {
+      _consultaSeleccionada = {
+        idConsulta:     con.idConsulta,
+        nombrePaciente: nombre,
+        fecha:          con.fecha_consulta ? con.fecha_consulta.split('T')[0] : '',
+      };
+      document.getElementById('diag-consulta').value = con.idConsulta;
+      document.getElementById('diag-fecha').value    = new Date().toISOString().slice(0,16);
+      _marcarAccordionDone('consulta', '· Ya registrada');
+      renderConsultaSeleccionada();
+    }
+  } catch {}
+
+  // Configurar estado para receta
+  _recPacienteId = idPaciente;
+  _recLineas     = [];
+  _recMedActual  = null;
+  renderLineasReceta();
+  if (!listaMedsActivos.length) cargarMedicamentosActivos();
+  cargarDiagnosticosPacienteParaReceta(idPaciente);
+
+  // Cargar preconsulta
   cargarPreconsulta(idCita);
+
+  // Scroll suave al panel
+  setTimeout(() => document.getElementById('panel-atencion').scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
 }
 
-document.addEventListener('click', (e) => {
-  const inp = document.getElementById('buscar-paciente-consulta');
-  const sug = document.getElementById('sug-paciente-consulta');
-  if (inp && sug && !inp.contains(e.target) && !sug.contains(e.target))
-    sug.style.display = 'none';
-});
+function cerrarPanelAtencion() {
+  document.getElementById('panel-atencion').style.display = 'none';
+  document.getElementById('bloque-preconsulta').style.display = 'none';
+  _citaSeleccionada    = null;
+  _consultaSeleccionada = null;
+  _recPacienteId        = null;
+  _recLineas            = [];
+}
+
+// Helpers de accordions
+function toggleAccordion(seccion) {
+  const body  = document.getElementById(`acc-body-${seccion}`);
+  const arrow = document.getElementById(`acc-arrow-${seccion}`);
+  const abierto = body.style.display !== 'none';
+  body.style.display  = abierto ? 'none' : 'block';
+  arrow.textContent   = abierto ? '▶' : '▼';
+}
+
+function _setAccordion(seccion, abierto, statusText, statusColor) {
+  const body  = document.getElementById(`acc-body-${seccion}`);
+  const arrow = document.getElementById(`acc-arrow-${seccion}`);
+  const num   = document.getElementById(`acc-num-${seccion}`);
+  const status = document.getElementById(`acc-status-${seccion}`);
+  body.style.display  = abierto ? 'block' : 'none';
+  arrow.textContent   = abierto ? '▼' : '▶';
+  num.classList.remove('done');
+  if (status) { status.textContent = statusText; status.style.color = statusColor || 'var(--text-soft)'; }
+}
+
+function _marcarAccordionDone(seccion, statusText) {
+  const num    = document.getElementById(`acc-num-${seccion}`);
+  const status = document.getElementById(`acc-status-${seccion}`);
+  num.textContent = '✓';
+  num.classList.add('done');
+  if (status) { status.textContent = statusText || '· Registrado'; status.style.color = 'var(--teal)'; }
+}
+
+async function cargarDiagnosticosPacienteParaReceta(idPaciente) {
+  const sel = document.getElementById('rec-diagnostico-sel');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">Cargando...</option>';
+  try {
+    const pac      = todosPacientes.find(p => p.idPaciente === Number(idPaciente));
+    const idUsuario = pac?.idUsuario;
+    const [citasRes, diagRes, consRes] = await Promise.all([
+      idUsuario ? fetch(`/api/citas/paciente/${idUsuario}`, { headers: H }) : Promise.resolve({ json: () => [] }),
+      fetch('/api/diagnosticos', { headers: H }),
+      fetch('/api/consultas',   { headers: H }),
+    ]);
+    const citas    = await citasRes.json().catch(() => []);
+    const diags    = await diagRes.json();
+    const consultas = await consRes.json();
+    const idsCitas  = Array.isArray(citas)    ? citas.map(c => c.idCita)    : [];
+    const idsCons   = Array.isArray(consultas) ? consultas.filter(c => idsCitas.includes(c.idCita)).map(c => c.idConsulta) : [];
+    const diagsPac  = Array.isArray(diags)    ? diags.filter(d => idsCons.includes(d.idConsulta)) : [];
+    sel.innerHTML = '<option value="">— Sin diagnóstico asociado —</option>' +
+      diagsPac.map(d => `<option value="${d.idDiagnostico}">#${d.idDiagnostico} · ${d.fecha_diagnostico ? d.fecha_diagnostico.split('T')[0] : '–'} · ${esc((d.descripcion||'').substring(0,50))}</option>`).join('');
+  } catch {
+    sel.innerHTML = '<option value="">— Sin diagnóstico asociado —</option>';
+  }
+}
 
 // ── PRECONSULTA ───────────────────────────────────────────────────────────────
 async function cargarPreconsulta(idCita) {
@@ -491,7 +474,7 @@ async function cargarPreconsulta(idCita) {
 
 // ── GUARDAR CONSULTA ──────────────────────────────────────────────────────────
 async function guardarConsulta() {
-  if (!_citaSeleccionada) { toast('⚠️ Primero selecciona un paciente y una cita.', 'warning'); return; }
+  if (!_citaSeleccionada)             { toast('⚠️ No hay cita seleccionada.', 'warning'); return; }
   if (!_citaSeleccionada.idHistorial) { toast('⚠️ No se encontró historial clínico para este paciente.', 'warning'); return; }
 
   const payload = {
@@ -508,56 +491,25 @@ async function guardarConsulta() {
   const res  = await fetch('/api/consultas', { method:'POST', headers: H, body: JSON.stringify(payload) });
   const data = await res.json();
   if (data.id) {
-    toast(`✅ Consulta registrada correctamente (Cita #${_citaSeleccionada.idCita})`);
-    limpiarSeleccionCita();
-    cargarConsultasRecientes();
+    toast('✅ Consulta registrada');
+    _marcarAccordionDone('consulta', '· Registrada');
+
+    // Auto-vincular al accordion de diagnóstico
+    _consultaSeleccionada = {
+      idConsulta:     data.id,
+      nombrePaciente: _citaSeleccionada.nombre,
+      fecha:          new Date().toISOString().split('T')[0],
+    };
+    document.getElementById('diag-consulta').value = data.id;
+    document.getElementById('diag-fecha').value    = new Date().toISOString().slice(0,16);
+    renderConsultaSeleccionada();
+
+    // Abrir siguiente paso
+    _setAccordion('diagnostico', true, '· opcional', '');
     cargarStats();
   } else {
     toast('Error: ' + (data.error?.sqlMessage || data.error || 'No se pudo registrar'), 'error');
   }
-}
-
-// ── HISTORIAL CONSULTAS ───────────────────────────────────────────────────────
-async function cargarHistorialConsultas() {
-  try {
-    const res  = await fetch('/api/consultas', { headers: H });
-    const data = await res.json();
-    document.getElementById('tbody-historial-consultas').innerHTML = Array.isArray(data) && data.length
-      ? data.map(c => `
-          <tr>
-            <td>#${c.idConsulta}</td>
-            <td>${c.fecha_consulta ? c.fecha_consulta.split('T')[0] : '–'}</td>
-            <td>${c.NombrePaciente ? `${esc(c.NombrePaciente)} ${esc(c.ApellidosPaciente || '')}` : `Cita #${c.idCita}`}</td>
-            <td>${c.peso ? c.peso + ' kg' : '–'}</td>
-            <td>${esc(c.presion_arterial || '–')}</td>
-            <td>${c.temperatura ? c.temperatura + ' °C' : '–'}</td>
-            <td>${esc(c.observaciones || '–')}</td>
-          </tr>`).join('')
-      : '<tr><td colspan="7" style="text-align:center;color:var(--text-soft);padding:20px;">Sin consultas registradas</td></tr>';
-  } catch {
-    document.getElementById('tbody-historial-consultas').innerHTML =
-      '<tr><td colspan="7" style="text-align:center;color:#c03030;padding:20px;">Error al cargar</td></tr>';
-  }
-}
-
-async function verDetalleConsulta(idConsulta) {
-  toast(`Detalle de consulta #${idConsulta} — próximamente`);
-}
-
-async function cargarConsultasRecientes() {
-  try {
-    const res  = await fetch('/api/consultas', { headers: H });
-    const data = await res.json();
-    document.getElementById('consultas-recientes').innerHTML = Array.isArray(data) && data.length
-      ? data.slice(0,5).map(c => `
-          <div style="padding:10px 0;border-bottom:1px solid rgba(42,107,94,0.07);">
-            <strong style="display:block;font-size:13px;color:var(--deep);">
-              ${c.NombrePaciente ? `${esc(c.NombrePaciente)} ${esc(c.ApellidosPaciente || '')}` : `Cita #${c.idCita}`}
-            </strong>
-            <span style="font-size:11.5px;color:var(--text-soft);">${c.fecha_consulta ? c.fecha_consulta.split('T')[0] : '–'} · ${esc(c.observaciones || '–')}</span>
-          </div>`).join('')
-      : '<p style="color:var(--text-soft);font-size:13px;">Sin consultas registradas</p>';
-  } catch {}
 }
 
 // ── CITAS ─────────────────────────────────────────────────────────────────────
@@ -570,7 +522,9 @@ async function cargarCitas() {
     todasLasCitas = Array.isArray(data) ? data : [];
 
     document.getElementById('tbody-citas').innerHTML = todasLasCitas.length
-      ? todasLasCitas.map(c => `
+      ? todasLasCitas.map(c => {
+          const atendible = ['CONFIRMADA', 'PENDIENTE', 'EN ATENCION'].includes(c.estado);
+          return `
           <tr>
             <td>#${c.idCita}</td>
             <td>${c.fecha ? c.fecha.split('T')[0] : '–'}</td>
@@ -578,10 +532,14 @@ async function cargarCitas() {
             <td>${nombrePaciente(c)}</td>
             <td>${esc(c.motivo || '–')}</td>
             <td>${estadoDot(c.estado)}</td>
-            <td>${['CONFIRMADA','PENDIENTE'].includes(c.estado)
-              ? `<button class="btn-tabla" onclick="abrirHistorialPaciente(${c.idCita}, ${c.idPaciente})">📋 Ver</button>`
-              : '–'}</td>
-          </tr>`).join('')
+            <td>
+              <div class="action-icons">
+                <button class="btn-tabla" onclick="abrirHistorialPaciente(${c.idCita}, ${c.idPaciente})">📋 Ver</button>
+                ${atendible ? `<button class="btn-atender" onclick="abrirAtencion(${c.idCita}, ${c.idPaciente})">🩺 Atender</button>` : ''}
+              </div>
+            </td>
+          </tr>`;
+        }).join('')
       : '<tr><td colspan="7" style="text-align:center;color:var(--text-soft);padding:20px;">Sin citas</td></tr>';
   } catch {
     document.getElementById('tbody-citas').innerHTML =
@@ -720,118 +678,21 @@ function renderCitasSemana(fechaStr) {
 // ── DIAGNÓSTICOS ──────────────────────────────────────────────────────────────
 let _consultaSeleccionada = null;
 
-async function iniciarSeccionDiagnostico() {
-  await cargarPacientes();
-  cargarDiagnosticosRecientes();
-  _consultaSeleccionada = null;
-  renderConsultaSeleccionada();
-}
-
 function renderConsultaSeleccionada() {
   const info = document.getElementById('diagnostico-consulta-info');
   if (!info) return;
   if (_consultaSeleccionada) {
     info.style.display = 'block';
-    info.innerHTML = `
-      <span style="font-size:12px;color:var(--teal);font-weight:600;">
-        ✅ Consulta seleccionada: <strong>${esc(_consultaSeleccionada.nombrePaciente)}</strong>
-        · ${esc(_consultaSeleccionada.fecha || '')} · Consulta #${_consultaSeleccionada.idConsulta}
-      </span>
-      <button onclick="limpiarConsultaSeleccionada()" style="margin-left:10px;padding:3px 10px;border:1px solid var(--border);border-radius:7px;background:transparent;font-size:11px;cursor:pointer;color:var(--text-soft);">✕ Cambiar</button>`;
+    info.innerHTML = `<span style="font-size:12px;color:var(--teal);font-weight:600;">✅ Vinculada a Consulta #${_consultaSeleccionada.idConsulta} · ${esc(_consultaSeleccionada.nombrePaciente)}</span>`;
     document.getElementById('diag-consulta').value = _consultaSeleccionada.idConsulta;
   } else {
     info.style.display = 'none';
-    info.innerHTML = '';
     document.getElementById('diag-consulta').value = '';
   }
 }
 
-function limpiarConsultaSeleccionada() {
-  _consultaSeleccionada = null;
-  document.getElementById('buscar-paciente-diag').value = '';
-  document.getElementById('bloque-consultas-diag').style.display = 'none';
-  renderConsultaSeleccionada();
-}
-
-let _sugTimeoutDiag = null;
-function buscarPacienteDiag() {
-  clearTimeout(_sugTimeoutDiag);
-  _sugTimeoutDiag = setTimeout(_doBuscarPacienteDiag, 250);
-}
-
-async function _doBuscarPacienteDiag() {
-  const input = document.getElementById('buscar-paciente-diag');
-  const lista = document.getElementById('sug-paciente-diag');
-  const q     = input.value.toLowerCase().trim();
-  if (!q) { lista.style.display = 'none'; return; }
-  const pacs = todosPacientes.filter(p =>
-    `${p.Nombres} ${p.Apellidos}`.toLowerCase().includes(q) ||
-    (p.numero_expediente || '').toLowerCase().includes(q)
-  );
-  pacs.forEach(p => _mapPacDiag.set(p.idPaciente, p));
-  lista.innerHTML = pacs.length
-    ? pacs.slice(0,8).map(p => `
-        <div class="autocomplete-item" onclick="seleccionarPacienteDiag(${p.idPaciente})">
-          <strong>${esc(p.Nombres)} ${esc(p.Apellidos)}</strong>
-          <span>Exp: ${esc(p.numero_expediente || '–')}</span>
-        </div>`).join('')
-    : '<div class="autocomplete-item" style="color:var(--text-soft);">Sin resultados</div>';
-  lista.style.display = 'block';
-}
-
-async function seleccionarPacienteDiag(idPaciente) {
-  const pac = _mapPacDiag.get(Number(idPaciente)) || todosPacientes.find(p => p.idPaciente === Number(idPaciente));
-  if (!pac) return;
-  const nombre = `${pac.Nombres} ${pac.Apellidos}`;
-  document.getElementById('buscar-paciente-diag').value = nombre;
-  document.getElementById('sug-paciente-diag').style.display = 'none';
-  document.getElementById('bloque-consultas-diag').style.display = 'block';
-  document.getElementById('lista-consultas-diag').innerHTML =
-    '<p style="font-size:12.5px;color:var(--text-soft);">Cargando consultas...</p>';
-  try {
-    const res  = await fetch('/api/consultas', { headers: H });
-    const data = await res.json();
-    const citasPac = todasLasCitas.filter(c => c.idPaciente === Number(idPaciente)).map(c => c.idCita);
-    const cons = Array.isArray(data) ? data.filter(c => citasPac.includes(c.idCita)) : [];
-    cons.forEach(c => _mapConDiag.set(c.idConsulta, { ...c, nombrePaciente: nombre }));
-    document.getElementById('lista-consultas-diag').innerHTML = cons.length
-      ? cons.map(c => `
-          <div onclick="elegirConsultaDiag(${c.idConsulta})"
-               style="padding:10px 14px;border:1.5px solid var(--border);border-radius:10px;cursor:pointer;transition:all 0.2s;margin-bottom:8px;"
-               onmouseover="this.style.borderColor='var(--teal)';this.style.background='rgba(42,107,94,0.04)'"
-               onmouseout="this.style.borderColor='var(--border)';this.style.background='transparent'">
-            <strong style="font-size:13px;color:var(--deep);">Consulta #${c.idConsulta} · ${c.fecha_consulta ? c.fecha_consulta.split('T')[0] : '–'}</strong>
-            <span style="display:block;font-size:11.5px;color:var(--text-soft);">${esc(c.observaciones || 'Sin observaciones')}</span>
-          </div>`).join('')
-      : '<p style="font-size:12.5px;color:var(--text-soft);">No se encontraron consultas para este paciente</p>';
-  } catch {
-    document.getElementById('lista-consultas-diag').innerHTML =
-      '<p style="font-size:12.5px;color:#c03030;">Error al cargar consultas</p>';
-  }
-}
-
-function elegirConsultaDiag(idConsulta) {
-  const c = _mapConDiag.get(Number(idConsulta));
-  if (!c) return;
-  _consultaSeleccionada = {
-    idConsulta,
-    nombrePaciente: c.nombrePaciente,
-    fecha: c.fecha_consulta ? c.fecha_consulta.split('T')[0] : '',
-  };
-  document.getElementById('bloque-consultas-diag').style.display = 'none';
-  document.getElementById('buscar-paciente-diag').value = '';
-  renderConsultaSeleccionada();
-}
-
-document.addEventListener('click', (e) => {
-  const inp = document.getElementById('buscar-paciente-diag');
-  const sug = document.getElementById('sug-paciente-diag');
-  if (inp && sug && !inp.contains(e.target) && !sug.contains(e.target))
-    sug.style.display = 'none';
-});
-
 async function guardarDiagnostico() {
-  if (!_consultaSeleccionada) { toast('⚠️ Primero selecciona un paciente y una consulta.', 'warning'); return; }
+  if (!_consultaSeleccionada) { toast('⚠️ Primero registra la consulta del paciente.', 'warning'); return; }
   const descripcion = document.getElementById('diag-descripcion').value.trim();
   const fechaVal    = document.getElementById('diag-fecha').value;
   if (!descripcion) { toast('La descripción es obligatoria.', 'warning'); return; }
@@ -844,28 +705,22 @@ async function guardarDiagnostico() {
   const res  = await fetch('/api/diagnosticos', { method:'POST', headers: H, body: JSON.stringify(payload) });
   const data = await res.json();
   if (data.id) {
-    toast('✅ Diagnóstico registrado correctamente');
-    document.getElementById('diag-descripcion').value = '';
-    document.getElementById('diag-fecha').value       = '';
-    limpiarConsultaSeleccionada();
-    cargarDiagnosticosRecientes();
+    toast('✅ Diagnóstico registrado');
+    _marcarAccordionDone('diagnostico', '· Registrado');
+
+    // Agregar el nuevo diagnóstico al selector de receta
+    const sel = document.getElementById('rec-diagnostico-sel');
+    const opt = document.createElement('option');
+    opt.value    = data.id;
+    opt.textContent = `#${data.id} · Hoy · ${esc(descripcion.substring(0,50))}`;
+    opt.selected = true;
+    sel.appendChild(opt);
+
+    // Abrir siguiente paso
+    _setAccordion('receta', true, '· opcional', '');
   } else {
     toast('Error: ' + (data.error?.sqlMessage || data.error || 'No se pudo registrar'), 'error');
   }
-}
-
-async function cargarDiagnosticosRecientes() {
-  try {
-    const res  = await fetch('/api/diagnosticos', { headers: H });
-    const data = await res.json();
-    document.getElementById('diagnosticos-recientes').innerHTML = Array.isArray(data) && data.length
-      ? data.slice(0,5).map(d => `
-          <div style="padding:10px 0;border-bottom:1px solid rgba(42,107,94,0.07);">
-            <strong style="display:block;font-size:13px;color:var(--deep);">Diagnóstico #${d.idDiagnostico} · Consulta #${d.idConsulta}</strong>
-            <span style="font-size:11.5px;color:var(--text-soft);">${d.fecha_diagnostico ? d.fecha_diagnostico.split('T')[0] : '–'} · ${esc(d.descripcion || '–')}</span>
-          </div>`).join('')
-      : '<p style="color:var(--text-soft);font-size:13px;">Sin diagnósticos registrados</p>';
-  } catch {}
 }
 
 // ── RECETAS ───────────────────────────────────────────────────────────────────
@@ -881,25 +736,13 @@ async function cargarMedicamentosActivos() {
   } catch {}
 }
 
-async function iniciarSeccionReceta() {
-  await cargarPacientes();
-  await cargarMedicamentosActivos();
-  limpiarFormReceta();
-  cargarRecetasRecientes();
-}
-
 function limpiarFormReceta() {
-  _recPacienteId = null;
   _recMedActual  = null;
   _recLineas     = [];
-  document.getElementById('rec-buscar-paciente').value = '';
-  document.getElementById('rec-sug-paciente').style.display = 'none';
-  document.getElementById('rec-paciente-info').style.display = 'none';
-  document.getElementById('rec-diagnostico-sel').innerHTML = '<option value="">— Selecciona paciente primero —</option>';
   document.getElementById('rec-medicamento-nombre').value = '';
-  document.getElementById('rec-medicamento-id').value = '';
-  document.getElementById('rec-med-campos').style.display = 'none';
-  document.getElementById('rec-stock-info').style.display = 'none';
+  document.getElementById('rec-medicamento-id').value     = '';
+  document.getElementById('rec-med-campos').style.display  = 'none';
+  document.getElementById('rec-stock-info').style.display  = 'none';
   document.getElementById('sug-medicamento').style.display = 'none';
   limpiarCamposMed();
   renderLineasReceta();
@@ -914,73 +757,6 @@ function limpiarCamposMed() {
   if (cant) cant.value = '1';
 }
 
-let _recSugTimer = null;
-function buscarPacienteReceta() {
-  clearTimeout(_recSugTimer);
-  _recSugTimer = setTimeout(() => {
-    const input = document.getElementById('rec-buscar-paciente');
-    const lista = document.getElementById('rec-sug-paciente');
-    const q     = input.value.toLowerCase().trim();
-    if (!q) { lista.style.display = 'none'; return; }
-    const pacs = todosPacientes.filter(p =>
-      `${p.Nombres} ${p.Apellidos}`.toLowerCase().includes(q) ||
-      (p.numero_expediente || '').toLowerCase().includes(q)
-    );
-    pacs.forEach(p => _mapPacRec.set(p.idPaciente, p));
-    lista.innerHTML = pacs.length
-      ? pacs.slice(0,8).map(p => `
-          <div class="autocomplete-item"
-            onclick="seleccionarPacienteReceta(${p.idPaciente}, ${p.idUsuario})">
-            <strong>${esc(p.Nombres)} ${esc(p.Apellidos)}</strong>
-            <span>Exp: ${esc(p.numero_expediente || '–')}</span>
-          </div>`).join('')
-      : '<div class="autocomplete-item" style="color:var(--text-soft);">Sin resultados</div>';
-    lista.style.display = 'block';
-  }, 220);
-}
-
-async function seleccionarPacienteReceta(idPaciente, idUsuario) {
-  const pac = _mapPacRec.get(Number(idPaciente)) || todosPacientes.find(p => p.idPaciente === Number(idPaciente));
-  if (!pac) return;
-  const nombre = `${pac.Nombres} ${pac.Apellidos}`;
-  _recPacienteId = idPaciente;
-  document.getElementById('rec-buscar-paciente').value = nombre;
-  document.getElementById('rec-sug-paciente').style.display = 'none';
-  const info = document.getElementById('rec-paciente-info');
-  info.textContent = `✅ Paciente: ${nombre}`;
-  info.style.display = 'block';
-  const sel = document.getElementById('rec-diagnostico-sel');
-  sel.innerHTML = '<option value="">Cargando diagnósticos...</option>';
-  try {
-    const resC = await fetch(`/api/citas/paciente/${idUsuario}`, { headers: H });
-    const citas = await resC.json();
-    const idsCitas = Array.isArray(citas) ? citas.map(c => c.idCita) : [];
-    const resD = await fetch('/api/diagnosticos', { headers: H });
-    const diags = await resD.json();
-    const resC2 = await fetch('/api/consultas', { headers: H });
-    const consultas = await resC2.json();
-    const idsCons = Array.isArray(consultas)
-      ? consultas.filter(c => idsCitas.includes(c.idCita)).map(c => c.idConsulta)
-      : [];
-    const diagsPac = Array.isArray(diags) ? diags.filter(d => idsCons.includes(d.idConsulta)) : [];
-    sel.innerHTML = diagsPac.length
-      ? `<option value="">— Sin diagnóstico asociado —</option>` +
-        diagsPac.map(d => `
-          <option value="${d.idDiagnostico}">
-            #${d.idDiagnostico} · ${d.fecha_diagnostico ? d.fecha_diagnostico.split('T')[0] : '–'} · ${esc((d.descripcion || '').substring(0,50))}${d.descripcion?.length > 50 ? '...' : ''}
-          </option>`).join('')
-      : '<option value="">Sin diagnósticos registrados</option>';
-  } catch {
-    sel.innerHTML = '<option value="">Error al cargar diagnósticos</option>';
-  }
-}
-
-document.addEventListener('click', (e) => {
-  const inp = document.getElementById('rec-buscar-paciente');
-  const sug = document.getElementById('rec-sug-paciente');
-  if (inp && sug && !inp.contains(e.target) && !sug.contains(e.target))
-    sug.style.display = 'none';
-});
 
 function buscarMedicamentoReceta() {
   const input = document.getElementById('rec-medicamento-nombre');
@@ -1123,10 +899,11 @@ async function guardarReceta() {
     }
     const total = _recLineas.reduce((s, l) => s + l.subtotal, 0);
     if (errores === 0) {
-      toast(`✅ Receta emitida correctamente. ${_recLineas.length} medicamento(s). Monto: $${total.toFixed(2)}`);
+      toast(`✅ Receta emitida. ${_recLineas.length} medicamento(s) · $${total.toFixed(2)}`);
+      _marcarAccordionDone('receta', '· Emitida');
       limpiarFormReceta();
+      _recPacienteId = _citaSeleccionada?.idPaciente || null;
       await cargarMedicamentosActivos();
-      cargarRecetasRecientes();
     } else {
       toast(`⚠️ Se emitieron ${_recLineas.length - errores} de ${_recLineas.length} medicamentos.`, 'warning');
     }
@@ -1134,20 +911,6 @@ async function guardarReceta() {
     toast('Error de conexión al emitir la receta.', 'error');
     console.error(err);
   }
-}
-
-async function cargarRecetasRecientes() {
-  try {
-    const res  = await fetch('/api/recetas', { headers: H });
-    const data = await res.json();
-    document.getElementById('recetas-recientes').innerHTML = Array.isArray(data) && data.length
-      ? data.slice(0,5).map(r => `
-          <div style="padding:10px 0;border-bottom:1px solid rgba(42,107,94,0.07);">
-            <strong style="display:block;font-size:13px;color:var(--deep);">${esc(r.medicamento)}</strong>
-            <span style="font-size:11.5px;color:var(--text-soft);">${esc(r.dosis || '–')} · ${esc(r.frecuencia || '–')} · ${esc(r.duracion || '–')}</span>
-          </div>`).join('')
-      : '<p style="color:var(--text-soft);font-size:13px;">Sin recetas registradas</p>';
-  } catch {}
 }
 
 // ── EXPEDIENTE ────────────────────────────────────────────────────────────────
