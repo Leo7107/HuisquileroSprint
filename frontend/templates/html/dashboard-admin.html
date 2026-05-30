@@ -7,10 +7,24 @@
   <link rel="shortcut icon" href="/genfavicon-32.png" type="image/x-icon">
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="/css/dashboard.css"/>
+  <style>
+    @media print {
+      .layout, .sidebar, .topbar, .main > *:not(#pdf-reporte-inv) { display: none !important; }
+      #pdf-reporte-inv {
+        display: block !important;
+        position: static !important;
+        width: 100% !important;
+        background: white !important;
+        padding: 32px !important;
+        box-sizing: border-box !important;
+      }
+    }
+  </style>
 </head>
 <body>
 <div class="layout rol-admin">
 
+  <!-- ══ SIDEBAR ══ -->
   <aside class="sidebar">
     <div class="sidebar__brand">
       <span class="brand-icon">✦</span>
@@ -29,6 +43,7 @@
     <button class="sidebar__logout" onclick="cerrarSesion()"><span>⏻</span> Cerrar sesión</button>
   </aside>
 
+  <!-- ══ MAIN ══ -->
   <main class="main">
 
     <header class="topbar">
@@ -45,10 +60,11 @@
       </div>
     </header>
 
-    <!-- ══ INICIO ══ -->
+    <!-- ══════════════════════════════════════════
+         INICIO
+    ══════════════════════════════════════════ -->
     <div id="sec-inicio">
 
-      <!-- HU14: Contadores principales -->
       <section class="stats-grid">
         <div class="stat-card stat-card--teal">
           <div class="stat-icon">👤</div>
@@ -92,7 +108,6 @@
           </div>
         </div>
 
-        <!-- HU14: Feed actividad reciente en inicio -->
         <div class="panel">
           <div class="panel__header">
             <h2>Últimas Acciones</h2>
@@ -104,7 +119,6 @@
         </div>
       </div>
 
-      <!-- HU14: Inventario crítico en inicio -->
       <div class="panel" id="panelInventarioCritico" style="margin-top:1.5rem;">
         <div class="panel__header">
           <h2>🔴 Inventario Crítico</h2>
@@ -128,7 +142,9 @@
 
     </div><!-- /sec-inicio -->
 
-    <!-- ══ USUARIOS ══ -->
+    <!-- ══════════════════════════════════════════
+         USUARIOS
+    ══════════════════════════════════════════ -->
     <div id="sec-usuarios" style="display:none;">
       <div class="panel">
         <div class="panel__header">
@@ -147,7 +163,9 @@
           <button class="tab-btn" onclick="setTab('Paciente',this)">Pacientes</button>
         </div>
         <table class="tabla">
-          <thead><tr><th>ID</th><th>Nombre</th><th>Email</th><th>Rol</th><th>Estado</th><th>Acciones</th></tr></thead>
+          <thead>
+            <tr><th>ID</th><th>Nombre</th><th>Email</th><th>Rol</th><th>Estado</th><th>Acciones</th></tr>
+          </thead>
           <tbody id="tbody-usuarios">
             <tr><td colspan="6" style="text-align:center;color:var(--text-soft);padding:24px;">Cargando...</td></tr>
           </tbody>
@@ -155,7 +173,9 @@
       </div>
     </div>
 
-    <!-- ══ MÉDICOS ══ -->
+    <!-- ══════════════════════════════════════════
+         MÉDICOS
+    ══════════════════════════════════════════ -->
     <div id="sec-medicos" style="display:none;">
       <div class="panel">
         <div class="panel__header">
@@ -182,13 +202,19 @@
       </div>
     </div>
 
-    <!-- ══ ROLES ══ -->
+    <!-- ══════════════════════════════════════════
+         ROLES
+    ══════════════════════════════════════════ -->
     <div id="sec-roles" style="display:none;">
       <div class="panel">
         <div class="panel__header"><h2>Asignación de Roles y Accesos</h2></div>
-        <p style="font-size:13px;color:var(--text-soft);margin-bottom:18px;">Cambia el rol o activa/desactiva usuarios. Los cambios aplican en el próximo inicio de sesión.</p>
+        <p style="font-size:13px;color:var(--text-soft);margin-bottom:18px;">
+          Cambia el rol o activa/desactiva usuarios. Los cambios aplican en el próximo inicio de sesión.
+        </p>
         <table class="tabla">
-          <thead><tr><th>Usuario</th><th>Email</th><th>Rol Actual</th><th>Cambiar Rol</th><th>Estado</th></tr></thead>
+          <thead>
+            <tr><th>Usuario</th><th>Email</th><th>Rol Actual</th><th>Cambiar Rol</th><th>Estado</th></tr>
+          </thead>
           <tbody id="tbody-roles">
             <tr><td colspan="5" style="text-align:center;color:var(--text-soft);padding:24px;">Cargando...</td></tr>
           </tbody>
@@ -196,7 +222,9 @@
       </div>
     </div>
 
-    <!-- ══ LOGS — HU14 ══ -->
+    <!-- ══════════════════════════════════════════
+         LOGS — HU14
+    ══════════════════════════════════════════ -->
     <div id="sec-logs" style="display:none;">
       <div class="panel">
         <div class="panel__header">
@@ -208,7 +236,6 @@
         </ul>
       </div>
 
-      <!-- Inventario crítico también en la sección de logs -->
       <div class="panel" style="margin-top:1.5rem;">
         <div class="panel__header">
           <h2>🔴 Inventario en Estado Crítico</h2>
@@ -231,7 +258,9 @@
       </div>
     </div>
 
-    <!-- ══ INVENTARIO ══ -->
+    <!-- ══════════════════════════════════════════
+         INVENTARIO
+    ══════════════════════════════════════════ -->
     <div id="sec-inventario" style="display:none;">
       <div id="alertas-stock" style="display:none;"></div>
       <div class="panel">
@@ -243,6 +272,8 @@
           <button class="tab-btn active" id="tab-medicamentos" onclick="switchTabInv('medicamentos')">💊 Medicamentos</button>
           <button class="tab-btn" id="tab-movimientos" onclick="switchTabInv('movimientos')">📋 Historial Movimientos</button>
         </div>
+
+        <!-- Tab: medicamentos -->
         <div id="tab-inv-medicamentos">
           <div class="search-wrap" style="margin-bottom:16px;">
             <span>🔍</span>
@@ -260,6 +291,8 @@
             </tbody>
           </table>
         </div>
+
+        <!-- Tab: movimientos -->
         <div id="tab-inv-movimientos" style="display:none;">
           <table class="tabla">
             <thead>
@@ -276,16 +309,17 @@
       </div>
     </div>
 
-    <!-- ══ REPORTES ══ HU12 -->
+    <!-- ══════════════════════════════════════════
+         REPORTES — HU12
+    ══════════════════════════════════════════ -->
     <div id="sec-reportes" style="display:none;">
 
-      <!-- Tabs: Citas | Inventario -->
       <div class="rep-tabs">
         <button class="rep-tab rep-tab--active" onclick="repSwitchTab('citas',this)">📅 Citas</button>
-        <button class="rep-tab"                 onclick="repSwitchTab('inventario',this)">💊 Inventario</button>
+        <button class="rep-tab" onclick="repSwitchTab('inventario',this)">💊 Inventario</button>
       </div>
 
-      <!-- ════ PANEL CITAS ════ -->
+      <!-- Panel citas -->
       <div id="rep-panel-citas">
 
         <div class="panel" style="margin-bottom:20px;">
@@ -321,7 +355,6 @@
           </div>
         </div>
 
-        <!-- KPI cards citas -->
         <section class="stats-grid" id="rep-kpis-citas" style="display:none;margin-bottom:20px;">
           <div class="stat-card stat-card--teal">
             <div class="stat-icon">📋</div>
@@ -353,7 +386,6 @@
           </div>
         </section>
 
-        <!-- Tabla detalle por médico -->
         <div class="panel" id="rep-tabla-citas-wrap" style="display:none;">
           <div class="panel__header">
             <h2>Detalle por médico</h2>
@@ -362,13 +394,8 @@
           <table class="tabla">
             <thead>
               <tr>
-                <th>Médico</th>
-                <th>Especialidad</th>
-                <th>Total</th>
-                <th>Atendidas</th>
-                <th>Canceladas</th>
-                <th>Pendientes</th>
-                <th>% Atendidas</th>
+                <th>Médico</th><th>Especialidad</th><th>Total</th>
+                <th>Atendidas</th><th>Canceladas</th><th>Pendientes</th><th>% Atendidas</th>
               </tr>
             </thead>
             <tbody id="rep-tbody-citas"></tbody>
@@ -380,7 +407,7 @@
 
       </div><!-- /rep-panel-citas -->
 
-      <!-- ════ PANEL INVENTARIO ════ -->
+      <!-- Panel inventario -->
       <div id="rep-panel-inventario" style="display:none;">
 
         <section class="stats-grid" style="margin-bottom:20px;">
@@ -417,22 +444,23 @@
         <div class="panel">
           <div class="panel__header" style="margin-bottom:16px;">
             <h2>Estado del inventario</h2>
-            <div class="tabs" style="margin-bottom:0;width:auto;gap:4px;">
-              <button class="tab-btn active" onclick="repFiltrarInv('todos',this)">Todos</button>
-              <button class="tab-btn"        onclick="repFiltrarInv('alerta',this)">⚠️ Alerta</button>
-              <button class="tab-btn"        onclick="repFiltrarInv('agotado',this)">🔴 Agotados</button>
-              <button class="tab-btn"        onclick="repFiltrarInv('normal',this)">✅ Stock OK</button>
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+              <div class="tabs" style="margin-bottom:0;width:auto;gap:4px;">
+                <button class="tab-btn active" onclick="repFiltrarInv('todos',this)">Todos</button>
+                <button class="tab-btn" onclick="repFiltrarInv('alerta',this)">⚠️ Alerta</button>
+                <button class="tab-btn" onclick="repFiltrarInv('agotado',this)">🔴 Agotados</button>
+                <button class="tab-btn" onclick="repFiltrarInv('normal',this)">✅ Stock OK</button>
+              </div>
+              <button class="header-btn" style="display:flex;align-items:center;gap:6px;white-space:nowrap;" onclick="exportarPDFInventario()">
+                📄 Exportar PDF
+              </button>
             </div>
           </div>
-          <table class="tabla">
+          <table class="tabla" id="rep-tabla-inv">
             <thead>
               <tr>
-                <th>Medicamento</th>
-                <th>Stock actual</th>
-                <th>Stock mínimo</th>
-                <th>Unidad</th>
-                <th>Precio unit.</th>
-                <th>Estado</th>
+                <th>Medicamento</th><th>Stock actual</th><th>Stock mínimo</th>
+                <th>Unidad</th><th>Precio unit.</th><th>Estado</th>
               </tr>
             </thead>
             <tbody id="rep-tbody-inv"></tbody>
@@ -443,129 +471,138 @@
 
     </div><!-- /sec-reportes -->
 
-    <!-- MODAL NUEVO / EDITAR MEDICAMENTO -->
-    <div class="modal-overlay" id="modal-medicamento">
-      <div class="modal">
-        <div class="modal__header">
-          <h3 id="modal-med-titulo">Nuevo Medicamento</h3>
-          <button class="modal__close" onclick="cerrarModalMed()">✕</button>
-        </div>
-        <input type="hidden" id="med-id"/>
-        <div class="form-row">
-          <div class="form-group" style="grid-column:span 2;">
-            <label>Nombre del Medicamento *</label>
-            <input type="text" id="med-nombre" placeholder="Ej: Amoxicilina 500mg"/>
-          </div>
-        </div>
-        <div class="form-group">
-          <label>Descripción</label>
-          <textarea id="med-descripcion" rows="2" placeholder="Descripción breve..."></textarea>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label>Stock Actual</label>
-            <input type="number" id="med-stock" placeholder="0" min="0"/>
-          </div>
-          <div class="form-group">
-            <label>Stock Mínimo</label>
-            <input type="number" id="med-stock-min" placeholder="5" min="0"/>
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label>Unidad de Medida</label>
-            <select id="med-unidad">
-              <option value="tableta">Tableta</option>
-              <option value="cápsula">Cápsula</option>
-              <option value="inhalador">Inhalador</option>
-              <option value="frasco">Frasco</option>
-              <option value="ampolla">Ampolla</option>
-              <option value="sobre">Sobre</option>
-              <option value="unidad">Unidad</option>
-              <option value="ml">ml</option>
-              <option value="mg">mg</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>Precio Unitario ($)</label>
-            <input type="number" id="med-precio" placeholder="0.00" min="0" step="0.01"/>
-          </div>
-        </div>
-        <div id="acciones-stock-modal" style="display:none; margin-bottom:14px;">
-          <div style="display:flex; gap:8px;">
-            <button class="btn-cancelar" style="flex:1; font-size:13px;"
-              onclick="abrirDesdeEditar('entrada')">➕ Agregar stock</button>
-            <button class="btn-cancelar" style="flex:1; font-size:13px;"
-              onclick="abrirDesdeEditar('ajuste')">🔧 Ajustar stock</button>
-          </div>
-        </div>
-        <div class="modal-actions">
-          <button class="btn-cancelar" onclick="cerrarModalMed()">Cancelar</button>
-          <button class="btn-primary" onclick="guardarMedicamento()">Guardar</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- MODAL ENTRADA DE STOCK -->
-    <div class="modal-overlay" id="modal-entrada">
-      <div class="modal" style="max-width:460px;">
-        <div class="modal__header">
-          <h3>📦 Registrar Entrada de Stock</h3>
-          <button class="modal__close" onclick="cerrarModalEntrada()">✕</button>
-        </div>
-        <input type="hidden" id="entrada-id-med"/>
-        <div style="background:rgba(42,107,94,0.07);border:1.5px solid rgba(42,107,94,0.15);border-radius:12px;padding:12px 16px;margin-bottom:18px;">
-          <p style="font-size:13px;color:var(--deep);font-weight:600;" id="entrada-nombre">—</p>
-        </div>
-        <div class="form-group">
-          <label>Cantidad a ingresar *</label>
-          <input type="number" id="entrada-cantidad" placeholder="Ej: 50" min="1"/>
-        </div>
-        <div class="form-group">
-          <label>Proveedor</label>
-          <input type="text" id="entrada-proveedor" placeholder="Nombre del proveedor"/>
-        </div>
-        <div class="modal-actions">
-          <button class="btn-cancelar" onclick="cerrarModalEntrada()">Cancelar</button>
-          <button class="btn-primary" onclick="guardarEntrada()">Registrar Entrada</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- MODAL AJUSTE MANUAL -->
-    <div class="modal-overlay" id="modal-ajuste">
-      <div class="modal" style="max-width:460px;">
-        <div class="modal__header">
-          <h3>🔧 Ajuste Manual de Stock</h3>
-          <button class="modal__close" onclick="cerrarModalAjuste()">✕</button>
-        </div>
-        <input type="hidden" id="ajuste-id-med"/>
-        <div style="background:rgba(201,168,76,0.08);border:1.5px solid rgba(201,168,76,0.2);border-radius:12px;padding:12px 16px;margin-bottom:18px;">
-          <p style="font-size:13px;color:var(--deep);font-weight:600;" id="ajuste-nombre">—</p>
-          <p style="font-size:12px;color:var(--text-soft);margin-top:4px;">Stock actual: <strong id="ajuste-stock-actual">—</strong></p>
-        </div>
-        <div class="form-group">
-          <label>Nuevo stock total *</label>
-          <input type="number" id="ajuste-cantidad" placeholder="Cantidad correcta" min="0"/>
-        </div>
-        <div class="form-group">
-          <label>Motivo del ajuste</label>
-          <input type="text" id="ajuste-motivo" placeholder="Ej: Conteo físico, corrección de error..."/>
-        </div>
-        <div class="modal-actions">
-          <button class="btn-cancelar" onclick="cerrarModalAjuste()">Cancelar</button>
-          <button class="btn-primary" onclick="guardarAjuste()">Aplicar Ajuste</button>
-        </div>
-      </div>
-    </div>
-
   </main>
+</div><!-- /layout -->
+
+<!-- ══════════════════════════════════════════
+     MODAL: NUEVO / EDITAR MEDICAMENTO
+══════════════════════════════════════════ -->
+<div class="modal-overlay" id="modal-medicamento">
+  <div class="modal">
+    <div class="modal__header">
+      <h3 id="modal-med-titulo">Nuevo Medicamento</h3>
+      <button class="modal__close" onclick="cerrarModalMed()">✕</button>
+    </div>
+    <input type="hidden" id="med-id"/>
+    <div class="form-row">
+      <div class="form-group" style="grid-column:span 2;">
+        <label>Nombre del Medicamento *</label>
+        <input type="text" id="med-nombre" placeholder="Ej: Amoxicilina 500mg"/>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Descripción</label>
+      <textarea id="med-descripcion" rows="2" placeholder="Descripción breve..."></textarea>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Stock Actual</label>
+        <input type="number" id="med-stock" placeholder="0" min="0"/>
+      </div>
+      <div class="form-group">
+        <label>Stock Mínimo</label>
+        <input type="number" id="med-stock-min" placeholder="5" min="0"/>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Unidad de Medida</label>
+        <select id="med-unidad">
+          <option value="tableta">Tableta</option>
+          <option value="cápsula">Cápsula</option>
+          <option value="inhalador">Inhalador</option>
+          <option value="frasco">Frasco</option>
+          <option value="ampolla">Ampolla</option>
+          <option value="sobre">Sobre</option>
+          <option value="unidad">Unidad</option>
+          <option value="ml">ml</option>
+          <option value="mg">mg</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Precio Unitario ($)</label>
+        <input type="number" id="med-precio" placeholder="0.00" min="0" step="0.01"/>
+      </div>
+    </div>
+    <div id="acciones-stock-modal" style="display:none;margin-bottom:14px;">
+      <div style="display:flex;gap:8px;">
+        <button class="btn-cancelar" style="flex:1;font-size:13px;" onclick="abrirDesdeEditar('entrada')">➕ Agregar stock</button>
+        <button class="btn-cancelar" style="flex:1;font-size:13px;" onclick="abrirDesdeEditar('ajuste')">🔧 Ajustar stock</button>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancelar" onclick="cerrarModalMed()">Cancelar</button>
+      <button class="btn-primary" onclick="guardarMedicamento()">Guardar</button>
+    </div>
+  </div>
 </div>
 
-<!-- MODAL USUARIO -->
+<!-- ══════════════════════════════════════════
+     MODAL: ENTRADA DE STOCK
+══════════════════════════════════════════ -->
+<div class="modal-overlay" id="modal-entrada">
+  <div class="modal" style="max-width:460px;">
+    <div class="modal__header">
+      <h3>📦 Registrar Entrada de Stock</h3>
+      <button class="modal__close" onclick="cerrarModalEntrada()">✕</button>
+    </div>
+    <input type="hidden" id="entrada-id-med"/>
+    <div style="background:rgba(42,107,94,0.07);border:1.5px solid rgba(42,107,94,0.15);border-radius:12px;padding:12px 16px;margin-bottom:18px;">
+      <p style="font-size:13px;color:var(--deep);font-weight:600;" id="entrada-nombre">—</p>
+    </div>
+    <div class="form-group">
+      <label>Cantidad a ingresar *</label>
+      <input type="number" id="entrada-cantidad" placeholder="Ej: 50" min="1"/>
+    </div>
+    <div class="form-group">
+      <label>Proveedor</label>
+      <input type="text" id="entrada-proveedor" placeholder="Nombre del proveedor"/>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancelar" onclick="cerrarModalEntrada()">Cancelar</button>
+      <button class="btn-primary" onclick="guardarEntrada()">Registrar Entrada</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     MODAL: AJUSTE MANUAL
+══════════════════════════════════════════ -->
+<div class="modal-overlay" id="modal-ajuste">
+  <div class="modal" style="max-width:460px;">
+    <div class="modal__header">
+      <h3>🔧 Ajuste Manual de Stock</h3>
+      <button class="modal__close" onclick="cerrarModalAjuste()">✕</button>
+    </div>
+    <input type="hidden" id="ajuste-id-med"/>
+    <div style="background:rgba(201,168,76,0.08);border:1.5px solid rgba(201,168,76,0.2);border-radius:12px;padding:12px 16px;margin-bottom:18px;">
+      <p style="font-size:13px;color:var(--deep);font-weight:600;" id="ajuste-nombre">—</p>
+      <p style="font-size:12px;color:var(--text-soft);margin-top:4px;">Stock actual: <strong id="ajuste-stock-actual">—</strong></p>
+    </div>
+    <div class="form-group">
+      <label>Nuevo stock total *</label>
+      <input type="number" id="ajuste-cantidad" placeholder="Cantidad correcta" min="0"/>
+    </div>
+    <div class="form-group">
+      <label>Motivo del ajuste</label>
+      <input type="text" id="ajuste-motivo" placeholder="Ej: Conteo físico, corrección de error..."/>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancelar" onclick="cerrarModalAjuste()">Cancelar</button>
+      <button class="btn-primary" onclick="guardarAjuste()">Aplicar Ajuste</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     MODAL: USUARIO
+══════════════════════════════════════════ -->
 <div class="modal-overlay" id="modal-usuario">
   <div class="modal">
-    <h3 id="modal-titulo">Nuevo Usuario</h3>
+    <div class="modal__header">
+      <h3 id="modal-titulo">Nuevo Usuario</h3>
+      <button class="modal__close" onclick="cerrarModal()">✕</button>
+    </div>
     <input type="hidden" id="m-id"/>
     <div class="form-row">
       <div class="form-group"><label>Nombres</label><input type="text" id="m-nombres" placeholder="Ana"/></div>
@@ -574,7 +611,11 @@
     <div class="form-row">
       <div class="form-group">
         <label>Sexo</label>
-        <select id="m-sexo"><option value="M">Masculino</option><option value="F">Femenino</option><option value="OTRO">Otro</option></select>
+        <select id="m-sexo">
+          <option value="M">Masculino</option>
+          <option value="F">Femenino</option>
+          <option value="OTRO">Otro</option>
+        </select>
       </div>
       <div class="form-group"><label>Fecha Nacimiento</label><input type="date" id="m-fecha"/></div>
     </div>
@@ -592,7 +633,10 @@
       </div>
     </div>
     <div class="form-group"><label>Dirección</label><input type="text" id="m-direccion" placeholder="Colonia, calle..."/></div>
-    <div class="form-group" id="campo-pass"><label>Contraseña</label><input type="password" id="m-pass" placeholder="Mínimo 6 caracteres"/></div>
+    <div class="form-group" id="campo-pass">
+      <label>Contraseña</label>
+      <input type="password" id="m-pass" placeholder="Mínimo 6 caracteres"/>
+    </div>
     <div class="modal-actions">
       <button class="btn-cancelar" onclick="cerrarModal()">Cancelar</button>
       <button class="btn-primary" onclick="guardarUsuario()">Guardar</button>
@@ -600,10 +644,15 @@
   </div>
 </div>
 
-<!-- MODAL MÉDICO -->
+<!-- ══════════════════════════════════════════
+     MODAL: MÉDICO
+══════════════════════════════════════════ -->
 <div class="modal-overlay" id="modal-medico">
   <div class="modal">
-    <h3 id="modal-medico-titulo">Nuevo Médico</h3>
+    <div class="modal__header">
+      <h3 id="modal-medico-titulo">Nuevo Médico</h3>
+      <button class="modal__close" onclick="cerrarModalMedico()">✕</button>
+    </div>
     <input type="hidden" id="md-id"/>
     <div class="form-row">
       <div class="form-group">
@@ -668,6 +717,44 @@
       <button class="btn-cancelar" onclick="cerrarModalMedico()">Cancelar</button>
       <button class="btn-primary" onclick="guardarMedico()">Guardar</button>
     </div>
+  </div>
+</div>
+
+<div id="pdf-reporte-inv" style="display:none;font-family:'DM Sans',Arial,sans-serif;color:#1a2e2a;">
+  <!-- Header del PDF -->
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #2a6b5e;padding-bottom:16px;margin-bottom:20px;">
+    <div>
+      <div style="font-size:22px;font-weight:700;color:#2a6b5e;">✦ Medisync</div>
+      <div style="font-size:13px;color:#666;margin-top:4px;">Sistema de Gestión Clínica</div>
+    </div>
+    <div style="text-align:right;">
+      <div style="font-size:16px;font-weight:700;color:#1a2e2a;">Reporte de Inventario</div>
+      <div style="font-size:12px;color:#666;margin-top:4px;" id="pdf-fecha-generacion"></div>
+      <div style="font-size:12px;color:#666;margin-top:2px;">Generado por: <strong id="pdf-usuario-generacion"></strong></div>
+    </div>
+  </div>
+  <!-- KPIs -->
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;" id="pdf-kpis"></div>
+  <!-- Filtro aplicado -->
+  <div style="font-size:12px;color:#888;margin-bottom:10px;" id="pdf-filtro-label"></div>
+  <!-- Tabla -->
+  <table style="width:100%;border-collapse:collapse;font-size:13px;" id="pdf-tabla-inv">
+    <thead>
+      <tr style="background:#2a6b5e;color:white;">
+        <th style="padding:10px 12px;text-align:left;">Medicamento</th>
+        <th style="padding:10px 12px;text-align:center;">Stock Actual</th>
+        <th style="padding:10px 12px;text-align:center;">Stock Mínimo</th>
+        <th style="padding:10px 12px;text-align:center;">Unidad</th>
+        <th style="padding:10px 12px;text-align:center;">Precio Unit.</th>
+        <th style="padding:10px 12px;text-align:center;">Estado</th>
+      </tr>
+    </thead>
+    <tbody id="pdf-tbody-inv"></tbody>
+  </table>
+  <!-- Footer -->
+  <div style="margin-top:24px;padding-top:12px;border-top:1px solid #ddd;font-size:11px;color:#aaa;display:flex;justify-content:space-between;">
+    <span>Medisync — Reporte generado automáticamente</span>
+    <span id="pdf-footer-fecha"></span>
   </div>
 </div>
 
