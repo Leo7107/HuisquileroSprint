@@ -8,11 +8,11 @@ const ReportesModel = {
   getCitasKPIs: ({ fechaInicio, fechaFin, idDoctor, especialidad }, cb) => {
     let sql = `
       SELECT
-        COUNT(c.idCita)              AS total,
-        SUM(c.estado = 'FINALIZADA')   AS atendidas,
-        SUM(c.estado = 'CANCELADA')  AS canceladas,
-        SUM(c.estado = 'PENDIENTE')  AS pendientes,
-        COUNT(DISTINCT c.idPaciente) AS pacientesAtendidos
+        COUNT(c.idCita)                                              AS total,
+        SUM(c.estado IN ('FINALIZADA','COMPLETADA'))                 AS atendidas,
+        SUM(c.estado = 'CANCELADA')                                  AS canceladas,
+        SUM(c.estado = 'PENDIENTE')                                  AS pendientes,
+        COUNT(DISTINCT c.idPaciente)                                 AS pacientesAtendidos
       FROM tbl_citas c
       INNER JOIN tbl_doctores d ON c.idDoctor = d.idDoctor
       WHERE c.fecha BETWEEN ? AND ?
@@ -32,12 +32,12 @@ const ReportesModel = {
         u.Apellidos,
         CONCAT(u.Nombres, ' ', u.Apellidos) AS nombreDoctor,
         d.Especialidad,
-        COUNT(c.idCita)             AS total,
-        SUM(c.estado = 'FINALIZADA')  AS atendidas,
-        SUM(c.estado = 'CANCELADA') AS canceladas,
-        SUM(c.estado = 'PENDIENTE') AS pendientes,
+        COUNT(c.idCita)                                             AS total,
+        SUM(c.estado IN ('FINALIZADA','COMPLETADA'))                AS atendidas,
+        SUM(c.estado = 'CANCELADA')                                 AS canceladas,
+        SUM(c.estado = 'PENDIENTE')                                 AS pendientes,
         ROUND(
-          SUM(c.estado = 'FINALIZADA') * 100.0 / NULLIF(COUNT(c.idCita), 0), 1
+          SUM(c.estado IN ('FINALIZADA','COMPLETADA')) * 100.0 / NULLIF(COUNT(c.idCita), 0), 1
         ) AS pctAtendidas
       FROM tbl_citas c
       INNER JOIN tbl_doctores d ON c.idDoctor  = d.idDoctor

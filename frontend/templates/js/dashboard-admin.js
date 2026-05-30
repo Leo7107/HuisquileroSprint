@@ -772,6 +772,13 @@ function abrirDesdeEditar(tipo) {
 // ══════════════════════════════════════════════
 let _repInvData = [];
 
+function repSwitchTab(tab, btn) {
+  document.querySelectorAll('.rep-tab').forEach(b => b.classList.remove('rep-tab--active'));
+  btn.classList.add('rep-tab--active');
+  document.getElementById('rep-panel-citas').style.display      = tab === 'citas'      ? '' : 'none';
+  document.getElementById('rep-panel-inventario').style.display = tab === 'inventario' ? '' : 'none';
+}
+
 async function iniciarReportes() {
   _repSetDefaultDates();
   await _repCargarFiltros();
@@ -803,6 +810,94 @@ async function _repCargarFiltros() {
   } catch (err) {
     console.error('_repCargarFiltros:', err);
   }
+}
+
+async function repGenerarCitas() {
+  const inicio = document.getElementById('rep-fecha-inicio').value;
+  const fin    = document.getElementById('rep-fecha-fin').value;
+  const doctor = document.getElementById('rep-doctor').value;
+  const esp    = document.getElementById('rep-especialidad').value;
+
+  let url = `/api/reportes/citas?fechaInicio=${inicio}&fechaFin=${fin}`;
+  if (doctor) url += `&idDoctor=${doctor}`;
+  if (esp)    url += `&especialidad=${encodeURIComponent(esp)}`;
+
+  try {
+    const res  = await fetch(url, { headers: H });
+    const data = await res.json();
+    const { kpis, detalle } = data;
+
+    document.getElementById('rep-kpi-total').textContent     = kpis?.total      ?? '—';
+    document.getElementById('rep-kpi-atendidas').textContent = kpis?.atendidas  ?? '—';
+    document.getElementById('rep-kpi-pendientes').textContent= kpis?.pendientes ?? '—';
+    document.getElementById('rep-kpi-canceladas').textContent= kpis?.canceladas ?? '—';
+    document.getElementById('rep-kpis-citas').style.display  = '';
+
+    document.getElementById('rep-periodo-label').textContent =
+      `${inicio} → ${fin}`;
+
+    const vacio = !Array.isArray(detalle) || !detalle.length;
+    document.getElementById('rep-citas-vacio').style.display      = vacio ? '' : 'none';
+    document.getElementById('rep-tabla-citas-wrap').style.display = '';
+
+    document.getElementById('rep-tbody-citas').innerHTML = vacio ? '' : detalle.map(d => `
+      <tr>
+        <td>${esc(d.nombreDoctor || '')}</td>
+        <td>${esc(d.Especialidad || '—')}</td>
+        <td>${d.total      ?? 0}</td>
+        <td>${d.atendidas  ?? 0}</td>
+        <td>${d.canceladas ?? 0}</td>
+        <td>${d.pendientes ?? 0}</td>
+        <td>${d.pctAtendidas != null ? d.pctAtendidas + '%' : '—'}</td>
+      </tr>`).join('');
+  } catch (err) {
+    console.error('repGenerarCitas:', err);
+    toast('Error al generar el reporte de citas.', 'error');
+  }
+}
+
+async function repCargarInventario() {
+  try {
+    const res  = await fetch('/api/reportes/inventario', { headers: H });
+    const data = await res.json();
+    const { kpis, medicamentos } = data;
+
+    document.getElementById('inv-kpi-total').textContent   = kpis?.totalMedicamentos ?? '—';
+    document.getElementById('inv-kpi-stock').textContent   = kpis?.enStock           ?? '—';
+    document.getElementById('inv-kpi-alerta').textContent  = kpis?.enAlerta          ?? '—';
+    document.getElementById('inv-kpi-agotados').textContent= kpis?.agotados          ?? '—';
+
+    _repInvData = Array.isArray(medicamentos) ? medicamentos : [];
+    _repRenderInv(_repInvData);
+  } catch (err) {
+    console.error('repCargarInventario:', err);
+  }
+}
+
+function _repRenderInv(lista) {
+  const cuerpo = document.getElementById('rep-tbody-inv');
+  if (!lista.length) {
+    cuerpo.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-soft);padding:20px;">Sin datos</td></tr>';
+    return;
+  }
+  const estadoChip = { agotado: '🔴 Agotado', alerta: '🟡 Alerta', normal: '✅ OK' };
+  const estadoClass= { agotado: 'stock-agotado', alerta: 'stock-critico', normal: '' };
+  cuerpo.innerHTML = lista.map(m => `
+    <tr>
+      <td>${esc(m.nombre || '')}</td>
+      <td class="${estadoClass[m.nivelStock] || ''}">${m.stock_actual ?? '—'}</td>
+      <td>${m.stock_minimo ?? '—'}</td>
+      <td>${esc(m.unidad_medida || '—')}</td>
+      <td>${m.precio_unitario != null ? '$' + Number(m.precio_unitario).toFixed(2) : '—'}</td>
+      <td>${estadoChip[m.nivelStock] || esc(m.estado || '—')}</td>
+    </tr>`).join('');
+}
+
+function repFiltrarInv(filtro, btn) {
+  document.querySelectorAll('#rep-panel-inventario .tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const lista = filtro === 'todos' ? _repInvData : _repInvData.filter(m => m.nivelStock === filtro);
+  _repRenderInv(lista);
 }
 
 // ══════════════════════════════════════════

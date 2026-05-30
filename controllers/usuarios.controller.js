@@ -50,8 +50,8 @@ exports.createUsuario = (req, res) => {
 };
 
 exports.updateUsuario = (req, res) => {
-  const { Nombres, Apellidos, Sexo, Fecha_nacimiento, Telefono, Direccion, Email, Estado } = req.body;
-  const data = { Nombres, Apellidos, Sexo, Fecha_nacimiento, Telefono, Direccion, Email, Estado };
+  const { Nombres, Apellidos, Sexo, Fecha_nacimiento, Telefono, Direccion, Email, Estado, idRol } = req.body;
+  const data = { Nombres, Apellidos, Sexo, Fecha_nacimiento, Telefono, Direccion, Email, Estado, idRol };
   Object.keys(data).forEach(k => data[k] === undefined && delete data[k]);
   Usuario.update(req.params.id, data, (err) => {
     if (err) return res.status(500).json({ message: 'Error interno.' });
