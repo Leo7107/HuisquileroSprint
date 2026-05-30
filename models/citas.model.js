@@ -46,7 +46,7 @@ const Cita = {
       SELECT idCita FROM tbl_citas
       WHERE idDoctor = ?
         AND DATE(fecha) = DATE(?)
-        AND estado NOT IN ('CANCELADA','COMPLETADA')
+        AND estado NOT IN ('CANCELADA','COMPLETADA','FINALIZADA')
         AND ABS(TIME_TO_SEC(TIMEDIFF(hora, ?))) < 5400`;
     if (excludeId) {
       db.query(base + ` AND idCita <> ?`, [idDoctor, fecha, hora, excludeId], cb);
@@ -66,7 +66,7 @@ const Cita = {
        AND d.idDoctor NOT IN (
          SELECT idDoctor FROM tbl_citas
          WHERE DATE(fecha) = ?
-           AND estado NOT IN ('CANCELADA','COMPLETADA')
+           AND estado NOT IN ('CANCELADA','COMPLETADA','FINALIZADA')
            AND ABS(TIME_TO_SEC(TIMEDIFF(hora, ?))) < 5400
        )
      ORDER BY u.Apellidos, u.Nombres`,
@@ -76,7 +76,7 @@ const Cita = {
   create:    (data, cb) => db.query("INSERT INTO tbl_citas SET ?", data, cb),
   update:    (id, data, cb) => db.query("UPDATE tbl_citas SET ? WHERE idcita = ?", [data, id], cb),
   delete:    (id, cb) => db.query("DELETE FROM tbl_citas WHERE idcita = ?", [id], cb),
-  completar: (id, cb) => db.query("UPDATE tbl_citas SET estado = 'COMPLETADA' WHERE idCita = ?", [id], cb),
+  completar: (id, cb) => db.query("UPDATE tbl_citas SET estado = 'FINALIZADA' WHERE idCita = ?", [id], cb),
 
   // HU11
   getByPaciente: (idPaciente, cb) => db.query(`

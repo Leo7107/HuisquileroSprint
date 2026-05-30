@@ -270,6 +270,7 @@
               </div>
               <span id="acc-arrow-receta" style="color:var(--teal);font-size:11px;">▶</span>
             </div>
+
             <div id="acc-body-receta" class="atencion-bloque__body" style="display:none;">
               <div class="fgroup">
                 <label class="lbl">Diagnóstico asociado</label>
@@ -318,6 +319,22 @@
               </div>
             </div>
           </div>
+
+        <!-- Pie del panel: Finalizar Cita -->
+        <div style="display:flex;justify-content:flex-end;align-items:center;gap:12px;margin-top:20px;padding-top:16px;border-top:1.5px solid var(--border);">
+          <span id="finalizar-cita-hint" style="font-size:12px;color:var(--text-soft);display:none;">
+            💡 Registra la consulta antes de finalizar
+          </span>
+          <button id="btn-finalizar-cita" onclick="finalizarCita()"
+            style="padding:12px 30px;border:none;border-radius:11px;
+              background:linear-gradient(135deg,#2a6b5e,#3d8b7a);
+              color:#fff;font-weight:700;font-size:14px;
+              font-family:'DM Sans',sans-serif;cursor:pointer;
+              box-shadow:0 4px 14px rgba(42,107,94,0.3);
+              transition:opacity .2s;">
+            ✅ Finalizar Cita
+          </button>
+        </div>
 
         </div>
       </div>

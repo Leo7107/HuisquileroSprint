@@ -371,6 +371,32 @@ function cerrarPanelAtencion() {
   _recLineas            = [];
 }
 
+async function finalizarCita() {
+  if (!_citaSeleccionada) return;
+
+  if (!_consultaSeleccionada) {
+    document.getElementById('finalizar-cita-hint').style.display = 'inline';
+    if (!confirm('No se ha registrado una consulta para esta cita. ¿Finalizar de todos modos?')) return;
+  }
+
+  const btn = document.getElementById('btn-finalizar-cita');
+  btn.disabled = true;
+  btn.textContent = 'Finalizando...';
+
+  const res = await fetch(`/api/citas/${_citaSeleccionada.idCita}/completar`, { method: 'PATCH', headers: H });
+  if (!res.ok) {
+    toast('Error al finalizar la cita.', 'error');
+    btn.disabled = false;
+    btn.textContent = '✅ Finalizar Cita';
+    return;
+  }
+
+  toast('✅ Cita finalizada correctamente.');
+  cerrarPanelAtencion();
+  await cargarCitas();
+  cargarStats();
+}
+
 // Helpers de accordions
 function toggleAccordion(seccion) {
   const body  = document.getElementById(`acc-body-${seccion}`);
@@ -494,8 +520,10 @@ async function guardarConsulta() {
     // Marcar la cita como COMPLETADA automáticamente al registrar la consulta
     await fetch(`/api/citas/${_citaSeleccionada.idCita}/completar`, { method:'PATCH', headers: H });
 
-    toast('✅ Consulta registrada · Cita marcada como finalizada');
+    toast('✅ Consulta registrada.');
     _marcarAccordionDone('consulta', '· Registrada');
+    document.getElementById('finalizar-cita-hint').style.display = 'none';
+    cargarCitas();
 
     // Auto-vincular al accordion de diagnóstico
     _consultaSeleccionada = {

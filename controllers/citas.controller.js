@@ -93,8 +93,8 @@ exports.cancelarCita = (req, res) => {
       return res.status(403).json({ error: "No tienes permiso para cancelar esta cita" });
     if (cita.estado === "CANCELADA")
       return res.status(409).json({ error: "La cita ya está cancelada" });
-    if (cita.estado === "COMPLETADA")
-      return res.status(409).json({ error: "No se puede cancelar una cita completada" });
+    if (cita.estado === "COMPLETADA" || cita.estado === "FINALIZADA")
+      return res.status(409).json({ error: "No se puede cancelar una cita ya finalizada" });
     Cita.cancelar(idCita, idPaciente, (err, result) => {
       if (err) { console.error('[citas]', err); return res.status(500).json({ message: 'Error interno del servidor.' }); }
       if (result.affectedRows === 0)
@@ -117,8 +117,8 @@ exports.reprogramarCita = (req, res) => {
       return res.status(403).json({ error: "No tienes permiso para reprogramar esta cita" });
     if (cita.estado === "CANCELADA")
       return res.status(409).json({ error: "No se puede reprogramar una cita cancelada" });
-    if (cita.estado === "COMPLETADA")
-      return res.status(409).json({ error: "No se puede reprogramar una cita completada" });
+    if (cita.estado === "COMPLETADA" || cita.estado === "FINALIZADA")
+      return res.status(409).json({ error: "No se puede reprogramar una cita ya finalizada" });
     Cita.checkDuplicado(cita.idDoctor, fecha, hora, idCita, (err, dup) => {
       if (err) { console.error('[citas]', err); return res.status(500).json({ message: 'Error interno del servidor.' }); }
       if (dup.length > 0)
