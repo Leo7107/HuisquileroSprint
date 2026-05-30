@@ -134,7 +134,8 @@ let tabCitaActual = 'todas';
 async function cargarCitas() {
   try {
     const res  = await fetch('/api/citas', { headers: H });
-    todasCitas = await res.json();
+    const data = await res.json();
+    todasCitas = Array.isArray(data) ? data : [];
     renderCitas(todasCitas);
   } catch {
     document.getElementById('tbody-citas').innerHTML =

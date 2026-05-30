@@ -36,11 +36,22 @@ function esc(s) {
 }
 
 // ─── Util: Toast ──────────────────────────────────────────────────────────────
-let _toastTimer = null;
 function toast(msg, tipo = 'success') {
-  const el = document.getElementById('toast');
+  let el = document.getElementById('toast');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'toast';
+    Object.assign(el.style, {
+      position:'fixed', bottom:'28px', right:'28px', zIndex:'9999',
+      padding:'14px 22px', borderRadius:'14px', fontSize:'13.5px', fontWeight:'600',
+      boxShadow:'0 8px 24px rgba(0,0,0,0.18)', display:'none', maxWidth:'340px', lineHeight:'1.4',
+    });
+    document.body.appendChild(el);
+  }
+  const paleta = { success:'#2a6b5e', error:'#c03030', warning:'#b07800' };
+  el.style.background = paleta[tipo] || paleta.success;
+  el.style.color = '#fff';
   el.textContent = msg;
-  el.className   = tipo;
   el.style.display = 'block';
   clearTimeout(_toastTimer);
   _toastTimer = setTimeout(() => { el.style.display = 'none'; }, 3500);

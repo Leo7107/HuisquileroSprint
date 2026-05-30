@@ -845,7 +845,9 @@ async function cargarResumen() {
 async function cargarInventarioCritico() {
   try {
     const res   = await fetch('/api/metricas/alertas-inventario', { headers: H });
-    const lista = await res.json();
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data  = await res.json();
+    const lista = Array.isArray(data) ? data : [];
 
     const badge = document.getElementById('badgeInventario');
     if (badge) {

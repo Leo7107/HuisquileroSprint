@@ -88,7 +88,7 @@ exports.login = (req, res) => {
       const token = jwt.sign(
         { id: usuario.idUsuario, rol: usuario.idRol },
         process.env.JWT_SECRET,
-        { expiresIn: "30m" }
+        { expiresIn: "8h" }
       );
       logSuccessAuth({ id: usuario.idUsuario, nombre: usuario.Nombres }, ip);
       res.json({ token, usuario: { id: usuario.idUsuario, nombre: usuario.Nombres, rol: usuario.idRol } });

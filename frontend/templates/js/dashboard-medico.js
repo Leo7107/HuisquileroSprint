@@ -31,7 +31,6 @@ const H = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token
 function esc(s) {
   return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
-let _toastTimer = null;
 function toast(msg, tipo = 'success') {
   let el = document.getElementById('_toast_notif');
   if (!el) {
@@ -118,7 +117,8 @@ async function cargarPacientes() {
   if (todosPacientes.length) return todosPacientes;
   try {
     const res   = await fetch('/api/pacientes', { headers: H });
-    todosPacientes = await res.json();
+    const data  = await res.json();
+    todosPacientes = Array.isArray(data) ? data : [];
     return todosPacientes;
   } catch { return []; }
 }

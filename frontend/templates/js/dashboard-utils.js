@@ -10,7 +10,7 @@ var ROLES = { ADMIN: 1, PACIENTE: 30001, MEDICO: 30002, RECEPCIONISTA: 30003 };
 // Usamos window.H para que sea accesible globalmente en todos los scripts
 window.H = {
   'Content-Type': 'application/json',
-  'Authorization': 'Bearer ' + localStorage.getItem('token'),
+  'Authorization': 'Bearer ' + sessionStorage.getItem('token'),
 };
 
 // ── ESCAPE HTML ───────────────────────────────────────────────────────────────
@@ -52,7 +52,29 @@ function toast(msg, tipo = 'success') {
 
 // ── CERRAR SESIÓN ─────────────────────────────────────────────────────────────
 function cerrarSesion() {
-  localStorage.removeItem('token');
-  localStorage.removeItem('usuario');
+  sessionStorage.removeItem('token');
+  sessionStorage.removeItem('usuario');
   window.location.href = '/';
 }
+
+// ── INTERCEPTOR GLOBAL DE FETCH ─────────────────────────────────────────────────
+// Si la sesión expira (401/403 en cualquier llamada a /api), limpia la sesión y
+// redirige al login en vez de dejar los dashboards rotos con errores en cascada.
+(function () {
+  var _fetch = window.fetch.bind(window);
+  var _redirigiendo = false;
+  window.fetch = function (input, init) {
+    return _fetch(input, init).then(function (res) {
+      var url = (typeof input === 'string') ? input : (input && input.url) || '';
+      if ((res.status === 401 || res.status === 403) && url.indexOf('/api/') !== -1
+          && url.indexOf('/api/usuarios/login') === -1) {
+        if (!_redirigiendo) {
+          _redirigiendo = true;
+          alert('Tu sesión ha expirado. Por favor inicia sesión nuevamente.');
+          cerrarSesion();
+        }
+      }
+      return res;
+    });
+  };
+})();
