@@ -1,5 +1,13 @@
 const Consulta = require("../models/consultas.model");
 
+exports.getRecientesConsultas = (req, res) => {
+    const limit = Math.min(parseInt(req.query.limit) || 6, 50);
+    Consulta.getRecientes(limit, (err, results) => {
+        if (err) { console.error('[consultas]', err); return res.status(500).json({ message: 'Error interno del servidor.' }); }
+        res.json(results);
+    });
+};
+
 exports.getConsultaByCita = (req, res) => {
     Consulta.getByCita(req.params.idCita, (err, result) => {
         if (err) { console.error('[consultas]', err); return res.status(500).json({ message: 'Error interno del servidor.' }); }

@@ -5,8 +5,9 @@ const auth = require("../middleware/auth");
 
 router.use(auth);
 
+router.get("/recientes",       consultasController.getRecientesConsultas);
 router.get("/by-cita/:idCita", consultasController.getConsultaByCita);
-router.get("/", consultasController.getConsultas);
+router.get("/",                consultasController.getConsultas);
 router.get("/:id", consultasController.getConsultaById);
 router.post("/", consultasController.createConsulta);
 router.put("/:id", consultasController.updateConsulta);

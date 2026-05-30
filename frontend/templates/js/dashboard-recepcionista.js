@@ -92,9 +92,10 @@ async function cargarStats() {
 
     const idsConPreconsulta = Array.isArray(consultas)
       ? consultas.map(c => String(c.idCita)) : [];
+    _idsConPreconsulta = new Set(idsConPreconsulta);
     const sinPreconsulta = citasHoy.filter(c =>
       ['PENDIENTE','CONFIRMADA'].includes(c.estado) &&
-      !idsConPreconsulta.includes(String(c.idCita))
+      !_idsConPreconsulta.has(String(c.idCita))
     );
     const atendidas = citasHoy.filter(c => c.estado === 'FINALIZADA');
 
@@ -128,8 +129,9 @@ async function cargarStats() {
 }
 
 // ── CITAS ─────────────────────────────────────
-let todasCitas    = [];
-let tabCitaActual = 'todas';
+let todasCitas          = [];
+let tabCitaActual       = 'todas';
+let _idsConPreconsulta  = new Set();
 
 async function cargarCitas() {
   try {
@@ -157,7 +159,8 @@ function renderCitas(lista) {
     const doctor = c.NombreDoctor
       ? `${esc(c.NombreDoctor)} ${esc(c.ApellidosDoctor || '')}`.trim()
       : `#${c.idDoctor}`;
-    const confirmable = c.estado === 'PENDIENTE';
+    const confirmable  = c.estado === 'PENDIENTE';
+    const tienePre     = _idsConPreconsulta.has(String(c.idCita));
     return `
       <tr>
         <td>#${c.idCita}</td>
@@ -165,7 +168,10 @@ function renderCitas(lista) {
         <td>${c.hora  || '—'}</td>
         <td>${paciente}</td>
         <td>${doctor}</td>
-        <td><span class="badge badge--${['CONFIRMADA','FINALIZADA','COMPLETADA'].includes(c.estado) ? 'activo' : 'pendiente'}">${c.estado}</span></td>
+        <td>
+          <span class="badge badge--${['CONFIRMADA','FINALIZADA','COMPLETADA'].includes(c.estado) ? 'activo' : 'pendiente'}">${c.estado}</span>
+          ${tienePre ? '<span title="Preconsulta registrada" style="margin-left:5px;font-size:11px;background:rgba(42,107,94,0.12);color:var(--teal);border-radius:6px;padding:2px 6px;font-weight:700;">Pre ✓</span>' : ''}
+        </td>
         <td>
           <div class="action-icons">
             ${confirmable ? `<button class="icon-btn icon-btn--confirm" title="Confirmar cita" onclick="confirmarCita(${c.idCita})">✔</button>` : ''}
@@ -818,6 +824,66 @@ function preRenderDatosPaciente(p) {
     </div>`;
 }
 
+// ── ALERTAS EN TIEMPO REAL ────────────────────
+function alertarVital(campo, valor) {
+  const el = document.getElementById('alerta-' + campo);
+  if (!el) return;
+  const v = parseFloat(valor);
+
+  const mostrar = (msg, tipo) => {
+    el.textContent  = msg;
+    el.className    = 'vital-alerta vital-alerta--' + tipo;
+    el.style.display = msg ? 'block' : 'none';
+  };
+
+  if (!valor || isNaN(v)) { el.style.display = 'none'; return; }
+
+  if (campo === 'sat') {
+    if      (v < 90) mostrar(`🔴 SpO₂ crítico (${v}%) — posible hipoxemia severa`, 'danger');
+    else if (v < 94) mostrar(`⚠️ SpO₂ bajo (${v}%) — monitorizar`, 'warn');
+    else             mostrar('', '');
+  } else if (campo === 'fc') {
+    if      (v > 120) mostrar(`🔴 Taquicardia severa (${v} lpm)`, 'danger');
+    else if (v > 100) mostrar(`⚠️ Taquicardia leve (${v} lpm)`, 'warn');
+    else if (v < 50)  mostrar(`🔴 Bradicardia severa (${v} lpm)`, 'danger');
+    else if (v < 60)  mostrar(`⚠️ Bradicardia leve (${v} lpm)`, 'warn');
+    else              mostrar('', '');
+  } else if (campo === 'temp') {
+    if      (v < 35)   mostrar(`🔴 Hipotermia (${v}°C)`, 'danger');
+    else if (v < 36)   mostrar(`⚠️ Temperatura baja (${v}°C)`, 'warn');
+    else if (v > 38.5) mostrar(`🔴 Fiebre alta (${v}°C)`, 'danger');
+    else if (v > 37.5) mostrar(`⚠️ Febrícula (${v}°C)`, 'warn');
+    else               mostrar('', '');
+  } else if (campo === 'presion') {
+    const m = String(valor).match(/^(\d{2,3})\/(\d{2,3})$/);
+    if (!m) { el.style.display = 'none'; return; }
+    const sis = parseInt(m[1]), dia = parseInt(m[2]);
+    if      (sis >= 180 || dia >= 110) mostrar(`🔴 Hipertensión severa (${valor}) — urgencia`, 'danger');
+    else if (sis >= 140 || dia >= 90)  mostrar(`⚠️ Hipertensión grado 1 (${valor})`, 'warn');
+    else if (sis < 90  || dia < 60)   mostrar(`🔴 Hipotensión (${valor})`, 'danger');
+    else                               mostrar('', '');
+  } else if (campo === 'peso' || campo === 'altura') {
+    // Calcular IMC si ambos están llenos
+    const peso   = parseFloat(document.getElementById('pre-peso').value);
+    const altura = parseFloat(document.getElementById('pre-altura').value);
+    const elImc  = document.getElementById('alerta-imc');
+    if (elImc && peso > 0 && altura > 0) {
+      const imc = (peso / Math.pow(altura / 100, 2)).toFixed(1);
+      let cat = '';
+      if      (imc < 18.5) cat = '⚠️ Bajo peso';
+      else if (imc < 25)   cat = '✅ Normal';
+      else if (imc < 30)   cat = '⚠️ Sobrepeso';
+      else                 cat = '⚠️ Obesidad';
+      elImc.textContent  = `IMC: ${imc} — ${cat}`;
+      elImc.className    = 'vital-alerta vital-alerta--' + (imc < 18.5 || imc >= 25 ? 'info' : 'ok');
+      elImc.style.display = 'block';
+    } else if (elImc) {
+      elImc.style.display = 'none';
+    }
+    el.style.display = 'none';
+  }
+}
+
 async function guardarPreconsulta() {
   if (!_prePaciente) { toast('⚠️ Selecciona un paciente primero.', 'warn'); return; }
   if (!_preCita)     { toast('⚠️ Selecciona la cita a atender.', 'warn'); return; }
@@ -882,12 +948,11 @@ async function guardarPreconsulta() {
   // ── Fin validaciones ───────────────────────────────────────────────────────
 
   try {
-    const checkRes  = await fetch('/api/consultas', { headers: H });
-    const consultas = await checkRes.json();
-    const yaExiste  = Array.isArray(consultas)
-      ? consultas.find(c => String(c.idCita) === String(_preCita.idCita)) : null;
+    // Verificar duplicado eficientemente: solo consulta esa cita
+    const checkRes = await fetch(`/api/consultas/by-cita/${_preCita.idCita}`, { headers: H });
+    const yaExiste = await checkRes.json();
 
-    if (yaExiste) {
+    if (yaExiste && yaExiste.idConsulta) {
       if (!confirm('Ya existe una preconsulta para esta cita. ¿Deseas actualizarla?')) return;
       const payload = {
         peso, altura, presion_arterial: presion, temperatura: temp,
@@ -938,12 +1003,12 @@ async function guardarPreconsulta() {
 
 async function preCargarUltimas() {
   try {
-    const res  = await fetch('/api/consultas', { headers: H });
+    const res  = await fetch('/api/consultas/recientes?limit=6', { headers: H });
     const data = await res.json();
     const cont = document.getElementById('pre-ultimas');
     if (!cont) return;
     cont.innerHTML = Array.isArray(data) && data.length
-      ? data.slice(0,6).map(c => `
+      ? data.map(c => `
           <div class="pre-historial-item">
             <strong>${c.NombrePaciente ? `${esc(c.NombrePaciente)} ${esc(c.ApellidosPaciente || '')}` : `Cita #${c.idCita}`}</strong>
             <span>
