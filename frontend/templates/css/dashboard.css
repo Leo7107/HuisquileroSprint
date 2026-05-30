@@ -857,15 +857,17 @@ body::after {
   transition: all 0.2s;
 }
 
-.icon-btn--edit   { background: rgba(201,168,76,0.15); color: #7a5c00; }
-.icon-btn--cancel { background: rgba(200,50,50,0.1);   color: #c03030; }
-.icon-btn--del    { background: rgba(200,50,50,0.1);   color: #c03030; }
-.icon-btn--toggle { background: rgba(201,168,76,0.15); color: #7a5c00; }
+.icon-btn--edit    { background: rgba(201,168,76,0.15); color: #7a5c00; }
+.icon-btn--cancel  { background: rgba(200,50,50,0.1);   color: #c03030; }
+.icon-btn--del     { background: rgba(200,50,50,0.1);   color: #c03030; }
+.icon-btn--toggle  { background: rgba(201,168,76,0.15); color: #7a5c00; }
+.icon-btn--confirm { background: rgba(42,107,94,0.12);  color: #1a5c4a; }
 
-.icon-btn--edit:hover   { background: var(--gold);  color: var(--deep); }
-.icon-btn--cancel:hover { background: #c03030; color: var(--white); }
-.icon-btn--del:hover    { background: #c03030; color: var(--white); }
-.icon-btn--toggle:hover { background: var(--gold);  color: var(--deep); }
+.icon-btn--edit:hover    { background: var(--gold);  color: var(--deep); }
+.icon-btn--cancel:hover  { background: #c03030; color: var(--white); }
+.icon-btn--del:hover     { background: #c03030; color: var(--white); }
+.icon-btn--toggle:hover  { background: var(--gold);  color: var(--deep); }
+.icon-btn--confirm:hover { background: var(--teal);  color: var(--white); }
 
 /* ============================================================
    HORARIO CHIP — para tabla de médicos

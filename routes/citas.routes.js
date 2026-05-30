@@ -5,9 +5,10 @@ const auth    = require("../middleware/auth");
 
 // ── EXISTENTES ────────────────────────────────────────────────────────────────
 router.get("/",                        auth, citasController.getCitas);
+router.get("/disponibilidad",          auth, citasController.getDisponibilidad);
 router.get("/paciente/:idUsuario",     auth, citasController.getCitasByPaciente);
 router.get("/porpaciente/:idPaciente", auth, citasController.getCitasByIdPaciente);
-router.get("/doctor/:idDoctor",        auth, citasController.getCitasByDoctor);   // ← NUEVO
+router.get("/doctor/:idDoctor",        auth, citasController.getCitasByDoctor);
 router.get("/:id",                     auth, citasController.getCitaById);
 router.post("/",                       auth, citasController.createCita);
 router.put("/:id",                     auth, citasController.updateCita);

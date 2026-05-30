@@ -30,7 +30,7 @@ exports.createCita = (req, res) => {
   Cita.checkDuplicado(idDoctor, fecha, hora, null, (err, existing) => {
     if (err) { console.error('[citas]', err); return res.status(500).json({ message: 'Error interno del servidor.' }); }
     if (existing.length > 0)
-      return res.status(409).json({ error: "El médico ya tiene una cita programada en esa fecha y hora." });
+      return res.status(409).json({ error: "El médico ya tiene una cita en ese horario. Se requieren al menos 90 minutos entre citas." });
     Cita.create(req.body, (err, result) => {
       if (err) { console.error('[citas]', err); return res.status(500).json({ message: 'Error interno del servidor.' }); }
       res.json({ message: "Cita creada", id: result.insertId });
@@ -45,7 +45,7 @@ exports.updateCita = (req, res) => {
     Cita.checkDuplicado(idDoctor, fecha, hora, id, (err, existing) => {
       if (err) { console.error('[citas]', err); return res.status(500).json({ message: 'Error interno del servidor.' }); }
       if (existing.length > 0)
-        return res.status(409).json({ error: "El médico ya tiene una cita programada en esa fecha y hora." });
+        return res.status(409).json({ error: "El médico ya tiene una cita en ese horario. Se requieren al menos 90 minutos entre citas." });
       Cita.update(id, req.body, (err) => {
         if (err) { console.error('[citas]', err); return res.status(500).json({ message: 'Error interno del servidor.' }); }
         res.json({ message: "Cita actualizada" });
@@ -122,7 +122,7 @@ exports.reprogramarCita = (req, res) => {
     Cita.checkDuplicado(cita.idDoctor, fecha, hora, idCita, (err, dup) => {
       if (err) { console.error('[citas]', err); return res.status(500).json({ message: 'Error interno del servidor.' }); }
       if (dup.length > 0)
-        return res.status(409).json({ error: "El médico ya tiene una cita en ese horario." });
+        return res.status(409).json({ error: "El médico ya tiene una cita en ese horario. Se requieren al menos 90 minutos entre citas." });
       Cita.reprogramar(idCita, parseInt(idPaciente), fecha, hora, (err, result) => {
         if (err) { console.error('[citas]', err); return res.status(500).json({ message: 'Error interno del servidor.' }); }
         if (result.affectedRows === 0)
@@ -136,6 +136,17 @@ exports.reprogramarCita = (req, res) => {
 // ── NUEVO: citas del doctor logueado ─────────────────────────────────────────
 exports.getCitasByDoctor = (req, res) => {
   Cita.getByDoctor(req.params.idDoctor, (err, results) => {
+    if (err) { console.error('[citas]', err); return res.status(500).json({ message: 'Error interno del servidor.' }); }
+    res.json(results);
+  });
+};
+
+// ── NUEVO: médicos disponibles para fecha/hora ────────────────────────────────
+exports.getDisponibilidad = (req, res) => {
+  const { fecha, hora } = req.query;
+  if (!fecha || !hora)
+    return res.status(400).json({ error: 'fecha y hora son requeridos.' });
+  Cita.getDisponibilidad(fecha, hora, (err, results) => {
     if (err) { console.error('[citas]', err); return res.status(500).json({ message: 'Error interno del servidor.' }); }
     res.json(results);
   });

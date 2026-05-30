@@ -42,22 +42,36 @@ const Cita = {
   `, [idUsuario], cb),
 
   checkDuplicado: (idDoctor, fecha, hora, excludeId = null, cb) => {
+    const base = `
+      SELECT idCita FROM tbl_citas
+      WHERE idDoctor = ?
+        AND DATE(fecha) = DATE(?)
+        AND estado NOT IN ('CANCELADA','COMPLETADA')
+        AND ABS(TIME_TO_SEC(TIMEDIFF(hora, ?))) < 5400`;
     if (excludeId) {
-      db.query(
-        `SELECT idCita FROM tbl_citas
-         WHERE idDoctor = ? AND fecha = ? AND hora = ?
-         AND estado <> 'CANCELADA' AND idCita <> ?`,
-        [idDoctor, fecha, hora, excludeId], cb
-      );
+      db.query(base + ` AND idCita <> ?`, [idDoctor, fecha, hora, excludeId], cb);
     } else {
-      db.query(
-        `SELECT idCita FROM tbl_citas
-         WHERE idDoctor = ? AND fecha = ? AND hora = ?
-         AND estado <> 'CANCELADA'`,
-        [idDoctor, fecha, hora], cb
-      );
+      db.query(base, [idDoctor, fecha, hora], cb);
     }
   },
+
+  getDisponibilidad: (fecha, hora, cb) => db.query(
+    `SELECT d.idDoctor, u.Nombres, u.Apellidos, d.Especialidad,
+            d.Consultorio, d.hora_inicio, d.hora_fin
+     FROM tbl_doctores d
+     JOIN tbl_usuarios u ON d.idUsuario = u.idUsuario
+     WHERE d.Estado = 'ACTIVO'
+       AND ? >= d.hora_inicio
+       AND ? <= d.hora_fin
+       AND d.idDoctor NOT IN (
+         SELECT idDoctor FROM tbl_citas
+         WHERE DATE(fecha) = ?
+           AND estado NOT IN ('CANCELADA','COMPLETADA')
+           AND ABS(TIME_TO_SEC(TIMEDIFF(hora, ?))) < 5400
+       )
+     ORDER BY u.Apellidos, u.Nombres`,
+    [hora, hora, fecha, hora], cb
+  ),
 
   create:    (data, cb) => db.query("INSERT INTO tbl_citas SET ?", data, cb),
   update:    (id, data, cb) => db.query("UPDATE tbl_citas SET ? WHERE idcita = ?", [data, id], cb),

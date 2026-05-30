@@ -157,6 +157,7 @@ function renderCitas(lista) {
     const doctor = c.NombreDoctor
       ? `${esc(c.NombreDoctor)} ${esc(c.ApellidosDoctor || '')}`.trim()
       : `#${c.idDoctor}`;
+    const confirmable = c.estado === 'PENDIENTE';
     return `
       <tr>
         <td>#${c.idCita}</td>
@@ -164,9 +165,10 @@ function renderCitas(lista) {
         <td>${c.hora  || '—'}</td>
         <td>${paciente}</td>
         <td>${doctor}</td>
-        <td><span class="badge badge--${['CONFIRMADA','FINALIZADA'].includes(c.estado) ? 'activo' : 'pendiente'}">${c.estado}</span></td>
+        <td><span class="badge badge--${['CONFIRMADA','FINALIZADA','COMPLETADA'].includes(c.estado) ? 'activo' : 'pendiente'}">${c.estado}</span></td>
         <td>
           <div class="action-icons">
+            ${confirmable ? `<button class="icon-btn icon-btn--confirm" title="Confirmar cita" onclick="confirmarCita(${c.idCita})">✔</button>` : ''}
             <button class="icon-btn icon-btn--edit"   title="Editar"   onclick="abrirModalEditarCita(${c.idCita})">✏️</button>
             <button class="icon-btn icon-btn--cancel" title="Cancelar" onclick="cancelarCita(${c.idCita})">✕</button>
           </div>
@@ -181,6 +183,13 @@ function setTabCitas(estado, btn) {
   btn.classList.add('active');
   const filtrado = estado === 'todas' ? todasCitas : todasCitas.filter(c => c.estado === estado);
   renderCitas(filtrado);
+}
+
+async function confirmarCita(id) {
+  if (!confirm('¿Confirmar esta cita?')) return;
+  const res = await fetch(`/api/citas/${id}`, { method:'PUT', headers:H, body:JSON.stringify({ estado:'CONFIRMADA' }) });
+  if (res.ok) { toast('✅ Cita confirmada'); cargarCitas(); }
+  else toast('Error al confirmar la cita', 'error');
 }
 
 async function cancelarCita(id) {
@@ -213,6 +222,17 @@ function abrirModalEditarCita(id) {
   document.getElementById('cita-doctor').value   = c.idDoctor   || '';
   document.getElementById('cita-estado').value   = c.estado     || 'PENDIENTE';
   document.getElementById('cita-motivo').value   = c.motivo     || '';
+
+  // Auto-fill campos de texto visibles
+  const nombrePac = c.NombrePaciente
+    ? `${c.NombrePaciente} ${c.ApellidosPaciente || ''}`.trim()
+    : '';
+  const nombreDoc = c.NombreDoctor
+    ? `${c.NombreDoctor} ${c.ApellidosDoctor || ''}`.trim()
+    : '';
+  document.getElementById('cita-paciente-nombre').value = nombrePac;
+  document.getElementById('cita-doctor-nombre').value   = nombreDoc;
+
   document.getElementById('modal-cita').classList.add('active');
 }
 

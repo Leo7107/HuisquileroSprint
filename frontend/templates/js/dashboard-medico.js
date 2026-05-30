@@ -491,7 +491,10 @@ async function guardarConsulta() {
   const res  = await fetch('/api/consultas', { method:'POST', headers: H, body: JSON.stringify(payload) });
   const data = await res.json();
   if (data.id) {
-    toast('✅ Consulta registrada');
+    // Marcar la cita como COMPLETADA automáticamente al registrar la consulta
+    await fetch(`/api/citas/${_citaSeleccionada.idCita}/completar`, { method:'PATCH', headers: H });
+
+    toast('✅ Consulta registrada · Cita marcada como finalizada');
     _marcarAccordionDone('consulta', '· Registrada');
 
     // Auto-vincular al accordion de diagnóstico

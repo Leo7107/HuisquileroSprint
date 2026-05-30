@@ -86,6 +86,38 @@
       border-radius: 11px; padding: 10px 14px; font-size: 12.5px; color: var(--teal);
       font-weight: 600; margin-bottom: 14px; display: none;
     }
+    .btn-buscar-medicos {
+      width: 100%; padding: 11px; border: 1.5px dashed var(--teal); border-radius: 11px;
+      background: rgba(42,107,94,0.05); color: var(--teal); font-size: 13.5px;
+      font-weight: 600; font-family: 'DM Sans', sans-serif; cursor: pointer;
+      transition: all 0.2s; margin-bottom: 14px;
+    }
+    .btn-buscar-medicos:hover:not(:disabled) { background: rgba(42,107,94,0.12); }
+    .btn-buscar-medicos:disabled { opacity: 0.4; cursor: not-allowed; }
+    .medico-card {
+      display: flex; align-items: center; gap: 12px; padding: 12px 14px;
+      border: 1.5px solid var(--border); border-radius: 12px; margin-bottom: 8px;
+      cursor: pointer; transition: all 0.2s; background: var(--cream);
+    }
+    .medico-card:hover { border-color: var(--teal); background: rgba(42,107,94,0.04); }
+    .medico-card.selected {
+      border-color: var(--teal); background: rgba(42,107,94,0.09);
+      box-shadow: 0 0 0 3px rgba(42,107,94,0.12);
+    }
+    .medico-card__avatar {
+      width: 40px; height: 40px; border-radius: 12px; flex-shrink: 0;
+      background: linear-gradient(135deg, var(--teal), var(--teal-light));
+      color: #fff; font-weight: 700; font-size: 1.1rem;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .medico-card__info { flex: 1; }
+    .medico-card__info strong { display: block; font-size: 13.5px; color: var(--deep); }
+    .medico-card__info span  { font-size: 11.5px; color: var(--text-soft); display: block; line-height: 1.5; }
+    .medico-card__flecha { font-size: 12px; color: var(--teal); font-weight: 600; flex-shrink: 0; }
+    .medicos-sin-resultado {
+      text-align: center; padding: 20px; color: var(--text-soft);
+      font-size: 13px; background: var(--cream); border-radius: 12px; margin-bottom: 10px;
+    }
 
     /* ── Detalle de cita ─────────────────────────────────────── */
     .detalle-grid {
@@ -411,25 +443,49 @@
 <div class="modal-overlay" id="modal-cita">
   <div class="modal">
     <h3 id="modal-cita-titulo">Solicitar Nueva Cita</h3>
+
     <div class="form-row">
-      <div class="form-group"><label>Fecha</label><input type="date" id="cita-fecha"/></div>
-      <div class="form-group"><label>Hora</label><input type="time" id="cita-hora"/></div>
+      <div class="form-group">
+        <label>Fecha</label>
+        <input type="date" id="cita-fecha" oninput="onFechaHoraChange()"/>
+      </div>
+      <div class="form-group">
+        <label>Hora</label>
+        <input type="time" id="cita-hora" min="07:00" max="18:00" step="1800"
+          oninput="onFechaHoraChange()"/>
+      </div>
     </div>
-    <div class="form-group autocomplete-wrap" id="doctor-wrap">
-      <label>Doctor</label>
-      <input type="text" id="cita-doctor-nombre" placeholder="Buscar doctor..."
-        oninput="buscarDoctor()" autocomplete="off"/>
-      <input type="hidden" id="cita-doctor"/>
-      <div id="sugerencias-doctor" class="autocomplete-lista"></div>
+
+    <!-- Solo para nueva cita: buscar médicos disponibles -->
+    <div id="buscar-medicos-wrap">
+      <button type="button" class="btn-buscar-medicos" id="btn-buscar-medicos"
+        onclick="buscarMedicosDisponibles()" disabled>
+        🔍 Ver médicos disponibles para esa fecha y hora
+      </button>
+      <div id="medicos-disponibles-wrap" style="display:none">
+        <div id="medicos-lista"></div>
+        <button type="button" style="background:none;border:none;color:var(--teal);font-size:12px;
+          font-weight:600;cursor:pointer;padding:0 0 10px 2px;font-family:'DM Sans',sans-serif;"
+          onclick="resetSeleccionMedico()">← Buscar de nuevo</button>
+      </div>
     </div>
-    <div class="horario-info" id="horario-info">🕐 Horario disponible: <span id="horario-texto"></span></div>
-    <div class="form-group" id="motivo-wrap">
+
+    <!-- Solo para reprogramar: info del doctor fijo -->
+    <div class="horario-info" id="horario-info">
+      🩺 <span id="horario-texto"></span>
+    </div>
+
+    <input type="hidden" id="cita-doctor"/>
+
+    <div class="form-group" id="motivo-wrap" style="display:none">
       <label>Motivo</label>
       <textarea id="cita-motivo" rows="3" placeholder="Describe el motivo de tu cita..."></textarea>
     </div>
+
     <div class="modal-actions">
       <button class="btn-cancelar" onclick="cerrarModalCita()">Cancelar</button>
-      <button class="btn-primary" id="btn-guardar-cita" onclick="guardarCitaModal()">Guardar</button>
+      <button class="btn-primary" id="btn-guardar-cita" onclick="guardarCitaModal()"
+        style="display:none">Confirmar Cita</button>
     </div>
   </div>
 </div>
