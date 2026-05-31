@@ -985,22 +985,35 @@ async function cargarActividad() {
     const res   = await fetch('/api/metricas/actividad-reciente', { headers: H });
     const lista = await res.json();
 
-    const html = lista.length === 0
+    const htmlPreview = lista.length === 0
+      ? '<li class="sin-datos">Sin actividad registrada aún.</li>'
+      : lista.slice(0, 3).map(a => `
+          <li>
+            <span class="feed-dot"></span>
+            <div>
+              <strong>${a.accion}</strong>${a.descripcion ? ' — ' + a.descripcion : ''}
+              <br><small style="color:#aaa">${a.nombreUsuario ?? 'Sistema'} · ${a.modulo ?? ''}</small>
+            </div>
+            <span class="feed-fecha">${_formatearFecha(a.fecha)}</span>
+          </li>`).join('');
+
+    const htmlFull = lista.length === 0
       ? '<li class="sin-datos">Sin actividad registrada aún.</li>'
       : lista.map(a => `
           <li>
             <span class="feed-dot"></span>
             <div>
-              <strong>${esc(a.accion || '')}</strong>${a.descripcion ? ' — ' + esc(a.descripcion) : ''}
-              <br><small style="color:#aaa">${esc(a.nombreUsuario ?? 'Sistema')} · ${esc(a.modulo ?? '')}</small>
+              <strong>${a.accion}</strong>${a.descripcion ? ' — ' + a.descripcion : ''}
+              <br><small style="color:#aaa">${a.nombreUsuario ?? 'Sistema'} · ${a.modulo ?? ''}</small>
             </div>
             <span class="feed-fecha">${_formatearFecha(a.fecha)}</span>
           </li>`).join('');
 
-    ids.forEach(id => {
-      const el = document.getElementById(id);
-      if (el) el.innerHTML = html;
-    });
+    const preview = document.getElementById('logs-preview');
+    const full    = document.getElementById('logs-full');
+    if (preview) preview.innerHTML = htmlPreview;
+    if (full)    full.innerHTML    = htmlFull;
+
   } catch (e) {
     console.error('HU14 cargarActividad:', e);
   }

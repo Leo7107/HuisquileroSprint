@@ -1345,4 +1345,41 @@ select.rol-select {
 .btn-refresh:hover {
   background: var(--teal, #2a6b5e);
   color: #fff;
+
+.panels-row {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 20px;
+  animation: fadeUp 0.6s ease 0.2s both;
+  align-items: start;
+}
+
+/* Feed actividad */
+.feed-actividad {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+#panelInventarioCritico {
+  margin-top: 0 !important;
+}
+/* Fix espacio blanco HU14 */
+.acciones-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  align-content: start;
+}
+
+#sec-inicio .panel {
+  height: auto !important;
+  min-height: unset !important;
+}
+
+#sec-inicio .panels-row {
+  align-items: start !important;
+}
 }
