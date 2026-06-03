@@ -144,45 +144,47 @@ function badgeEstado(estado) {
 }
 
 // ─── Fila de cita reutilizable ────────────────────────────────────────────────
-function filaCita(c, compact = false) {
-  _mapCitasPac.set(c.idCita, c);
-  const esCancelable    = ['PENDIENTE','CONFIRMADA'].includes(c.estado);
-  const esReprogramable = esCancelable;
-  const fechaStr = c.fecha ? c.fecha.split('T')[0] : '—';
-  const horaStr  = c.hora  ? c.hora.substring(0,5)  : '—';
-  const doctor   = c.NombreDoctor
-    ? `${esc(c.NombreDoctor)} ${esc(c.ApellidosDoctor)}`
-    : `#${c.idDoctor}`;
+/* ============================================================
+   PATCH: filaCita con data-label + otras tablas con data-label
+   Reemplaza las funciones indicadas en dashboard-paciente.js
+   ============================================================ */
 
-  const acciones = `
-    <div class="action-icons">
-      <button class="icon-btn icon-btn--edit" title="Ver detalle"
-        onclick="verDetalleCita(${c.idCita})">🔍</button>
-      ${esReprogramable ? `<button class="icon-btn icon-btn--toggle" title="Reprogramar"
-        onclick="abrirReprogramar(${c.idCita})">📅</button>` : ''}
-      ${esCancelable ? `<button class="icon-btn icon-btn--cancel" title="Cancelar cita"
-        onclick="abrirCancelar(${c.idCita}, '${fechaStr}', '${horaStr}')">✕</button>` : ''}
-    </div>`;
+// ── filaCita ──────────────────────────────────────────────
+function filaCita(c, compact) {
+  _mapCitasPac.set(c.idCita, c);
+  var esCancelable    = ['PENDIENTE','CONFIRMADA'].includes(c.estado);
+  var esReprogramable = esCancelable;
+  var fechaStr = c.fecha ? c.fecha.split('T')[0] : '—';
+  var horaStr  = c.hora  ? c.hora.substring(0,5) : '—';
+  var doctor   = c.NombreDoctor
+    ? esc(c.NombreDoctor) + ' ' + esc(c.ApellidosDoctor)
+    : '#' + c.idDoctor;
+
+  var acciones = '<div class="action-icons">'
+    + '<button class="icon-btn icon-btn--edit" title="Ver detalle" onclick="verDetalleCita(' + c.idCita + ')">🔍</button>'
+    + (esReprogramable ? '<button class="icon-btn icon-btn--toggle" title="Reprogramar" onclick="abrirReprogramar(' + c.idCita + ')">📅</button>' : '')
+    + (esCancelable    ? '<button class="icon-btn icon-btn--cancel" title="Cancelar cita" onclick="abrirCancelar(' + c.idCita + ', \'' + fechaStr + '\', \'' + horaStr + '\')">✕</button>' : '')
+    + '</div>';
 
   if (compact) {
-    return `<tr>
-      <td>${fechaStr}</td>
-      <td>${horaStr}</td>
-      <td>${doctor}</td>
-      <td>${badgeEstado(c.estado)}</td>
-      <td>${acciones}</td>
-    </tr>`;
+    return '<tr>'
+      + '<td data-label="Fecha">'   + fechaStr + '</td>'
+      + '<td data-label="Hora">'    + horaStr  + '</td>'
+      + '<td data-label="Doctor">'  + doctor   + '</td>'
+      + '<td data-label="Estado">'  + badgeEstado(c.estado) + '</td>'
+      + '<td data-label="Acciones">' + acciones + '</td>'
+      + '</tr>';
   }
 
-  return `<tr>
-    <td>#${c.idCita}</td>
-    <td>${fechaStr}</td>
-    <td>${horaStr}</td>
-    <td>${doctor}</td>
-    <td>${esc(c.motivo || '—')}</td>
-    <td>${badgeEstado(c.estado)}</td>
-    <td>${acciones}</td>
-  </tr>`;
+  return '<tr>'
+    + '<td data-label="ID">#'       + c.idCita + '</td>'
+    + '<td data-label="Fecha">'     + fechaStr + '</td>'
+    + '<td data-label="Hora">'      + horaStr  + '</td>'
+    + '<td data-label="Doctor">'    + doctor   + '</td>'
+    + '<td data-label="Motivo">'    + esc(c.motivo || '—') + '</td>'
+    + '<td data-label="Estado">'    + badgeEstado(c.estado) + '</td>'
+    + '<td data-label="Acciones">'  + acciones + '</td>'
+    + '</tr>';
 }
 
 // ─── Cargar tabla Mis Citas ───────────────────────────────────────────────────
