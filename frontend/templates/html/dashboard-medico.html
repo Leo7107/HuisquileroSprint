@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>MedySync – Médico</title>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,400,0,0" />
+
   <link rel="stylesheet" href="/css/dashboard.css"/>
   <style>
     .autocomplete-wrap { position: relative; }
@@ -83,18 +85,18 @@
 
   <aside class="sidebar">
     <div class="sidebar__brand">
-      <span class="brand-icon">✦</span>
+      <span class="brand-icon material-symbols-outlined icon-inline">medical_services</span>
       <span class="brand-name">MedySync</span>
     </div>
     <div class="sidebar__rol sidebar__rol--medico">Médico</div>
     <nav class="sidebar__nav">
-      <a href="#" class="nav-item active" onclick="nav('inicio',this);return false;"><span class="nav-icon">⊞</span> Mi Panel</a>
-      <a href="#" class="nav-item" onclick="nav('citas',this);return false;"><span class="nav-icon">📅</span> Mis Citas</a>
-      <a href="#" class="nav-item" onclick="nav('expediente',this);return false;"><span class="nav-icon">📋</span> Expedientes</a>
-      <a href="#" class="nav-item" onclick="nav('horario',this);return false;"><span class="nav-icon">🕐</span> Mi Horario</a>
-      <a href="#" class="nav-item" onclick="nav('reportes',this);return false;"><span class="nav-icon">📊</span> Mis Reportes</a>
+      <a href="#" class="nav-item active" onclick="nav('inicio',this);return false;"><span class="nav-icon material-symbols-outlined icon-inline">dashboard</span> Mi Panel</a>
+      <a href="#" class="nav-item" onclick="nav('citas',this);return false;"><span class="nav-icon material-symbols-outlined icon-inline">calendar_today</span> Mis Citas</a>
+      <a href="#" class="nav-item" onclick="nav('expediente',this);return false;"><span class="nav-icon material-symbols-outlined icon-inline">article</span> Expedientes</a>
+      <a href="#" class="nav-item" onclick="nav('horario',this);return false;"><span class="nav-icon material-symbols-outlined icon-inline">schedule</span> Mi Horario</a>
+      <a href="#" class="nav-item" onclick="nav('reportes',this);return false;"><span class="nav-icon material-symbols-outlined icon-inline">bar_chart</span> Mis Reportes</a>
     </nav>
-    <button class="sidebar__logout" onclick="cerrarSesion()"><span>⏻</span> Cerrar sesión</button>
+    <button class="sidebar__logout" onclick="cerrarSesion()"><span class="material-symbols-outlined icon-inline">power_settings_new</span> Cerrar sesión</button>
   </aside>
 
   <main class="main">
@@ -117,15 +119,15 @@
     <div id="sec-inicio">
       <section class="stats-grid">
         <div class="stat-card stat-card--teal">
-          <div class="stat-icon">📅</div>
+          <div class="stat-icon material-symbols-outlined icon-inline">calendar_today</div>
           <div class="stat-info"><div class="stat-num" id="s-citas">—</div><div class="stat-label">Citas de Hoy</div></div>
         </div>
         <div class="stat-card stat-card--gold">
-          <div class="stat-icon">👤</div>
+          <div class="stat-icon material-symbols-outlined icon-inline">person</div>
           <div class="stat-info"><div class="stat-num" id="s-pacientes">—</div><div class="stat-label">Pacientes Activos</div></div>
         </div>
         <div class="stat-card stat-card--soft">
-          <div class="stat-icon">🩺</div>
+          <div class="stat-icon material-symbols-outlined icon-inline">medical_services</div>
           <div class="stat-info"><div class="stat-num" id="s-consultas">—</div><div class="stat-label">Consultas del Mes</div></div>
         </div>
         <div class="stat-card stat-card--dark">
@@ -149,10 +151,10 @@
         <div class="panel">
           <div class="panel__header"><h2>Acciones Rápidas</h2></div>
           <div class="acciones-grid">
-            <button class="accion-btn" onclick="nav('citas',this)"><span>📅</span><span>Mis Citas</span></button>
-            <button class="accion-btn" onclick="nav('expediente',this)"><span>📋</span><span>Expedientes</span></button>
-            <button class="accion-btn" onclick="nav('horario',this)"><span>🕐</span><span>Mi Horario</span></button>
-            <button class="accion-btn" onclick="nav('reportes',this)"><span>📊</span><span>Mis Reportes</span></button>
+            <button class="accion-btn" onclick="nav('citas',this)"><span class="material-symbols-outlined icon-inline">calendar_today</span><span>Mis Citas</span></button>
+            <button class="accion-btn" onclick="nav('expediente',this)"><span class="material-symbols-outlined icon-inline">article</span><span>Expedientes</span></button>
+            <button class="accion-btn" onclick="nav('horario',this)"><span class="material-symbols-outlined icon-inline">schedule</span><span>Mi Horario</span></button>
+            <button class="accion-btn" onclick="nav('reportes',this)"><span class="material-symbols-outlined icon-inline">bar_chart</span><span>Mis Reportes</span></button>
           </div>
         </div>
       </div>
@@ -197,10 +199,10 @@
           <!-- Cabecera del panel -->
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;padding-bottom:16px;border-bottom:1.5px solid var(--border);">
             <div>
-              <h2 style="margin:0;font-size:1.05rem;color:var(--deep);">🩺 Atención Clínica</h2>
+              <h2 style="margin:0;font-size:1.05rem;color:var(--deep);"> <span class="material-symbols-outlined icon-inline">medical_services</span> Atención Clínica</h2>
               <div id="atencion-paciente-info" style="font-size:13px;color:var(--teal);font-weight:600;margin-top:4px;"></div>
             </div>
-            <button onclick="cerrarPanelAtencion()" style="padding:8px 16px;border:1.5px solid var(--border);border-radius:10px;background:transparent;color:var(--text-soft);font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif;">✕ Cerrar</button>
+            <button onclick="cerrarPanelAtencion()" style="padding:8px 16px;border:1.5px solid var(--border);border-radius:10px;background:transparent;color:var(--text-soft);font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif;"> <span class="material-symbols-outlined icon-inline">close</span> Cerrar</button>
           </div>
 
           <!-- Accordion 1: Consulta -->
@@ -215,7 +217,7 @@
             </div>
             <div id="acc-body-consulta" class="atencion-bloque__body">
               <div class="preconsulta-card" id="bloque-preconsulta" style="display:none;margin-bottom:16px;">
-                <div class="preconsulta-card__header"><span>📋</span><h4>Preconsulta registrada por Recepcionista
+                <div class="preconsulta-card__header"><span class="material-symbols-outlined icon-inline">article</span><h4>Preconsulta registrada por Recepcionista
                 </h4></div>
                 <div class="preconsulta-grid" id="preconsulta-datos"></div>
               </div>
@@ -332,7 +334,7 @@
               font-family:'DM Sans',sans-serif;cursor:pointer;
               box-shadow:0 4px 14px rgba(42,107,94,0.3);
               transition:opacity .2s;">
-            ✅ Finalizar Cita
+            <span class="material-symbols-outlined icon-inline">check_circle</span> Finalizar Cita
           </button>
         </div>
 
@@ -345,7 +347,7 @@
       <div class="panel">
         <div class="panel__header"><h2>Buscar Expediente</h2></div>
         <div style="display:flex;align-items:center;gap:10px;background:var(--cream);border:1.5px solid var(--border);border-radius:14px;padding:12px 18px;margin-bottom:16px;">
-          <span style="color:var(--text-soft);font-size:16px;">🔍</span>
+          <span class="material-symbols-outlined icon-inline">search</span>
           <input type="text" id="q-expediente" placeholder="Buscar por nombre, expediente o ID..." oninput="buscarExpediente()" style="border:none;background:transparent;flex:1;font-size:14px;color:var(--text);font-family:'DM Sans',sans-serif;"/>
         </div>
         <div id="resultados-expediente">
@@ -404,7 +406,7 @@
       <div class="panel" style="margin-bottom:20px;">
         <div class="panel__header" style="margin-bottom:14px;">
           <h2>Período del reporte</h2>
-          <button class="header-btn" onclick="repMedicoGenerar()">🔍 Generar</button>
+          <button class="header-btn" onclick="repMedicoGenerar()"> <span class="material-symbols-outlined icon-inline">search</span> Generar</button>
         </div>
         <div class="rep-filtros-grid">
           <div class="form-group">
@@ -421,14 +423,14 @@
       <!-- KPI cards -->
       <section class="stats-grid" style="margin-bottom:20px;">
         <div class="stat-card stat-card--teal">
-          <div class="stat-icon">🩺</div>
+          <div class="stat-icon material-symbols-outlined icon-inline">medical_services</div>
           <div class="stat-info">
             <div class="stat-num" id="repm-kpi-consultas">—</div>
             <div class="stat-label">Consultas realizadas</div>
           </div>
         </div>
         <div class="stat-card stat-card--gold">
-          <div class="stat-icon">👤</div>
+          <div class="stat-icon material-symbols-outlined icon-inline">person</div>
           <div class="stat-info">
             <div class="stat-num" id="repm-kpi-pacientes">—</div>
             <div class="stat-label">Pacientes atendidos</div>
@@ -499,15 +501,15 @@
 <div class="modal-overlay" id="modal-historial-paciente">
   <div class="modal" style="max-width:680px;">
     <div class="modal__header">
-      <h3>📋 Historial del Paciente</h3>
-      <button class="modal__close" onclick="cerrarModalHistorial()">✕</button>
+      <h3> <span class="material-symbols-outlined icon-inline">article</span> Historial del Paciente</h3>
+      <button class="modal__close" onclick="cerrarModalHistorial()"> <span class="material-symbols-outlined icon-inline">close</span></button>
     </div>
     <div id="modal-historial-contenido">
       <p style="text-align:center;color:var(--text-soft);padding:30px;">Cargando...</p>
     </div>
     <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px;padding-top:16px;border-top:1px solid var(--border);">
       <button class="btn-cancelar" onclick="cerrarModalHistorial()">Cerrar</button>
-      <button class="btn-primary" id="btn-atender-modal">🩺 Atender</button>
+      <button class="btn-primary" id="btn-atender-modal"> <span class="material-symbols-outlined icon-inline">medical_services</span> Atender</button>
     </div>
   </div>
 </div>

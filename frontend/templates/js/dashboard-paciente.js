@@ -161,9 +161,9 @@ function filaCita(c, compact) {
     : '#' + c.idDoctor;
 
   var acciones = '<div class="action-icons">'
-    + '<button class="icon-btn icon-btn--edit" title="Ver detalle" onclick="verDetalleCita(' + c.idCita + ')">🔍</button>'
-    + (esReprogramable ? '<button class="icon-btn icon-btn--toggle" title="Reprogramar" onclick="abrirReprogramar(' + c.idCita + ')">📅</button>' : '')
-    + (esCancelable    ? '<button class="icon-btn icon-btn--cancel" title="Cancelar cita" onclick="abrirCancelar(' + c.idCita + ', \'' + fechaStr + '\', \'' + horaStr + '\')">✕</button>' : '')
+    + '<button class="icon-btn icon-btn--edit" title="Ver detalle" onclick="verDetalleCita(' + c.idCita + ')"><span class="material-symbols-outlined">search</span></button>'
+    + (esReprogramable ? '<button class="icon-btn icon-btn--toggle" title="Reprogramar" onclick="abrirReprogramar(' + c.idCita + ')"><span class="material-symbols-outlined">calendar_today</span></button>' : '')
+    + (esCancelable    ? '<button class="icon-btn icon-btn--cancel" title="Cancelar cita" onclick="abrirCancelar(' + c.idCita + ', \'' + fechaStr + '\', \'' + horaStr + '\')"><span class="material-symbols-outlined">close</span></button>' : '')
     + '</div>';
 
   if (compact) {
@@ -278,10 +278,10 @@ async function confirmarCancelacion() {
     const data = await res.json();
 
     if (res.status === 409 || data.error) {
-      toast('⚠️ ' + data.error, 'warning');
+      toast('' + data.error, 'warning');
     } else {
       cerrarModal('modal-cancelar');
-      toast('✅ Cita cancelada correctamente');
+      toast('Cita cancelada correctamente');
       cargarCitas();
       cargarEstadisticas();
     }
@@ -310,7 +310,7 @@ function abrirModalCita() {
   document.getElementById('motivo-wrap').style.display            = 'none';
   document.getElementById('btn-guardar-cita').style.display       = 'none';
   document.getElementById('btn-buscar-medicos').disabled          = true;
-  document.getElementById('btn-buscar-medicos').textContent       = '🔍 Ver médicos disponibles para esa fecha y hora';
+  document.getElementById('btn-buscar-medicos').textContent       = 'Ver médicos disponibles para esa fecha y hora';
 
   document.getElementById('modal-cita').classList.add('active');
 }
@@ -370,7 +370,7 @@ async function buscarMedicosDisponibles() {
 
   const btn = document.getElementById('btn-buscar-medicos');
   btn.disabled    = true;
-  btn.textContent = '⏳ Buscando...';
+  btn.innerHTML = '<span class="material-symbols-outlined icon-inline">hourglass_empty</span> Buscando...';
   document.getElementById('cita-doctor').value             = '';
   document.getElementById('horario-info').style.display    = 'none';
   document.getElementById('motivo-wrap').style.display     = 'none';
@@ -385,7 +385,7 @@ async function buscarMedicosDisponibles() {
     if (lista.length === 0) {
       listaEl.innerHTML = `
         <div class="medicos-sin-resultado">
-          😔 No hay médicos disponibles el <strong>${fecha}</strong> a las <strong>${hora}</strong>.<br>
+          <span class="material-symbols-outlined" style="font-size:18px;vertical-align:middle;">info</span> No hay médicos disponibles el <strong>${fecha}</strong> a las <strong>${hora}</strong>.<br>
           Prueba con otra fecha u hora.
         </div>`;
     } else {
@@ -413,7 +413,7 @@ async function buscarMedicosDisponibles() {
     toast('Error al buscar médicos disponibles. Intenta de nuevo.', 'error');
   } finally {
     btn.disabled    = false;
-    btn.textContent = '🔍 Ver médicos disponibles para esa fecha y hora';
+    btn.textContent = 'Ver médicos disponibles para esa fecha y hora';
   }
 }
 
@@ -471,9 +471,9 @@ async function reprogramarCita() {
     const data = await res.json();
 
     if (res.status === 409 || data.error) {
-      toast('⚠️ ' + data.error, 'warning');
+      toast('' + data.error, 'warning');
     } else {
-      toast('✅ Cita reprogramada correctamente. Estado: Pendiente de confirmación.');
+      toast('Cita reprogramada correctamente. Estado: Pendiente de confirmación.');
       cerrarModalCita();
       cargarCitas();
       cargarEstadisticas();
@@ -502,10 +502,10 @@ async function solicitarCita() {
     const res  = await fetch('/api/citas', { method: 'POST', headers: H, body: JSON.stringify(payload) });
     const data = await res.json();
 
-    if (res.status === 409) { toast('⚠️ ' + data.error, 'warning'); return; }
+    if (res.status === 409) { toast('' + data.error, 'warning'); return; }
 
     if (data.id || data.message) {
-      toast('✅ Cita solicitada. Estado: Pendiente de confirmación.');
+      toast('Cita solicitada. Estado: Pendiente de confirmación.');
       cerrarModalCita();
       cargarCitas();
       cargarEstadisticas();
@@ -563,7 +563,7 @@ async function cargarRecetas() {
             <td>${esc(r.indicaciones || '—')}</td>
             <td>
               <button class="btn-pdf" onclick="descargarReceta(${r.idReceta})">
-                ⬇ PDF
+                <span class="material-symbols-outlined" style="vertical-align:middle;">download</span> PDF
               </button>
             </td>
           </tr>`).join('')
@@ -592,7 +592,7 @@ async function cargarDocumentos() {
             <td>${esc(r.duracion    || '—')}</td>
             <td>
               <button class="btn-pdf" onclick="descargarReceta(${r.idReceta})">
-                ⬇ Descargar PDF
+                <span class="material-symbols-outlined" style="vertical-align:middle;">download</span> Descargar PDF
               </button>
             </td>
           </tr>`).join('')
@@ -606,7 +606,7 @@ async function cargarDocumentos() {
 // ─── DESCARGAS PDF ────────────────────────────────────────────────────────────
 async function descargarPDF(url, nombreArchivo) {
   try {
-    toast('⏳ Generando PDF...', 'success');
+    toast('Generando PDF...', 'success');
     const res = await fetch(url, { headers: H });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
@@ -622,7 +622,7 @@ async function descargarPDF(url, nombreArchivo) {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(blobUrl);
-    toast('✅ PDF descargado correctamente');
+    toast('PDF descargado correctamente');
   } catch {
     toast('Error de conexión al generar PDF', 'error');
   }
@@ -704,7 +704,7 @@ async function guardarPerfil() {
     });
     const data = await res.json();
     if (data.message) {
-      toast('✅ Perfil actualizado correctamente');
+      toast('Perfil actualizado correctamente');
       cargarPerfil();
     } else {
       toast('Error: ' + (data.error?.sqlMessage || data.error || 'No se pudo actualizar'), 'error');

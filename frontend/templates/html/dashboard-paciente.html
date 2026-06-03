@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>MedySync – Paciente</title>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,400,0,0" />
+
   <link rel="stylesheet" href="/css/dashboard.css"/>
   <style>
     /* ── Overrides y estilos HU11 ─────────────────────────────── */
@@ -206,19 +208,19 @@
 
   <aside class="sidebar">
     <div class="sidebar__brand">
-      <span class="brand-icon">✦</span>
+      <span class="brand-icon material-symbols-outlined icon-inline">medical_services</span>
       <span class="brand-name">MedySync</span>
     </div>
     <div class="sidebar__rol sidebar__rol--paciente">Paciente</div>
     <nav class="sidebar__nav">
-      <a href="#" class="nav-item active"  onclick="nav('inicio',this);return false;"><span class="nav-icon">⊞</span> Mi Panel</a>
-      <a href="#" class="nav-item"         onclick="nav('citas',this);return false;"><span class="nav-icon">📅</span> Mis Citas</a>
-      <a href="#" class="nav-item"         onclick="nav('consultas',this);return false;"><span class="nav-icon">🩺</span> Mis Consultas</a>
-      <a href="#" class="nav-item"         onclick="nav('recetas',this);return false;"><span class="nav-icon">💊</span> Mis Recetas</a>
-      <a href="#" class="nav-item"         onclick="nav('documentos',this);return false;"><span class="nav-icon">📄</span> Mis Documentos</a>
-      <a href="#" class="nav-item"         onclick="nav('perfil',this);return false;"><span class="nav-icon">👤</span> Mi Perfil</a>
+      <a href="#" class="nav-item active"  onclick="nav('inicio',this);return false;"><span class="nav-icon material-symbols-outlined icon-inline">dashboard</span> Mi Panel</a>
+      <a href="#" class="nav-item"         onclick="nav('citas',this);return false;"><span class="nav-icon material-symbols-outlined icon-inline">calendar_today</span> Mis Citas</a>
+      <a href="#" class="nav-item"         onclick="nav('consultas',this);return false;"><span class="nav-icon material-symbols-outlined icon-inline">medical_services</span> Mis Consultas</a>
+      <a href="#" class="nav-item"         onclick="nav('recetas',this);return false;"><span class="nav-icon material-symbols-outlined icon-inline">medication</span> Mis Recetas</a>
+      <a href="#" class="nav-item"         onclick="nav('documentos',this);return false;"><span class="nav-icon material-symbols-outlined icon-inline">description</span> Mis Documentos</a>
+      <a href="#" class="nav-item"         onclick="nav('perfil',this);return false;"><span class="nav-icon material-symbols-outlined icon-inline">person</span> Mi Perfil</a>
     </nav>
-    <button class="sidebar__logout" onclick="cerrarSesion()"><span>⏻</span> Cerrar sesión</button>
+    <button class="sidebar__logout" onclick="cerrarSesion()"><span class="material-symbols-outlined icon-inline">power_settings_new</span> Cerrar sesión</button>
   </aside>
 
   <main class="main">
@@ -241,21 +243,21 @@
     <div id="sec-inicio">
       <section class="stats-grid">
         <div class="stat-card stat-card--teal">
-          <div class="stat-icon">📅</div>
+          <div class="stat-icon material-symbols-outlined icon-inline">calendar_today</div>
           <div class="stat-info">
             <div class="stat-num" id="stat-proximas">—</div>
             <div class="stat-label">Citas Activas</div>
           </div>
         </div>
         <div class="stat-card stat-card--gold">
-          <div class="stat-icon">🩺</div>
+          <div class="stat-icon material-symbols-outlined icon-inline">medical_services</div>
           <div class="stat-info">
             <div class="stat-num" id="stat-consultas">—</div>
             <div class="stat-label">Consultas Previas</div>
           </div>
         </div>
         <div class="stat-card stat-card--soft">
-          <div class="stat-icon">💊</div>
+          <div class="stat-icon material-symbols-outlined icon-inline">medication</div>
           <div class="stat-info">
             <div class="stat-num" id="stat-recetas">—</div>
             <div class="stat-label">Recetas Emitidas</div>
@@ -278,10 +280,10 @@
         <div class="panel">
           <div class="panel__header"><h2>Acciones Rápidas</h2></div>
           <div class="acciones-grid">
-            <button class="accion-btn" onclick="abrirModalCita()"><span>📅</span><span>Nueva Cita</span></button>
-            <button class="accion-btn" onclick="nav('citas',this)"><span>📋</span><span>Mis Citas</span></button>
-            <button class="accion-btn" onclick="nav('documentos',this)"><span>📄</span><span>Documentos</span></button>
-            <button class="accion-btn" onclick="nav('recetas',this)"><span>💊</span><span>Mis Recetas</span></button>
+            <button class="accion-btn" onclick="abrirModalCita()"><span class="material-symbols-outlined icon-inline">calendar_today</span><span>Nueva Cita</span></button>
+            <button class="accion-btn" onclick="nav('citas',this)"><span class="material-symbols-outlined icon-inline">article</span><span>Mis Citas</span></button>
+            <button class="accion-btn" onclick="nav('documentos',this)"><span class="material-symbols-outlined icon-inline">description</span><span>Documentos</span></button>
+            <button class="accion-btn" onclick="nav('recetas',this)"><span class="material-symbols-outlined icon-inline">medication</span><span>Mis Recetas</span></button>
           </div>
         </div>
       </div>
@@ -350,7 +352,7 @@
         </p>
         <div class="docs-grid">
           <div class="doc-card" onclick="descargarHistorial()">
-            <span>📋</span>
+            <span class="material-symbols-outlined icon-inline">article</span>
             <span>Historial Clínico Completo</span>
             <span class="doc-card__badge">PDF · Completo</span>
           </div>
@@ -460,7 +462,7 @@
     <div id="buscar-medicos-wrap">
       <button type="button" class="btn-buscar-medicos" id="btn-buscar-medicos"
         onclick="buscarMedicosDisponibles()" disabled>
-        🔍 Ver médicos disponibles para esa fecha y hora
+        <span class="material-symbols-outlined icon-inline">search</span> Ver médicos disponibles para esa fecha y hora
       </button>
       <div id="medicos-disponibles-wrap" style="display:none">
         <div id="medicos-lista"></div>
@@ -472,7 +474,7 @@
 
     <!-- Solo para reprogramar: info del doctor fijo -->
     <div class="horario-info" id="horario-info">
-      🩺 <span id="horario-texto"></span>
+      <span class="material-symbols-outlined icon-inline">medical_services</span> <span id="horario-texto"></span>
     </div>
 
     <input type="hidden" id="cita-doctor"/>

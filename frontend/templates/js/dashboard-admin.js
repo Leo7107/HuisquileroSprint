@@ -122,8 +122,8 @@ function renderUsuarios(lista) {
       <td><span class="badge badge--${u.Estado === 'ACTIVO' ? 'activo' : 'inactivo'}">${u.Estado || '—'}</span></td>
       <td>
         <div class="action-icons">
-          <button class="icon-btn icon-btn--edit" title="Editar" onclick="abrirModalEditar(${u.idUsuario})">✏️</button>
-          <button class="icon-btn icon-btn--del"  title="Eliminar" onclick="eliminarUsuario(${u.idUsuario})">🗑</button>
+          <button class="icon-btn icon-btn--edit" title="Editar" onclick="abrirModalEditar(${u.idUsuario})"><span class="material-symbols-outlined">edit</span></button>
+          <button class="icon-btn icon-btn--del"  title="Eliminar" onclick="eliminarUsuario(${u.idUsuario})"><span class="material-symbols-outlined">delete</span></button>
         </div>
       </td>
     </tr>`).join('');
@@ -271,13 +271,13 @@ const logsEjemplo = [
   { tipo:'acceso',   texto:'Inicio de sesión',          sub:'admin@medisync.sv',             tiempo:'Hace 2 h'    },
   { tipo:'crear',    texto:'Médico registrado',         sub:'Dra. Sofía Ramos · Pediatría',  tiempo:'Hace 3 h'    },
 ];
-const iconoLog = { crear:'➕', editar:'✏️', eliminar:'🗑', acceso:'🔑' };
+const iconoLog = { crear: iconHtml('add', 'log-icon-symbol'), editar: iconHtml('edit', 'log-icon-symbol'), eliminar: iconHtml('delete', 'log-icon-symbol'), acceso: iconHtml('vpn_key', 'log-icon-symbol') };
 
 function renderLogs(contenedor, lista) {
   if (!contenedor) return;
   contenedor.innerHTML = lista.map(l => `
     <div class="log-item">
-      <div class="log-icon log-icon--${l.tipo}">${iconoLog[l.tipo] || '📋'}</div>
+      <div class="log-icon log-icon--${l.tipo}">${iconoLog[l.tipo] || iconHtml('article', 'log-icon-symbol')}</div>
       <div class="log-body">
         <strong>${l.texto}</strong>
         <span>${l.sub}</span>
@@ -315,7 +315,7 @@ function renderMedicos(lista) {
   document.getElementById('tbody-medicos').innerHTML = lista.map(d => {
     const esActivo = d.Estado === 'ACTIVO';
     const horario = (d.hora_inicio && d.hora_fin)
-      ? `<span class="horario-chip">🕐 ${d.hora_inicio.substring(0,5)} – ${d.hora_fin.substring(0,5)}</span>`
+      ? `<span class="horario-chip"><span class="material-symbols-outlined">schedule</span> ${d.hora_inicio.substring(0,5)} – ${d.hora_fin.substring(0,5)}</span>`
       : (d.Horario || '<span style="color:var(--text-soft);font-size:12px;">Sin horario</span>');
     return `
       <tr>
@@ -328,11 +328,11 @@ function renderMedicos(lista) {
         <td>
           <div class="action-icons">
             <button class="icon-btn icon-btn--edit" title="Editar"
-              onclick="abrirModalEditarMedico(${d.idDoctor})">✏️</button>
+              onclick="abrirModalEditarMedico(${d.idDoctor})"><span class="material-symbols-outlined">edit</span></button>
             <button class="icon-btn icon-btn--toggle"
               title="${esActivo ? 'Desactivar' : 'Activar'}"
               onclick="toggleMedico(${d.idDoctor}, ${esActivo})">
-              ${esActivo ? '🔴' : '🟢'}
+              ${esActivo ? iconHtml('toggle_off') : iconHtml('toggle_on')}
             </button>
           </div>
         </td>
@@ -427,7 +427,7 @@ async function guardarMedico() {
   const res    = await fetch(url, { method, headers: H, body: JSON.stringify(payload) });
   const data   = await res.json();
 
-  if (res.status === 409) { toast('⚠️ ' + data.error, 'warn'); return; }
+  if (res.status === 409) { toast('' + data.error, 'warn'); return; }
   if (data.message || data.id) {
     cerrarModalMedico();
     cargarMedicos();
@@ -547,12 +547,12 @@ function renderTablaInventario(lista) {
             <td>
               <div class="action-icons">
                 <button class="icon-btn icon-btn--edit" title="Editar"
-                  onclick="abrirModalEditarMed(${m.idMedicamento})">✏️</button>
+                  onclick="abrirModalEditarMed(${m.idMedicamento})"><span class="material-symbols-outlined">edit</span></button>
                 <button class="icon-btn"
                   style="background:${esActivo ? 'rgba(200,50,50,0.15)' : 'rgba(42,107,94,0.15)'};"
                   title="${esActivo ? 'Desactivar' : 'Activar'}"
                   onclick="toggleMedicamento(${m.idMedicamento}, '${esActivo ? 'INACTIVO' : 'ACTIVO'}')">
-                  ${esActivo ? '🟢' : '🔴'}
+                  ${esActivo ? iconHtml('toggle_on') : iconHtml('toggle_off')}
                 </button>
               </div>
             </td>
@@ -572,7 +572,7 @@ async function cargarAlertasStock() {
       cont.innerHTML = `
         <div style="background:rgba(200,50,50,0.07);border:1.5px solid rgba(200,50,50,0.2);border-radius:14px;padding:16px 20px;margin-bottom:16px;">
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
-            <span style="font-size:18px;">⚠️</span>
+            <span class="material-symbols-outlined" style="font-size:18px;">warning</span>
             <strong style="color:#c03030;font-size:13.5px;">Stock bajo en ${data.length} medicamento(s)</strong>
           </div>
           <div style="display:flex;flex-wrap:wrap;gap:8px;">
@@ -880,7 +880,7 @@ function _repRenderInv(lista) {
     cuerpo.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-soft);padding:20px;">Sin datos</td></tr>';
     return;
   }
-  const estadoChip = { agotado: '🔴 Agotado', alerta: '🟡 Alerta', normal: '✅ OK' };
+  const estadoChip = { agotado: 'Agotado', alerta: 'Alerta', normal: 'OK' };
   const estadoClass= { agotado: 'stock-agotado', alerta: 'stock-critico', normal: '' };
   cuerpo.innerHTML = lista.map(m => `
     <tr>
@@ -925,7 +925,7 @@ async function cargarResumen() {
 
     if (el('metCitasSub')) {
       el('metCitasSub').innerHTML =
-        `✅ ${data.citasCompletadas ?? 0} completadas &nbsp;❌ ${data.citasCanceladas ?? 0} canceladas`;
+        `${data.citasCompletadas ?? 0} completadas &nbsp;${data.citasCanceladas ?? 0} canceladas`;
     }
 
     if ((data.alertasInventario ?? 0) > 0) {
@@ -951,11 +951,11 @@ async function cargarInventarioCritico() {
     }
 
     const html = lista.length === 0
-      ? `<tr><td colspan="5" style="text-align:center;color:var(--text-soft);padding:20px;">✅ Sin alertas de inventario</td></tr>`
+      ? `<tr><td colspan="5" style="text-align:center;color:var(--text-soft);padding:20px;">Sin alertas de inventario</td></tr>`
       : lista.map(m => {
           const agotado = m.stock_actual === 0;
           const clase   = agotado ? 'stock-agotado' : 'stock-critico';
-          const estado  = agotado ? '🔴 Agotado' : '🟡 Crítico';
+          const estado  = agotado ? 'Agotado' : 'Crítico';
           return `<tr>
             <td>${esc(m.nombre || '')}</td>
             <td class="${clase}">${m.stock_actual}</td>

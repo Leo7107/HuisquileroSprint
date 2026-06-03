@@ -120,7 +120,7 @@ async function cargarStats() {
               <td>${doctor}</td>
               <td>
                 <span class="badge badge--${['CONFIRMADA','FINALIZADA'].includes(c.estado) ? 'activo' : 'pendiente'}">${c.estado}</span>
-                ${tienePre ? '<span style="font-size:10px;color:var(--teal);margin-left:4px;">📋</span>' : ''}
+                ${tienePre ? '<span class="material-symbols-outlined icon-inline" style="font-size:10px;color:var(--teal);margin-left:4px;">article</span>' : ''}
               </td>
             </tr>`;
         }).join('')
@@ -175,8 +175,8 @@ function renderCitas(lista) {
         <td>
           <div class="action-icons">
             ${confirmable ? `<button class="icon-btn icon-btn--confirm" title="Confirmar cita" onclick="confirmarCita(${c.idCita})">✔</button>` : ''}
-            <button class="icon-btn icon-btn--edit"   title="Editar"   onclick="abrirModalEditarCita(${c.idCita})">✏️</button>
-            <button class="icon-btn icon-btn--cancel" title="Cancelar" onclick="cancelarCita(${c.idCita})">✕</button>
+            <button class="icon-btn icon-btn--edit"   title="Editar"   onclick="abrirModalEditarCita(${c.idCita})"><span class="material-symbols-outlined">edit</span></button>
+            <button class="icon-btn icon-btn--cancel" title="Cancelar" onclick="cancelarCita(${c.idCita})"><span class="material-symbols-outlined">close</span></button>
           </div>
         </td>
       </tr>`;
@@ -194,7 +194,7 @@ function setTabCitas(estado, btn) {
 async function confirmarCita(id) {
   if (!confirm('¿Confirmar esta cita?')) return;
   const res = await fetch(`/api/citas/${id}`, { method:'PUT', headers:H, body:JSON.stringify({ estado:'CONFIRMADA' }) });
-  if (res.ok) { toast('✅ Cita confirmada'); cargarCitas(); }
+  if (res.ok) { toast('Cita confirmada'); cargarCitas(); }
   else toast('Error al confirmar la cita', 'error');
 }
 
@@ -261,7 +261,7 @@ async function guardarCita() {
   const res    = await fetch(url, { method, headers:H, body:JSON.stringify(payload) });
   const data   = await res.json();
 
-  if (res.status === 409) { toast('⚠️ ' + data.error, 'warn'); return; }
+  if (res.status === 409) { toast('' + data.error, 'warn'); return; }
   if (data.id || data.message) { cerrarModalCita(); cargarCitas(); }
   else toast('Error al guardar cita: ' + (data.error?.sqlMessage || data.error || 'Revisa los datos'), 'error');
 }
@@ -334,7 +334,7 @@ async function registrarPaciente() {
   const res  = await fetch('/api/pacientes', { method:'POST', headers:H, body:JSON.stringify(payload) });
   const data = await res.json();
   if (data.id) {
-    toast('✅ Paciente registrado correctamente');
+    toast('Paciente registrado correctamente');
     ['exp','contacto','parentesco','obs','usuario','usuario-nombre'].forEach(f =>
       document.getElementById('pac-' + f).value = '');
     document.getElementById('pac-sangre').value = '';
@@ -525,7 +525,7 @@ function renderMedicos(lista) {
   document.getElementById('tbody-medicos').innerHTML = lista.map(d => {
     const esActivo = d.Estado === 'ACTIVO';
     const horario  = (d.hora_inicio && d.hora_fin)
-      ? `<span class="horario-chip">🕐 ${d.hora_inicio.substring(0,5)} – ${d.hora_fin.substring(0,5)}</span>`
+      ? `<span class="horario-chip"><span class="material-symbols-outlined">schedule</span> ${d.hora_inicio.substring(0,5)} – ${d.hora_fin.substring(0,5)}</span>`
       : (d.Horario || '<span style="color:var(--text-soft);font-size:12px;">Sin horario</span>');
     return `
       <tr>
@@ -537,9 +537,9 @@ function renderMedicos(lista) {
         <td><span class="badge-estado--${esActivo ? 'activo' : 'inactivo'}">${d.Estado}</span></td>
         <td>
           <div class="action-icons">
-            <button class="icon-btn icon-btn--edit" title="Editar" onclick="abrirModalEditarMedico(${d.idDoctor})">✏️</button>
+            <button class="icon-btn icon-btn--edit" title="Editar" onclick="abrirModalEditarMedico(${d.idDoctor})"><span class="material-symbols-outlined">edit</span></button>
             <button class="icon-btn icon-btn--toggle" title="${esActivo ? 'Desactivar' : 'Activar'}" onclick="toggleMedico(${d.idDoctor}, ${esActivo})">
-              ${esActivo ? '🔴' : '🟢'}
+              ${esActivo ? iconHtml('toggle_off') : iconHtml('toggle_on')}
             </button>
           </div>
         </td>
@@ -621,7 +621,7 @@ async function guardarMedico() {
   const method = id ? 'PUT' : 'POST';
   const res    = await fetch(url, { method, headers:H, body:JSON.stringify(payload) });
   const data   = await res.json();
-  if (res.status === 409) { toast('⚠️ ' + data.error, 'warn'); return; }
+  if (res.status === 409) { toast('' + data.error, 'warn'); return; }
   if (data.message || data.id) { cerrarModalMedico(); cargarMedicos(); cargarListasAutocompletado(); }
   else toast('Error: ' + (data.error?.sqlMessage || data.error || 'Revisa los datos'), 'error');
 }
@@ -714,7 +714,7 @@ async function preSeleccionarPaciente(idPaciente) {
 
   const alertEl = document.getElementById('pre-alerta-alergias');
   if (p.alergias) {
-    alertEl.innerHTML     = `⚠️ Alergias registradas: <strong>${esc(p.alergias)}</strong>`;
+    alertEl.innerHTML     = `Alergias registradas: <strong>${esc(p.alergias)}</strong>`;
     alertEl.style.display = 'block';
   } else {
     alertEl.style.display = 'none';
@@ -764,12 +764,12 @@ async function preElegirCita(idCita) {
   const badge = document.getElementById('pre-cita-badge');
   badge.style.display = 'block';
   badge.innerHTML = `
-    ✅ Cita seleccionada: <strong>${esc(_prePaciente.nombre)}</strong>
+    Cita seleccionada: <strong>${esc(_prePaciente.nombre)}</strong>
     · ${esc(fecha)} ${esc(hora)} · Cita #${idCita}
     <button onclick="preCambiarCita()"
       style="margin-left:10px;padding:3px 10px;border:1px solid var(--border);
         border-radius:7px;background:transparent;font-size:11px;cursor:pointer;color:var(--text-soft);">
-      ✕ Cambiar
+      <span class="material-symbols-outlined">close</span> Cambiar
     </button>`;
 }
 
@@ -813,7 +813,7 @@ function preRenderDatosPaciente(p) {
       </div>
       ${p.alergias ? `
       <div style="padding:8px 10px;background:rgba(200,50,50,0.06);border:1.5px solid rgba(200,50,50,0.15);border-radius:10px;grid-column:1/-1;">
-        <span style="font-size:10.5px;color:#c03030;display:block;font-weight:700;">⚠️ Alergias</span>
+        <span style="font-size:10.5px;color:#c03030;display:block;font-weight:700;">Alergias</span>
         <strong style="color:#c03030;">${esc(p.alergias)}</strong>
       </div>` : ''}
       ${p.padecimientos_cronicos ? `
@@ -839,28 +839,28 @@ function alertarVital(campo, valor) {
   if (!valor || isNaN(v)) { el.style.display = 'none'; return; }
 
   if (campo === 'sat') {
-    if      (v < 90) mostrar(`🔴 SpO₂ crítico (${v}%) — posible hipoxemia severa`, 'danger');
-    else if (v < 94) mostrar(`⚠️ SpO₂ bajo (${v}%) — monitorizar`, 'warn');
+    if      (v < 90) mostrar(`SpO₂ crítico (${v}%) — posible hipoxemia severa`, 'danger');
+    else if (v < 94) mostrar(`SpO₂ bajo (${v}%) — monitorizar`, 'warn');
     else             mostrar('', '');
   } else if (campo === 'fc') {
-    if      (v > 120) mostrar(`🔴 Taquicardia severa (${v} lpm)`, 'danger');
-    else if (v > 100) mostrar(`⚠️ Taquicardia leve (${v} lpm)`, 'warn');
-    else if (v < 50)  mostrar(`🔴 Bradicardia severa (${v} lpm)`, 'danger');
-    else if (v < 60)  mostrar(`⚠️ Bradicardia leve (${v} lpm)`, 'warn');
+    if      (v > 120) mostrar(`Taquicardia severa (${v} lpm)`, 'danger');
+    else if (v > 100) mostrar(`Taquicardia leve (${v} lpm)`, 'warn');
+    else if (v < 50)  mostrar(`Bradicardia severa (${v} lpm)`, 'danger');
+    else if (v < 60)  mostrar(`Bradicardia leve (${v} lpm)`, 'warn');
     else              mostrar('', '');
   } else if (campo === 'temp') {
-    if      (v < 35)   mostrar(`🔴 Hipotermia (${v}°C)`, 'danger');
-    else if (v < 36)   mostrar(`⚠️ Temperatura baja (${v}°C)`, 'warn');
-    else if (v > 38.5) mostrar(`🔴 Fiebre alta (${v}°C)`, 'danger');
-    else if (v > 37.5) mostrar(`⚠️ Febrícula (${v}°C)`, 'warn');
+    if      (v < 35)   mostrar(`Hipotermia (${v}°C)`, 'danger');
+    else if (v < 36)   mostrar(`Temperatura baja (${v}°C)`, 'warn');
+    else if (v > 38.5) mostrar(`Fiebre alta (${v}°C)`, 'danger');
+    else if (v > 37.5) mostrar(`Febrícula (${v}°C)`, 'warn');
     else               mostrar('', '');
   } else if (campo === 'presion') {
     const m = String(valor).match(/^(\d{2,3})\/(\d{2,3})$/);
     if (!m) { el.style.display = 'none'; return; }
     const sis = parseInt(m[1]), dia = parseInt(m[2]);
-    if      (sis >= 180 || dia >= 110) mostrar(`🔴 Hipertensión severa (${valor}) — urgencia`, 'danger');
-    else if (sis >= 140 || dia >= 90)  mostrar(`⚠️ Hipertensión grado 1 (${valor})`, 'warn');
-    else if (sis < 90  || dia < 60)   mostrar(`🔴 Hipotensión (${valor})`, 'danger');
+    if      (sis >= 180 || dia >= 110) mostrar(`Hipertensión severa (${valor}) — urgencia`, 'danger');
+    else if (sis >= 140 || dia >= 90)  mostrar(`Hipertensión grado 1 (${valor})`, 'warn');
+    else if (sis < 90  || dia < 60)   mostrar(`Hipotensión (${valor})`, 'danger');
     else                               mostrar('', '');
   } else if (campo === 'peso' || campo === 'altura') {
     // Calcular IMC si ambos están llenos
@@ -870,10 +870,10 @@ function alertarVital(campo, valor) {
     if (elImc && peso > 0 && altura > 0) {
       const imc = (peso / Math.pow(altura / 100, 2)).toFixed(1);
       let cat = '';
-      if      (imc < 18.5) cat = '⚠️ Bajo peso';
-      else if (imc < 25)   cat = '✅ Normal';
-      else if (imc < 30)   cat = '⚠️ Sobrepeso';
-      else                 cat = '⚠️ Obesidad';
+      if      (imc < 18.5) cat = 'Bajo peso';
+      else if (imc < 25)   cat = 'Normal';
+      else if (imc < 30)   cat = 'Sobrepeso';
+      else                 cat = 'Obesidad';
       elImc.textContent  = `IMC: ${imc} — ${cat}`;
       elImc.className    = 'vital-alerta vital-alerta--' + (imc < 18.5 || imc >= 25 ? 'info' : 'ok');
       elImc.style.display = 'block';
@@ -885,8 +885,8 @@ function alertarVital(campo, valor) {
 }
 
 async function guardarPreconsulta() {
-  if (!_prePaciente) { toast('⚠️ Selecciona un paciente primero.', 'warn'); return; }
-  if (!_preCita)     { toast('⚠️ Selecciona la cita a atender.', 'warn'); return; }
+  if (!_prePaciente) { toast('Selecciona un paciente primero.', 'warn'); return; }
+  if (!_preCita)     { toast('Selecciona la cita a atender.', 'warn'); return; }
 
   const peso    = parseFloat(document.getElementById('pre-peso').value)    || null;
   const altura  = parseFloat(document.getElementById('pre-altura').value)  || null;
@@ -898,7 +898,7 @@ async function guardarPreconsulta() {
   const obs     = document.getElementById('pre-obs').value.trim();
 
   if (!presion && !peso && !temp) {
-    toast('⚠️ Ingresa al menos un signo vital (presión, peso o temperatura).', 'warn');
+    toast('Ingresa al menos un signo vital (presión, peso o temperatura).', 'warn');
     return;
   }
 
@@ -942,7 +942,7 @@ async function guardarPreconsulta() {
   }
 
   if (erroresClinico.length) {
-    toast('⚠️ Datos fuera de rango: ' + erroresClinico.join(' | '), 'warn');
+    toast('Datos fuera de rango: ' + erroresClinico.join(' | '), 'warn');
     return;
   }
   // ── Fin validaciones ───────────────────────────────────────────────────────
@@ -961,13 +961,13 @@ async function guardarPreconsulta() {
       };
       const res  = await fetch(`/api/consultas/${yaExiste.idConsulta}`, { method:'PUT', headers:H, body:JSON.stringify(payload) });
       const data = await res.json();
-      if (data.message) { toast('✅ Preconsulta actualizada correctamente.'); preLimpiarFormulario(); preCargarUltimas(); cargarStats(); }
+      if (data.message) { toast('Preconsulta actualizada correctamente.'); preLimpiarFormulario(); preCargarUltimas(); cargarStats(); }
       else toast('Error: ' + (data.error?.sqlMessage || data.error || 'No se pudo actualizar'), 'error');
       return;
     }
 
     if (!_preCita.idHistorial) {
-      toast('⚠️ Este paciente no tiene historial clínico registrado. Debe registrarse antes de la preconsulta.', 'warn');
+      toast('Este paciente no tiene historial clínico registrado. Debe registrarse antes de la preconsulta.', 'warn');
       return;
     }
 
@@ -988,7 +988,7 @@ async function guardarPreconsulta() {
     const data = await res.json();
 
     if (data.id) {
-      toast(`✅ Preconsulta registrada para ${_prePaciente.nombre}.`);
+      toast(`Preconsulta registrada para ${_prePaciente.nombre}.`);
       preLimpiarFormulario();
       preCargarUltimas();
       cargarStats();

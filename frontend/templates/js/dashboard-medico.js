@@ -161,7 +161,7 @@ async function cargarStats() {
             <td>${esc(c.motivo || '–')}</td>
             <td>${estadoDot(c.estado)}</td>
             <td>${['CONFIRMADA','PENDIENTE'].includes(c.estado)
-              ? `<button class="btn-tabla" onclick="abrirHistorialPaciente(${c.idCita}, ${c.idPaciente})">📋 Ver</button>`
+              ? `<button class="btn-tabla" onclick="abrirHistorialPaciente(${c.idCita}, ${c.idPaciente})"><span class="material-symbols-outlined icon-inline">article</span> Ver</button>`
               : '–'}</td>
           </tr>`).join('')
       : '<tr><td colspan="5" style="text-align:center;color:var(--text-soft);padding:16px;">Sin citas para hoy</td></tr>';
@@ -234,9 +234,9 @@ async function abrirHistorialPaciente(idCita, idPaciente) {
           <strong style="display:block;font-size:14px;color:var(--deep);">${esc(p?.Nombres || '–')} ${esc(p?.Apellidos || '')}</strong>
           <span style="font-size:12px;color:var(--text-soft);">Exp: ${esc(p?.numero_expediente || '–')} · Sangre: ${esc(p?.tipo_sangre || 'N/A')}</span>
         </div>
-        ${p?.alergias ? `<div style="margin-left:auto;background:rgba(200,50,50,0.07);border:1px solid rgba(200,50,50,0.15);border-radius:10px;padding:8px 12px;font-size:11.5px;color:#c03030;">⚠️ Alergia: ${esc(p.alergias)}</div>` : ''}
+        ${p?.alergias ? `<div style="margin-left:auto;background:rgba(200,50,50,0.07);border:1px solid rgba(200,50,50,0.15);border-radius:10px;padding:8px 12px;font-size:11.5px;color:#c03030;">Alergia: ${esc(p.alergias)}</div>` : ''}
       </div>
-      <h4 style="font-size:12.5px;font-weight:700;color:var(--deep);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.06em;">🩺 Últimas Consultas</h4>
+      <h4 style="font-size:12.5px;font-weight:700;color:var(--deep);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.06em;">Últimas Consultas</h4>
       <div class="historial-mini" style="margin-bottom:18px;">
         ${Array.isArray(consultas) && consultas.length
           ? consultas.slice(0,3).map(c => `
@@ -257,7 +257,7 @@ async function abrirHistorialPaciente(idCita, idPaciente) {
               </div>`).join('')
           : '<p style="color:var(--text-soft);font-size:12.5px;">Sin diagnósticos registrados</p>'}
       </div>
-      <h4 style="font-size:12.5px;font-weight:700;color:var(--deep);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.06em;">💊 Recetas Recientes</h4>
+      <h4 style="font-size:12.5px;font-weight:700;color:var(--deep);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.06em;">Recetas Recientes</h4>
       <div class="historial-mini">
         ${Array.isArray(recetas) && recetas.length
           ? recetas.slice(0,3).map(r => `
@@ -296,7 +296,7 @@ async function abrirAtencion(idCita, idPaciente) {
   // Mostrar panel y cabecera
   document.getElementById('panel-atencion').style.display = 'block';
   document.getElementById('atencion-paciente-info').innerHTML =
-    `👤 <strong>${esc(nombre)}</strong> · Cita #${idCita} · ${fechaStr} ${horaStr ? '— ' + horaStr : ''}`;
+    `<span class="material-symbols-outlined icon-inline">person</span> <strong>${esc(nombre)}</strong> · Cita #${idCita} · ${fechaStr} ${horaStr ? '— ' + horaStr : ''}`;
 
   // Resetear accordions
   _setAccordion('consulta',    true,  '', '');
@@ -387,11 +387,11 @@ async function finalizarCita() {
   if (!res.ok) {
     toast('Error al finalizar la cita.', 'error');
     btn.disabled = false;
-    btn.textContent = '✅ Finalizar Cita';
+    btn.textContent = 'Finalizar Cita';
     return;
   }
 
-  toast('✅ Cita finalizada correctamente.');
+  toast('Cita finalizada correctamente.');
   cerrarPanelAtencion();
   await cargarCitas();
   cargarStats();
@@ -500,8 +500,8 @@ async function cargarPreconsulta(idCita) {
 
 // ── GUARDAR CONSULTA ──────────────────────────────────────────────────────────
 async function guardarConsulta() {
-  if (!_citaSeleccionada)             { toast('⚠️ No hay cita seleccionada.', 'warning'); return; }
-  if (!_citaSeleccionada.idHistorial) { toast('⚠️ No se encontró historial clínico para este paciente.', 'warning'); return; }
+  if (!_citaSeleccionada)             { toast('No hay cita seleccionada.', 'warning'); return; }
+  if (!_citaSeleccionada.idHistorial) { toast('No se encontró historial clínico para este paciente.', 'warning'); return; }
 
   const payload = {
     fecha_consulta:   new Date().toISOString().slice(0,19).replace('T',' '),
@@ -520,7 +520,7 @@ async function guardarConsulta() {
     // Marcar la cita como COMPLETADA automáticamente al registrar la consulta
     await fetch(`/api/citas/${_citaSeleccionada.idCita}/completar`, { method:'PATCH', headers: H });
 
-    toast('✅ Consulta registrada.');
+    toast('Consulta registrada.');
     _marcarAccordionDone('consulta', '· Registrada');
     document.getElementById('finalizar-cita-hint').style.display = 'none';
     cargarCitas();
@@ -565,8 +565,8 @@ async function cargarCitas() {
             <td>${estadoDot(c.estado)}</td>
             <td>
               <div class="action-icons">
-                <button class="btn-tabla" onclick="abrirHistorialPaciente(${c.idCita}, ${c.idPaciente})">📋 Ver</button>
-                ${atendible ? `<button class="btn-atender" onclick="abrirAtencion(${c.idCita}, ${c.idPaciente})">🩺 Atender</button>` : ''}
+                <button class="btn-tabla" onclick="abrirHistorialPaciente(${c.idCita}, ${c.idPaciente})"><span class="material-symbols-outlined icon-inline">article</span> Ver</button>
+                ${atendible ? `<button class="btn-atender" onclick="abrirAtencion(${c.idCita}, ${c.idPaciente})"><span class="material-symbols-outlined icon-inline">medical_services</span> Atender</button>` : ''}
               </div>
             </td>
           </tr>`;
@@ -646,7 +646,7 @@ function renderVistaDia() {
           <td>${esc(c.motivo || '–')}</td>
           <td>${estadoDot(c.estado)}</td>
           <td>${['CONFIRMADA','PENDIENTE'].includes(c.estado)
-            ? `<button class="btn-tabla" onclick="abrirHistorialPaciente(${c.idCita}, ${c.idPaciente})">📋 Ver</button>`
+            ? `<button class="btn-tabla" onclick="abrirHistorialPaciente(${c.idCita}, ${c.idPaciente})"><span class="material-symbols-outlined icon-inline">article</span> Ver</button>`
             : '–'}</td>
         </tr>`).join('')
     : '<tr><td colspan="5" style="text-align:center;color:var(--text-soft);padding:20px;">Sin citas para este día</td></tr>';
@@ -700,7 +700,7 @@ function renderCitasSemana(fechaStr) {
           <td>${esc(c.motivo || '–')}</td>
           <td>${estadoDot(c.estado)}</td>
           <td>${['CONFIRMADA','PENDIENTE'].includes(c.estado)
-            ? `<button class="btn-tabla" onclick="abrirHistorialPaciente(${c.idCita}, ${c.idPaciente})">📋 Ver</button>`
+            ? `<button class="btn-tabla" onclick="abrirHistorialPaciente(${c.idCita}, ${c.idPaciente})"><span class="material-symbols-outlined icon-inline">article</span> Ver</button>`
             : '–'}</td>
         </tr>`).join('')
     : '<tr><td colspan="5" style="text-align:center;color:var(--text-soft);padding:16px;">Sin citas para este día</td></tr>';
@@ -714,7 +714,7 @@ function renderConsultaSeleccionada() {
   if (!info) return;
   if (_consultaSeleccionada) {
     info.style.display = 'block';
-    info.innerHTML = `<span style="font-size:12px;color:var(--teal);font-weight:600;">✅ Vinculada a Consulta #${_consultaSeleccionada.idConsulta} · ${esc(_consultaSeleccionada.nombrePaciente)}</span>`;
+    info.innerHTML = `<span style="font-size:12px;color:var(--teal);font-weight:600;">Vinculada a Consulta #${_consultaSeleccionada.idConsulta} · ${esc(_consultaSeleccionada.nombrePaciente)}</span>`;
     document.getElementById('diag-consulta').value = _consultaSeleccionada.idConsulta;
   } else {
     info.style.display = 'none';
@@ -723,7 +723,7 @@ function renderConsultaSeleccionada() {
 }
 
 async function guardarDiagnostico() {
-  if (!_consultaSeleccionada) { toast('⚠️ Primero registra la consulta del paciente.', 'warning'); return; }
+  if (!_consultaSeleccionada) { toast('Primero registra la consulta del paciente.', 'warning'); return; }
   const descripcion = document.getElementById('diag-descripcion').value.trim();
   const fechaVal    = document.getElementById('diag-fecha').value;
   if (!descripcion) { toast('La descripción es obligatoria.', 'warning'); return; }
@@ -736,7 +736,7 @@ async function guardarDiagnostico() {
   const res  = await fetch('/api/diagnosticos', { method:'POST', headers: H, body: JSON.stringify(payload) });
   const data = await res.json();
   if (data.id) {
-    toast('✅ Diagnóstico registrado');
+    toast('Diagnóstico registrado');
     _marcarAccordionDone('diagnostico', '· Registrado');
 
     // Agregar el nuevo diagnóstico al selector de receta
@@ -836,22 +836,22 @@ document.addEventListener('click', (e) => {
 });
 
 function agregarMedicamentoLista() {
-  if (!_recMedActual) { toast('⚠️ Selecciona un medicamento del listado primero.', 'warning'); return; }
+  if (!_recMedActual) { toast('Selecciona un medicamento del listado primero.', 'warning'); return; }
   const cantidad    = parseInt(document.getElementById('rec-cantidad').value) || 1;
   const dosis       = document.getElementById('rec-dosis').value.trim();
   const frecuencia  = document.getElementById('rec-frecuencia').value.trim();
   const duracion    = document.getElementById('rec-duracion').value.trim();
   const indicaciones= document.getElementById('rec-indicaciones').value.trim();
-  if (!dosis)      { toast('⚠️ La dosis es obligatoria.', 'warning'); return; }
-  if (!frecuencia) { toast('⚠️ La frecuencia es obligatoria.', 'warning'); return; }
-  if (!duracion)   { toast('⚠️ La duración es obligatoria.', 'warning'); return; }
-  if (cantidad < 1){ toast('⚠️ La cantidad debe ser al menos 1.', 'warning'); return; }
+  if (!dosis)      { toast('La dosis es obligatoria.', 'warning'); return; }
+  if (!frecuencia) { toast('La frecuencia es obligatoria.', 'warning'); return; }
+  if (!duracion)   { toast('La duración es obligatoria.', 'warning'); return; }
+  if (cantidad < 1){ toast('La cantidad debe ser al menos 1.', 'warning'); return; }
   if (cantidad > _recMedActual.stock) {
-    toast(`⚠️ Stock insuficiente. Solo hay ${_recMedActual.stock} ${_recMedActual.unidad} disponibles.`, 'warning');
+    toast(`Stock insuficiente. Solo hay ${_recMedActual.stock} ${_recMedActual.unidad} disponibles.`, 'warning');
     return;
   }
   const yaEsta = _recLineas.find(l => l.med.id === _recMedActual.id);
-  if (yaEsta) { toast('⚠️ Este medicamento ya fue agregado.', 'warning'); return; }
+  if (yaEsta) { toast('Este medicamento ya fue agregado.', 'warning'); return; }
   const subtotal = _recMedActual.precio * cantidad;
   _recLineas.push({ med: { ..._recMedActual }, dosis, frecuencia, duracion, cantidad, indicaciones, subtotal });
   document.getElementById('rec-medicamento-nombre').value = '';
@@ -887,7 +887,7 @@ function renderLineasReceta() {
       <td>${l.cantidad} ${esc(l.med.unidad)}</td>
       <td style="font-weight:600;color:var(--teal);">$${l.subtotal.toFixed(2)}</td>
       <td><button onclick="eliminarLineaReceta(${i})"
-        style="width:28px;height:28px;border:none;border-radius:7px;background:rgba(200,50,50,0.1);color:#c03030;cursor:pointer;font-size:13px;">✕</button></td>
+        style="width:28px;height:28px;border:none;border-radius:7px;background:rgba(200,50,50,0.1);color:#c03030;cursor:pointer;font-size:13px;"><span class="material-symbols-outlined">close</span></button></td>
     </tr>`).join('');
   const total = _recLineas.reduce((s, l) => s + l.subtotal, 0);
   document.getElementById('rec-total').textContent = total.toFixed(2);
@@ -899,8 +899,8 @@ function eliminarLineaReceta(idx) {
 }
 
 async function guardarReceta() {
-  if (!_recPacienteId) { toast('⚠️ Selecciona un paciente primero.', 'warning'); return; }
-  if (!_recLineas.length) { toast('⚠️ Agrega al menos un medicamento.', 'warning'); return; }
+  if (!_recPacienteId) { toast('Selecciona un paciente primero.', 'warning'); return; }
+  if (!_recLineas.length) { toast('Agrega al menos un medicamento.', 'warning'); return; }
   const idDiagnostico = parseInt(document.getElementById('rec-diagnostico-sel').value) || null;
   try {
     let errores = 0;
@@ -930,13 +930,13 @@ async function guardarReceta() {
     }
     const total = _recLineas.reduce((s, l) => s + l.subtotal, 0);
     if (errores === 0) {
-      toast(`✅ Receta emitida. ${_recLineas.length} medicamento(s) · $${total.toFixed(2)}`);
+      toast(`Receta emitida. ${_recLineas.length} medicamento(s) · $${total.toFixed(2)}`);
       _marcarAccordionDone('receta', '· Emitida');
       limpiarFormReceta();
       _recPacienteId = _citaSeleccionada?.idPaciente || null;
       await cargarMedicamentosActivos();
     } else {
-      toast(`⚠️ Se emitieron ${_recLineas.length - errores} de ${_recLineas.length} medicamentos.`, 'warning');
+      toast(`Se emitieron ${_recLineas.length - errores} de ${_recLineas.length} medicamentos.`, 'warning');
     }
   } catch (err) {
     toast('Error de conexión al emitir la receta.', 'error');
@@ -1005,8 +1005,8 @@ async function abrirExpediente(idPaciente) {
       <button onclick="volverBuscador()" style="margin-bottom:16px;padding:8px 16px;border:1.5px solid var(--border);border-radius:10px;background:transparent;color:var(--text-soft);cursor:pointer;font-size:13px;">← Volver</button>
       <div style="background:var(--cream);border:1.5px solid var(--border);border-radius:16px;padding:24px;margin-bottom:16px;">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-          <h3 style="font-size:15px;font-weight:700;color:var(--deep);">👤 ${esc(p?.Nombres || '–')} ${esc(p?.Apellidos || '')}</h3>
-          <button onclick="editarPaciente(${p.idPaciente})" style="padding:7px 14px;border:none;border-radius:9px;background:linear-gradient(135deg,var(--teal),var(--teal-light));color:#fff;font-size:12px;font-weight:600;cursor:pointer;">✏️ Editar</button>
+          <h3 style="font-size:15px;font-weight:700;color:var(--deep);"><span class="material-symbols-outlined icon-inline">person</span> ${esc(p?.Nombres || '–')} ${esc(p?.Apellidos || '')}</h3>
+          <button onclick="editarPaciente(${p.idPaciente})" style="padding:7px 14px;border:none;border-radius:9px;background:linear-gradient(135deg,var(--teal),var(--teal-light));color:#fff;font-size:12px;font-weight:600;cursor:pointer;">Editar</button>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:13px;">
           <div><span style="color:var(--text-soft);">Expediente:</span> <strong>${esc(p?.numero_expediente || '–')}</strong></div>
@@ -1026,7 +1026,7 @@ async function abrirExpediente(idPaciente) {
           </div>` : '<p style="color:var(--text-soft);font-size:13px;">Sin historial registrado</p>'}
       </div>
       <div style="background:var(--cream);border:1.5px solid var(--border);border-radius:16px;padding:24px;margin-bottom:16px;">
-        <h3 style="font-size:15px;font-weight:700;color:var(--deep);margin-bottom:14px;">📅 Citas (${citasPaciente.length})</h3>
+        <h3 style="font-size:15px;font-weight:700;color:var(--deep);margin-bottom:14px;">Citas (${citasPaciente.length})</h3>
         ${citasPaciente.length ? `
           <table style="width:100%;border-collapse:collapse;font-size:13px;">
             <thead><tr style="color:var(--text-soft);font-size:11.5px;">
@@ -1045,7 +1045,7 @@ async function abrirExpediente(idPaciente) {
           </table>` : '<p style="color:var(--text-soft);font-size:13px;">Sin citas</p>'}
       </div>
       <div id="form-editar-${p.idPaciente}" style="display:none;background:var(--cream);border:1.5px solid var(--border);border-radius:16px;padding:24px;margin-top:16px;">
-        <h3 style="font-size:15px;font-weight:700;color:var(--deep);margin-bottom:14px;">✏️ Editar Paciente</h3>
+        <h3 style="font-size:15px;font-weight:700;color:var(--deep);margin-bottom:14px;">Editar Paciente</h3>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
           <div>
             <label style="font-size:11.5px;color:var(--text-soft);font-weight:600;">Tipo de Sangre</label>
@@ -1099,7 +1099,7 @@ async function guardarEdicionPaciente(idPaciente) {
   };
   const res  = await fetch(`/api/pacientes/${idPaciente}`, { method:'PUT', headers: H, body: JSON.stringify(payload) });
   const data = await res.json();
-  if (data.message) { toast('✅ Paciente actualizado'); abrirExpediente(idPaciente); }
+  if (data.message) { toast('Paciente actualizado'); abrirExpediente(idPaciente); }
   else toast('Error: ' + (data.error?.sqlMessage || 'No se pudo actualizar'), 'error');
 }
 
@@ -1131,7 +1131,7 @@ function _repmSetDefaultDates() {
 async function repMedicoGenerar() {
   const fechaInicio = document.getElementById('repm-fecha-inicio').value;
   const fechaFin    = document.getElementById('repm-fecha-fin').value;
-  if (!fechaInicio || !fechaFin) { toast('⚠️ Selecciona un rango de fechas.', 'warning'); return; }
+  if (!fechaInicio || !fechaFin) { toast('Selecciona un rango de fechas.', 'warning'); return; }
   const params = new URLSearchParams({ fechaInicio, fechaFin });
   try {
     const res  = await fetch(`/api/reportes/consultas-medico?${params}`, { headers: H });

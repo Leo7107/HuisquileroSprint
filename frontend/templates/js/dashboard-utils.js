@@ -14,6 +14,12 @@ window.H = {
 };
 
 // ── ESCAPE HTML ───────────────────────────────────────────────────────────────
+
+function iconHtml(name, extraClass) {
+  var cls = 'material-symbols-outlined' + (extraClass ? ' ' + extraClass : '');
+  return '<span class="' + cls + '">' + name + '</span>';
+}
+
 function esc(s) {
   return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
