@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>MedySync – Médico</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="/css/dashboard.css"/>
+  <style>
+    .autocomplete-wrap { position: relative; }
+    .autocomplete-lista {
+      display: none; position: absolute; top: 100%; left: 0; right: 0;
+      background: #fff; border: 1.5px solid var(--border); border-radius: 11px;
+      box-shadow: 0 8px 24px rgba(26,46,42,0.12); z-index: 100;
+      max-height: 220px; overflow-y: auto;
+    }
+    .autocomplete-item {
+      padding: 10px 14px; cursor: pointer; transition: background 0.15s;
+      border-bottom: 1px solid var(--border);
+    }
+    .autocomplete-item:last-child { border-bottom: none; }
+    .autocomplete-item:hover { background: var(--cream); }
+    .autocomplete-item strong { display: block; font-size: 13px; color: var(--deep); }
+    .autocomplete-item span   { font-size: 11.5px; color: var(--text-soft); }
+    .inp {
+      width: 100%; padding: 10px 14px;
+      border: 1.5px solid var(--border); border-radius: 11px;
+      font-size: 13.5px; color: var(--text);
+      background: var(--cream); font-family: 'DM Sans', sans-serif;
+      box-sizing: border-box; transition: border 0.2s, background 0.2s;
+    }
+    .inp:focus { outline: none; border-color: var(--teal); background: #fff; }
+    .lbl {
+      display: block; font-size: 11.5px; font-weight: 600;
+      color: var(--text-soft); margin-bottom: 5px; letter-spacing: 0.04em;
+    }
+    .fgroup { margin-bottom: 14px; }
+    .cita-info-badge {
+      background: rgba(42,107,94,0.08); border: 1.5px solid rgba(42,107,94,0.2);
+      border-radius: 10px; padding: 10px 14px; font-size: 12.5px;
+      color: var(--teal); font-weight: 600; margin-bottom: 14px; display: none;
+    }
+    /* ── Panel de Atención Clínica ── */
+    .atencion-bloque {
+      border: 1.5px solid var(--border); border-radius: 14px;
+      margin-bottom: 12px; overflow: hidden;
+    }
+    .atencion-bloque__header {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 14px 20px; cursor: pointer; background: var(--cream);
+      transition: background 0.15s;
+    }
+    .atencion-bloque__header:hover { background: rgba(42,107,94,0.06); }
+    .atencion-bloque__body { padding: 20px; border-top: 1.5px solid var(--border); background: #fff; }
+    .acc-num {
+      width: 26px; height: 26px; border-radius: 50%;
+      background: rgba(42,107,94,0.15); color: var(--teal);
+      font-size: 12px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .acc-num.done { background: var(--teal); color: #fff; }
+    .btn-atender {
+      background: linear-gradient(135deg,var(--teal),var(--teal-light));
+      color: #fff; border: none; border-radius: 9px;
+      padding: 7px 14px; font-size: 12.5px; font-weight: 700;
+      font-family: 'DM Sans', sans-serif; cursor: pointer;
+    }
+    .btn-atender:hover { opacity: 0.9; }
+    /* ── Reportes médico ── */
+    .rep-filtros-grid { display: grid; grid-template-columns: 1fr 1fr auto; gap: 12px; align-items: end; }
+    .rep-input {
+      width: 100%; padding: 10px 14px; border: 1.5px solid var(--border);
+      border-radius: 11px; font-size: 13.5px; color: var(--text);
+      background: var(--cream); font-family: 'DM Sans', sans-serif;
+      box-sizing: border-box; transition: border 0.2s;
+    }
+    .rep-input:focus { outline: none; border-color: var(--gold); background: var(--white); }
+  </style>
+</head>
+<body>
+
+<div class="layout rol-medico">
+
+  <aside class="sidebar">
+    <div class="sidebar__brand">
+      <span class="brand-icon">✦</span>
+      <span class="brand-name">MedySync</span>
+    </div>
+    <div class="sidebar__rol sidebar__rol--medico">Médico</div>
+    <nav class="sidebar__nav">
+      <a href="#" class="nav-item active" onclick="nav('inicio',this);return false;"><span class="nav-icon">⊞</span> Mi Panel</a>
+      <a href="#" class="nav-item" onclick="nav('citas',this);return false;"><span class="nav-icon">📅</span> Mis Citas</a>
+      <a href="#" class="nav-item" onclick="nav('expediente',this);return false;"><span class="nav-icon">📋</span> Expedientes</a>
+      <a href="#" class="nav-item" onclick="nav('horario',this);return false;"><span class="nav-icon">🕐</span> Mi Horario</a>
+      <a href="#" class="nav-item" onclick="nav('reportes',this);return false;"><span class="nav-icon">📊</span> Mis Reportes</a>
+    </nav>
+    <button class="sidebar__logout" onclick="cerrarSesion()"><span>⏻</span> Cerrar sesión</button>
+  </aside>
+
+  <main class="main">
+
+    <header class="topbar">
+      <div class="topbar__title">
+        <h1>Bienvenido, <span id="nombre-medico">Doctor</span></h1>
+        <p id="fecha-actual"></p>
+      </div>
+      <div class="topbar__usuario">
+        <div class="avatar avatar--medico" id="avatar-inicial">M</div>
+        <div>
+          <div class="usuario-nombre" id="usuario-nombre">Médico</div>
+          <div class="usuario-rol">Especialista</div>
+        </div>
+      </div>
+    </header>
+
+    <!-- ══ INICIO ══ -->
+    <div id="sec-inicio">
+      <section class="stats-grid">
+        <div class="stat-card stat-card--teal">
+          <div class="stat-icon">📅</div>
+          <div class="stat-info"><div class="stat-num" id="s-citas">—</div><div class="stat-label">Citas de Hoy</div></div>
+        </div>
+        <div class="stat-card stat-card--gold">
+          <div class="stat-icon">👤</div>
+          <div class="stat-info"><div class="stat-num" id="s-pacientes">—</div><div class="stat-label">Pacientes Activos</div></div>
+        </div>
+        <div class="stat-card stat-card--soft">
+          <div class="stat-icon">🩺</div>
+          <div class="stat-info"><div class="stat-num" id="s-consultas">—</div><div class="stat-label">Consultas del Mes</div></div>
+        </div>
+        <div class="stat-card stat-card--dark">
+          <div class="stat-icon">📝</div>
+          <div class="stat-info"><div class="stat-num" id="s-recetas">—</div><div class="stat-label">Recetas Emitidas</div></div>
+        </div>
+      </section>
+      <div class="panels-row">
+        <div class="panel">
+          <div class="panel__header">
+            <h2>Agenda de Hoy</h2>
+            <a href="#" class="panel__link" onclick="nav('citas',null);return false;">Ver todas →</a>
+          </div>
+          <table class="tabla">
+            <thead><tr><th>Hora</th><th>Paciente</th><th>Motivo</th><th>Estado</th><th>Acción</th></tr></thead>
+            <tbody id="citas-preview">
+              <tr><td colspan="5" style="text-align:center;color:var(--text-soft);padding:16px;">Cargando...</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="panel">
+          <div class="panel__header"><h2>Acciones Rápidas</h2></div>
+          <div class="acciones-grid">
+            <button class="accion-btn" onclick="nav('citas',this)"><span>📅</span><span>Mis Citas</span></button>
+            <button class="accion-btn" onclick="nav('expediente',this)"><span>📋</span><span>Expedientes</span></button>
+            <button class="accion-btn" onclick="nav('horario',this)"><span>🕐</span><span>Mi Horario</span></button>
+            <button class="accion-btn" onclick="nav('reportes',this)"><span>📊</span><span>Mis Reportes</span></button>
+          </div>
+        </div>
+      </div>
+      <div class="panels-row">
+        <div class="panel">
+          <div class="panel__header">
+            <h2>Pacientes Recientes</h2>
+            <a href="#" class="panel__link" onclick="nav('expediente',null);return false;">Ver expedientes →</a>
+          </div>
+          <div id="historial-pacientes-preview">
+            <p style="text-align:center;color:var(--text-soft);padding:16px;font-size:13px;">Cargando...</p>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel__header"><h2>Últimas Consultas</h2></div>
+          <table class="tabla">
+            <thead><tr><th>Fecha</th><th>Paciente</th><th>Observaciones</th><th>Acción</th></tr></thead>
+            <tbody id="consultas-preview">
+              <tr><td colspan="4" style="text-align:center;color:var(--text-soft);padding:16px;">Cargando...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ CITAS + ATENCIÓN CLÍNICA ══ -->
+    <div id="sec-citas" style="display:none;">
+      <div class="panel">
+        <div class="panel__header"><h2>Mis Citas</h2></div>
+        <table class="tabla">
+          <thead><tr><th>ID</th><th>Fecha</th><th>Hora</th><th>Paciente</th><th>Motivo</th><th>Estado</th><th>Acciones</th></tr></thead>
+          <tbody id="tbody-citas">
+            <tr><td colspan="7" style="text-align:center;color:var(--text-soft);padding:20px;">Cargando...</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Panel de Atención Clínica (se abre al hacer click en Atender) -->
+      <div id="panel-atencion" style="display:none;margin-top:16px;">
+        <div class="panel" style="border:2px solid rgba(42,107,94,0.3);">
+
+          <!-- Cabecera del panel -->
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;padding-bottom:16px;border-bottom:1.5px solid var(--border);">
+            <div>
+              <h2 style="margin:0;font-size:1.05rem;color:var(--deep);">🩺 Atención Clínica</h2>
+              <div id="atencion-paciente-info" style="font-size:13px;color:var(--teal);font-weight:600;margin-top:4px;"></div>
+            </div>
+            <button onclick="cerrarPanelAtencion()" style="padding:8px 16px;border:1.5px solid var(--border);border-radius:10px;background:transparent;color:var(--text-soft);font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif;">✕ Cerrar</button>
+          </div>
+
+          <!-- Accordion 1: Consulta -->
+          <div class="atencion-bloque" id="acc-bloque-consulta">
+            <div class="atencion-bloque__header" onclick="toggleAccordion('consulta')">
+              <div style="display:flex;align-items:center;gap:12px;">
+                <div class="acc-num" id="acc-num-consulta">1</div>
+                <strong style="font-size:14px;color:var(--deep);">Consulta</strong>
+                <span id="acc-status-consulta" style="font-size:11.5px;color:var(--text-soft);"></span>
+              </div>
+              <span id="acc-arrow-consulta" style="color:var(--teal);font-size:11px;">▼</span>
+            </div>
+            <div id="acc-body-consulta" class="atencion-bloque__body">
+              <div class="preconsulta-card" id="bloque-preconsulta" style="display:none;margin-bottom:16px;">
+                <div class="preconsulta-card__header"><span>📋</span><h4>Preconsulta registrada por Enfermería</h4></div>
+                <div class="preconsulta-grid" id="preconsulta-datos"></div>
+              </div>
+              <input type="hidden" id="con-cita"/>
+              <input type="hidden" id="con-historial"/>
+              <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;margin-bottom:14px;">
+                <div><label class="lbl">Peso (kg)</label><input type="number" id="con-peso" class="inp" placeholder="70.5"/></div>
+                <div><label class="lbl">Altura (cm)</label><input type="number" id="con-altura" class="inp" placeholder="170"/></div>
+                <div><label class="lbl">Presión Arterial</label><input type="text" id="con-presion" class="inp" placeholder="120/80"/></div>
+                <div><label class="lbl">Temperatura (°C)</label><input type="number" id="con-temp" class="inp" placeholder="36.5"/></div>
+              </div>
+              <div class="fgroup">
+                <label class="lbl">Observaciones médicas</label>
+                <textarea id="con-obs" rows="3" class="inp" placeholder="Hallazgos clínicos, evolución del paciente..."></textarea>
+              </div>
+              <button onclick="guardarConsulta()" style="padding:10px 24px;border:none;border-radius:11px;background:linear-gradient(135deg,var(--teal),var(--teal-light));color:#fff;font-weight:700;font-size:13px;font-family:'DM Sans',sans-serif;cursor:pointer;">Registrar Consulta</button>
+            </div>
+          </div>
+
+          <!-- Accordion 2: Diagnóstico -->
+          <div class="atencion-bloque" id="acc-bloque-diagnostico">
+            <div class="atencion-bloque__header" onclick="toggleAccordion('diagnostico')">
+              <div style="display:flex;align-items:center;gap:12px;">
+                <div class="acc-num" id="acc-num-diagnostico">2</div>
+                <strong style="font-size:14px;color:var(--deep);">Diagnóstico</strong>
+                <span id="acc-status-diagnostico" style="font-size:11.5px;color:var(--text-soft);">· opcional</span>
+              </div>
+              <span id="acc-arrow-diagnostico" style="color:var(--teal);font-size:11px;">▶</span>
+            </div>
+            <div id="acc-body-diagnostico" class="atencion-bloque__body" style="display:none;">
+              <div id="diagnostico-consulta-info" class="cita-info-badge"></div>
+              <input type="hidden" id="diag-consulta"/>
+              <div class="fgroup">
+                <label class="lbl">Fecha del Diagnóstico</label>
+                <input type="datetime-local" id="diag-fecha" class="inp"/>
+              </div>
+              <div class="fgroup">
+                <label class="lbl">Descripción</label>
+                <textarea id="diag-descripcion" rows="4" class="inp" placeholder="Descripción clínica del diagnóstico..."></textarea>
+              </div>
+              <button onclick="guardarDiagnostico()" style="padding:10px 24px;border:none;border-radius:11px;background:linear-gradient(135deg,var(--teal),var(--teal-light));color:#fff;font-weight:700;font-size:13px;font-family:'DM Sans',sans-serif;cursor:pointer;">Registrar Diagnóstico</button>
+            </div>
+          </div>
+
+          <!-- Accordion 3: Receta -->
+          <div class="atencion-bloque" id="acc-bloque-receta">
+            <div class="atencion-bloque__header" onclick="toggleAccordion('receta')">
+              <div style="display:flex;align-items:center;gap:12px;">
+                <div class="acc-num" id="acc-num-receta">3</div>
+                <strong style="font-size:14px;color:var(--deep);">Receta</strong>
+                <span id="acc-status-receta" style="font-size:11.5px;color:var(--text-soft);">· opcional</span>
+              </div>
+              <span id="acc-arrow-receta" style="color:var(--teal);font-size:11px;">▶</span>
+            </div>
+            <div id="acc-body-receta" class="atencion-bloque__body" style="display:none;">
+              <div class="fgroup">
+                <label class="lbl">Diagnóstico asociado</label>
+                <select id="rec-diagnostico-sel" class="inp" style="cursor:pointer;">
+                  <option value="">— Sin diagnóstico asociado —</option>
+                </select>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr auto;gap:10px;align-items:end;margin-bottom:12px;">
+                <div class="autocomplete-wrap">
+                  <label class="lbl">Buscar medicamento</label>
+                  <input type="text" id="rec-medicamento-nombre" class="inp" placeholder="Ej: Paracetamol, Ibuprofeno..." oninput="buscarMedicamentoReceta()" autocomplete="off"/>
+                  <input type="hidden" id="rec-medicamento-id"/>
+                  <div id="sug-medicamento" class="autocomplete-lista"></div>
+                </div>
+                <button onclick="agregarMedicamentoLista()" style="padding:10px 18px;border:none;border-radius:11px;background:linear-gradient(135deg,var(--teal),var(--teal-light));color:#fff;font-weight:700;font-size:13px;font-family:'DM Sans',sans-serif;cursor:pointer;white-space:nowrap;height:42px;">+ Agregar</button>
+              </div>
+              <div id="rec-med-campos" style="display:none;background:rgba(42,107,94,0.04);border:1.5px solid rgba(42,107,94,0.15);border-radius:11px;padding:14px;margin-bottom:12px;">
+                <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;">
+                  <div><label class="lbl">Dosis</label><input type="text" id="rec-dosis" class="inp" placeholder="500mg"/></div>
+                  <div><label class="lbl">Frecuencia</label><input type="text" id="rec-frecuencia" class="inp" placeholder="Cada 8 horas"/></div>
+                  <div><label class="lbl">Duración</label><input type="text" id="rec-duracion" class="inp" placeholder="7 días"/></div>
+                  <div><label class="lbl">Cantidad</label><input type="number" id="rec-cantidad" class="inp" placeholder="1" min="1" value="1"/></div>
+                </div>
+                <div style="margin-top:10px;">
+                  <label class="lbl">Indicaciones</label>
+                  <input type="text" id="rec-indicaciones" class="inp" placeholder="Tomar con alimentos..."/>
+                </div>
+                <div id="rec-stock-info" style="display:none;font-size:11.5px;color:var(--teal);font-weight:600;margin-top:8px;padding:5px 10px;background:rgba(42,107,94,0.07);border-radius:8px;"></div>
+              </div>
+              <div id="rec-lista-meds-wrap" style="display:none;">
+                <table class="tabla" style="margin-bottom:0;">
+                  <thead><tr><th>Medicamento</th><th>Dosis</th><th>Frecuencia</th><th>Duración</th><th>Cant.</th><th>Subtotal</th><th></th></tr></thead>
+                  <tbody id="rec-lista-meds"></tbody>
+                  <tfoot>
+                    <tr>
+                      <td colspan="5" style="text-align:right;font-weight:700;font-size:13px;color:var(--deep);padding:12px;">Monto Total:</td>
+                      <td style="font-family:'Playfair Display',serif;font-size:1.1rem;font-weight:700;color:var(--teal);padding:12px;">$<span id="rec-total">0.00</span></td>
+                      <td></td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+              <p id="rec-lista-vacia" style="font-size:12.5px;color:var(--text-soft);text-align:center;padding:10px;">Busca y agrega medicamentos arriba</p>
+              <div style="display:flex;justify-content:flex-end;margin-top:14px;">
+                <button onclick="guardarReceta()" style="padding:10px 28px;border:none;border-radius:11px;background:linear-gradient(135deg,var(--gold),var(--gold-light));color:var(--deep);font-weight:700;font-size:13px;font-family:'DM Sans',sans-serif;cursor:pointer;">Emitir Receta</button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ VER EXPEDIENTE ══ -->
+    <div id="sec-expediente" style="display:none;">
+      <div class="panel">
+        <div class="panel__header"><h2>Buscar Expediente</h2></div>
+        <div style="display:flex;align-items:center;gap:10px;background:var(--cream);border:1.5px solid var(--border);border-radius:14px;padding:12px 18px;margin-bottom:16px;">
+          <span style="color:var(--text-soft);font-size:16px;">🔍</span>
+          <input type="text" id="q-expediente" placeholder="Buscar por nombre, expediente o ID..." oninput="buscarExpediente()" style="border:none;background:transparent;flex:1;font-size:14px;color:var(--text);font-family:'DM Sans',sans-serif;"/>
+        </div>
+        <div id="resultados-expediente">
+          <p style="text-align:center;color:var(--text-soft);padding:24px;font-size:13px;">Escribe para buscar un expediente...</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ MI HORARIO ══ -->
+    <div id="sec-horario" style="display:none;">
+      <div class="panel">
+        <div class="panel__header">
+          <h2>Mi Horario</h2>
+          <div class="tabs" style="margin-bottom:0;width:220px;">
+            <button class="tab-btn active" id="tab-diaria" onclick="cambiarVistaHorario('diaria')">Vista Diaria</button>
+            <button class="tab-btn" id="tab-semanal" onclick="cambiarVistaHorario('semanal')">Vista Semanal</button>
+          </div>
+        </div>
+        <div id="horario-info">
+          <p style="text-align:center;color:var(--text-soft);padding:24px;font-size:13px;">Cargando...</p>
+        </div>
+        <div id="vista-diaria">
+          <div class="semana-nav">
+            <button class="semana-nav__btn" onclick="navegarDia(-1)">‹</button>
+            <span class="semana-nav__titulo" id="titulo-dia-actual">Hoy</span>
+            <button class="semana-nav__btn" onclick="navegarDia(1)">›</button>
+          </div>
+          <table class="tabla">
+            <thead><tr><th>Hora</th><th>Paciente</th><th>Motivo</th><th>Estado</th><th>Acción</th></tr></thead>
+            <tbody id="tbody-citas-dia">
+              <tr><td colspan="5" style="text-align:center;color:var(--text-soft);padding:20px;">Cargando...</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div id="vista-semanal" style="display:none;">
+          <div class="semana-nav">
+            <button class="semana-nav__btn" onclick="navegarSemana(-1)">‹</button>
+            <span class="semana-nav__titulo" id="titulo-semana">Semana actual</span>
+            <button class="semana-nav__btn" onclick="navegarSemana(1)">›</button>
+          </div>
+          <div class="semana-tabs" id="semana-tabs"></div>
+          <table class="tabla">
+            <thead><tr><th>Hora</th><th>Paciente</th><th>Motivo</th><th>Estado</th><th>Acción</th></tr></thead>
+            <tbody id="tbody-citas-semana">
+              <tr><td colspan="5" style="text-align:center;color:var(--text-soft);padding:20px;">Selecciona un día</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ MIS REPORTES ══ HU12 -->
+    <div id="sec-reportes" style="display:none;">
+
+      <!-- Filtro período -->
+      <div class="panel" style="margin-bottom:20px;">
+        <div class="panel__header" style="margin-bottom:14px;">
+          <h2>Período del reporte</h2>
+          <button class="header-btn" onclick="repMedicoGenerar()">🔍 Generar</button>
+        </div>
+        <div class="rep-filtros-grid">
+          <div class="form-group">
+            <label class="lbl">Fecha inicio</label>
+            <input type="date" id="repm-fecha-inicio" class="rep-input"/>
+          </div>
+          <div class="form-group">
+            <label class="lbl">Fecha fin</label>
+            <input type="date" id="repm-fecha-fin" class="rep-input"/>
+          </div>
+        </div>
+      </div>
+
+      <!-- KPI cards -->
+      <section class="stats-grid" style="margin-bottom:20px;">
+        <div class="stat-card stat-card--teal">
+          <div class="stat-icon">🩺</div>
+          <div class="stat-info">
+            <div class="stat-num" id="repm-kpi-consultas">—</div>
+            <div class="stat-label">Consultas realizadas</div>
+          </div>
+        </div>
+        <div class="stat-card stat-card--gold">
+          <div class="stat-icon">👤</div>
+          <div class="stat-info">
+            <div class="stat-num" id="repm-kpi-pacientes">—</div>
+            <div class="stat-label">Pacientes atendidos</div>
+          </div>
+        </div>
+        <div class="stat-card stat-card--soft">
+          <div class="stat-icon">📝</div>
+          <div class="stat-info">
+            <div class="stat-num" id="repm-kpi-recetas">—</div>
+            <div class="stat-label">Recetas emitidas</div>
+          </div>
+        </div>
+        <div class="stat-card stat-card--dark">
+          <div class="stat-icon">🔬</div>
+          <div class="stat-info">
+            <div class="stat-num" id="repm-kpi-diagnosticos">—</div>
+            <div class="stat-label">Diagnósticos</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Diagnósticos frecuentes — ancho completo -->
+      <div class="panel" style="margin-bottom:20px;">
+        <div class="panel__header" style="margin-bottom:16px;">
+          <h2>Diagnósticos más frecuentes</h2>
+        </div>
+        <div id="repm-diagnosticos">
+          <p style="text-align:center;color:var(--text-soft);padding:20px;font-size:13px;">
+            Genera el reporte para ver resultados.
+          </p>
+        </div>
+      </div>
+
+      <!-- Recetas emitidas — ancho completo, tabla con todas las columnas -->
+      <div class="panel">
+        <div class="panel__header" style="margin-bottom:16px;">
+          <h2>Últimas recetas emitidas</h2>
+        </div>
+        <div class="rep-tabla-recetas-wrap">
+          <table class="tabla">
+            <thead>
+              <tr>
+                <th style="min-width:90px;">Fecha</th>
+                <th style="min-width:140px;">Paciente</th>
+                <th style="min-width:160px;">Medicamento</th>
+                <th style="min-width:80px;">Dosis</th>
+                <th style="min-width:120px;">Frecuencia</th>
+                <th style="min-width:90px;">Duración</th>
+              </tr>
+            </thead>
+            <tbody id="repm-tbody-recetas">
+              <tr>
+                <td colspan="6" style="text-align:center;color:var(--text-soft);padding:20px;">
+                  Genera el reporte para ver resultados.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div><!-- /sec-reportes -->
+
+  </main>
+</div>
+
+<!-- MODAL HISTORIAL PACIENTE -->
+<div class="modal-overlay" id="modal-historial-paciente">
+  <div class="modal" style="max-width:680px;">
+    <div class="modal__header">
+      <h3>📋 Historial del Paciente</h3>
+      <button class="modal__close" onclick="cerrarModalHistorial()">✕</button>
+    </div>
+    <div id="modal-historial-contenido">
+      <p style="text-align:center;color:var(--text-soft);padding:30px;">Cargando...</p>
+    </div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px;padding-top:16px;border-top:1px solid var(--border);">
+      <button class="btn-cancelar" onclick="cerrarModalHistorial()">Cerrar</button>
+      <button class="btn-primary" id="btn-atender-modal">🩺 Atender</button>
+    </div>
+  </div>
+</div>
+
+<script src="/js/dashboard-utils.js"></script>
+<script src="/js/dashboard-medico.js"></script>
+</body>
+</html>
