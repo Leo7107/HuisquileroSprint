@@ -6,8 +6,6 @@
   <title>Medisync – Administrador</title>
   <link rel="shortcut icon" href="/genfavicon-32.png" type="image/x-icon">
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,400,0,0" />
-
   <link rel="stylesheet" href="/css/dashboard.css"/>
   <style>
     @media print {
@@ -29,20 +27,20 @@
   <!-- ══ SIDEBAR ══ -->
   <aside class="sidebar">
     <div class="sidebar__brand">
-      <span class="brand-icon material-symbols-outlined icon-inline">medical_services</span>
+      <span class="brand-icon">✦</span>
       <span class="brand-name">Medisync</span>
     </div>
     <div class="sidebar__rol sidebar__rol--admin">Administrador</div>
     <nav class="sidebar__nav">
-      <a href="#" class="nav-item active" onclick="nav('inicio',this);return false;"><span class="nav-icon material-symbols-outlined icon-inline">dashboard</span> Panel Principal</a>
-      <a href="#" class="nav-item" onclick="nav('usuarios',this);return false;"><span class="nav-icon material-symbols-outlined icon-inline">groups</span> Gestión de Usuarios</a>
-      <a href="#" class="nav-item" onclick="nav('medicos',this);return false;"><span class="nav-icon material-symbols-outlined icon-inline">medical_services</span> Gestión de Médicos</a>
-      <a href="#" class="nav-item" onclick="nav('roles',this);return false;"><span class="nav-icon material-symbols-outlined icon-inline">vpn_key</span> Roles y Accesos</a>
-      <a href="#" class="nav-item" onclick="nav('logs',this);return false;"><span class="nav-icon material-symbols-outlined icon-inline">article</span> Logs del Sistema</a>
-      <a href="#" class="nav-item" onclick="nav('inventario',this);return false;"><span class="nav-icon material-symbols-outlined icon-inline">medication</span> Inventario</a>
-      <a href="#" class="nav-item" onclick="nav('reportes',this);return false;"><span class="nav-icon material-symbols-outlined icon-inline">bar_chart</span> Reportes</a>
+      <a href="#" class="nav-item active" onclick="nav('inicio',this);return false;"><span class="nav-icon">⊞</span> Panel Principal</a>
+      <a href="#" class="nav-item" onclick="nav('usuarios',this);return false;"><span class="nav-icon">👥</span> Gestión de Usuarios</a>
+      <a href="#" class="nav-item" onclick="nav('medicos',this);return false;"><span class="nav-icon">🩺</span> Gestión de Médicos</a>
+      <a href="#" class="nav-item" onclick="nav('roles',this);return false;"><span class="nav-icon">🔑</span> Roles y Accesos</a>
+      <a href="#" class="nav-item" onclick="nav('logs',this);return false;"><span class="nav-icon">📋</span> Logs del Sistema</a>
+      <a href="#" class="nav-item" onclick="nav('inventario',this);return false;"><span class="nav-icon">💊</span> Inventario</a>
+      <a href="#" class="nav-item" onclick="nav('reportes',this);return false;"><span class="nav-icon">📊</span> Reportes</a>
     </nav>
-    <button class="sidebar__logout" onclick="cerrarSesion()"><span class="material-symbols-outlined icon-inline">power_settings_new</span> Cerrar sesión</button>
+    <button class="sidebar__logout" onclick="cerrarSesion()"><span>⏻</span> Cerrar sesión</button>
   </aside>
 
   <!-- ══ MAIN ══ -->
@@ -69,14 +67,14 @@
 
       <section class="stats-grid">
         <div class="stat-card stat-card--teal">
-          <div class="stat-icon material-symbols-outlined icon-inline">person</div>
+          <div class="stat-icon">👤</div>
           <div class="stat-info">
             <div class="stat-num" id="s-pacientes">—</div>
             <div class="stat-label">Pacientes Registrados</div>
           </div>
         </div>
         <div class="stat-card stat-card--gold">
-          <div class="stat-icon material-symbols-outlined icon-inline">calendar_today</div>
+          <div class="stat-icon">📅</div>
           <div class="stat-info">
             <div class="stat-num" id="metCitasHoy">—</div>
             <div class="stat-label">Citas de Hoy</div>
@@ -84,14 +82,14 @@
           </div>
         </div>
         <div class="stat-card stat-card--soft">
-          <div class="stat-icon material-symbols-outlined icon-inline">medical_services</div>
+          <div class="stat-icon">🩺</div>
           <div class="stat-info">
             <div class="stat-num" id="metMedicos">—</div>
             <div class="stat-label">Médicos Activos</div>
           </div>
         </div>
         <div class="stat-card stat-card--dark alerta-card" id="cardAlertas">
-          <div class="stat-icon material-symbols-outlined icon-inline">warning</div>
+          <div class="stat-icon">⚠️</div>
           <div class="stat-info">
             <div class="stat-num" id="metAlertas">—</div>
             <div class="stat-label">Alertas de Inventario</div>
@@ -103,10 +101,10 @@
         <div class="panel">
           <div class="panel__header"><h2>Acciones Rápidas</h2></div>
           <div class="acciones-grid">
-            <button class="accion-btn" onclick="nav('usuarios',null)"><span class="material-symbols-outlined icon-inline">groups</span><span>Gestionar Usuarios</span></button>
-            <button class="accion-btn" onclick="nav('medicos',null)"><span class="material-symbols-outlined icon-inline">medical_services</span><span>Gestionar Médicos</span></button>
-            <button class="accion-btn" onclick="abrirModal()"><span class="material-symbols-outlined icon-inline">add</span><span>Nuevo Usuario</span></button>
-            <button class="accion-btn" onclick="nav('logs',null)"><span class="material-symbols-outlined icon-inline">article</span><span>Ver Logs</span></button>
+            <button class="accion-btn" onclick="nav('usuarios',null)"><span>👥</span><span>Gestionar Usuarios</span></button>
+            <button class="accion-btn" onclick="nav('medicos',null)"><span>🩺</span><span>Gestionar Médicos</span></button>
+            <button class="accion-btn" onclick="abrirModal()"><span>➕</span><span>Nuevo Usuario</span></button>
+            <button class="accion-btn" onclick="nav('logs',null)"><span>📋</span><span>Ver Logs</span></button>
           </div>
         </div>
 
@@ -123,7 +121,7 @@
 
       <div class="panel" id="panelInventarioCritico" style="margin-top:1.5rem;">
         <div class="panel__header">
-          <h2> <span class="material-symbols-outlined icon-inline">warning</span> Inventario Crítico</h2>
+          <h2>🔴 Inventario Crítico</h2>
           <span class="badge-alerta" id="badgeInventario">0</span>
         </div>
         <table class="tabla">
@@ -154,7 +152,7 @@
           <button class="header-btn" onclick="abrirModal()">+ Nuevo Usuario</button>
         </div>
         <div class="search-wrap">
-          <span class="material-symbols-outlined icon-inline">search</span>
+          <span>🔍</span>
           <input type="text" id="q-usuarios" placeholder="Buscar por nombre, email o rol..." oninput="filtrarUsuarios()"/>
         </div>
         <div class="tabs">
@@ -185,7 +183,7 @@
           <button class="header-btn" onclick="abrirModalMedico()">+ Nuevo Médico</button>
         </div>
         <div class="search-wrap">
-          <span class="material-symbols-outlined icon-inline">search</span>
+          <span>🔍</span>
           <input type="text" id="q-medicos" placeholder="Buscar por nombre, especialidad o junta médica..." oninput="filtrarMedicos()"/>
         </div>
         <div class="tabs">
@@ -230,8 +228,8 @@
     <div id="sec-logs" style="display:none;">
       <div class="panel">
         <div class="panel__header">
-          <h2> <span class="material-symbols-outlined icon-inline">article</span> Logs del Sistema</h2>
-          <button class="btn-refresh" onclick="cargarActividad()"> <span class="material-symbols-outlined icon-inline">refresh</span> Actualizar</button>
+          <h2>📋 Logs del Sistema</h2>
+          <button class="btn-refresh" onclick="cargarActividad()">↻ Actualizar</button>
         </div>
         <ul class="feed-actividad" id="logs-full">
           <li class="sin-datos">Cargando actividad...</li>
@@ -240,7 +238,7 @@
 
       <div class="panel" style="margin-top:1.5rem;">
         <div class="panel__header">
-          <h2> <span class="material-symbols-outlined icon-inline">warning</span> Inventario en Estado Crítico</h2>
+          <h2>🔴 Inventario en Estado Crítico</h2>
           <button class="btn-refresh" onclick="nav('inventario',null)">Ir a Inventario →</button>
         </div>
         <table class="tabla">
@@ -271,14 +269,14 @@
           <button class="header-btn" onclick="abrirModalNuevoMed()">+ Nuevo Medicamento</button>
         </div>
         <div class="tabs">
-          <button class="tab-btn active" id="tab-medicamentos" onclick="switchTabInv('medicamentos')"> <span class="material-symbols-outlined icon-inline">medication</span> Medicamentos</button>
-          <button class="tab-btn" id="tab-movimientos" onclick="switchTabInv('movimientos')"> <span class="material-symbols-outlined icon-inline">article</span> Historial Movimientos</button>
+          <button class="tab-btn active" id="tab-medicamentos" onclick="switchTabInv('medicamentos')">💊 Medicamentos</button>
+          <button class="tab-btn" id="tab-movimientos" onclick="switchTabInv('movimientos')">📋 Historial Movimientos</button>
         </div>
 
         <!-- Tab: medicamentos -->
         <div id="tab-inv-medicamentos">
           <div class="search-wrap" style="margin-bottom:16px;">
-            <span class="material-symbols-outlined icon-inline">search</span>
+            <span>🔍</span>
             <input type="text" id="q-inventario" placeholder="Buscar medicamento..." oninput="buscarInventario()"/>
           </div>
           <table class="tabla">
@@ -317,8 +315,8 @@
     <div id="sec-reportes" style="display:none;">
 
       <div class="rep-tabs">
-        <button class="rep-tab rep-tab--active" onclick="repSwitchTab('citas',this)"> <span class="material-symbols-outlined icon-inline">calendar_today</span> Citas</button>
-        <button class="rep-tab" onclick="repSwitchTab('inventario',this)"> <span class="material-symbols-outlined icon-inline">medication</span> Inventario</button>
+        <button class="rep-tab rep-tab--active" onclick="repSwitchTab('citas',this)">📅 Citas</button>
+        <button class="rep-tab" onclick="repSwitchTab('inventario',this)">💊 Inventario</button>
       </div>
 
       <!-- Panel citas -->
@@ -351,7 +349,7 @@
             </div>
             <div class="form-group rep-btn-wrap">
               <button class="header-btn" style="width:100%;padding:11px;" onclick="repGenerarCitas()">
-                <span class="material-symbols-outlined icon-inline">search</span> Generar reporte
+                🔍 Generar reporte
               </button>
             </div>
           </div>
@@ -359,28 +357,28 @@
 
         <section class="stats-grid" id="rep-kpis-citas" style="display:none;margin-bottom:20px;">
           <div class="stat-card stat-card--teal">
-            <div class="stat-icon material-symbols-outlined icon-inline">article</div>
+            <div class="stat-icon">📋</div>
             <div class="stat-info">
               <div class="stat-num" id="rep-kpi-total">—</div>
               <div class="stat-label">Total citas</div>
             </div>
           </div>
           <div class="stat-card stat-card--soft">
-            <div class="stat-icon material-symbols-outlined icon-inline">check_circle</div>
+            <div class="stat-icon">✅</div>
             <div class="stat-info">
               <div class="stat-num" id="rep-kpi-atendidas">—</div>
               <div class="stat-label">Atendidas</div>
             </div>
           </div>
           <div class="stat-card stat-card--gold">
-            <div class="stat-icon material-symbols-outlined icon-inline">schedule</div>
+            <div class="stat-icon">⏳</div>
             <div class="stat-info">
               <div class="stat-num" id="rep-kpi-pendientes">—</div>
               <div class="stat-label">Pendientes</div>
             </div>
           </div>
           <div class="stat-card stat-card--dark">
-            <div class="stat-icon material-symbols-outlined icon-inline">cancel</div>
+            <div class="stat-icon">❌</div>
             <div class="stat-info">
               <div class="stat-num" id="rep-kpi-canceladas">—</div>
               <div class="stat-label">Canceladas</div>
@@ -414,28 +412,28 @@
 
         <section class="stats-grid" style="margin-bottom:20px;">
           <div class="stat-card stat-card--teal">
-            <div class="stat-icon material-symbols-outlined icon-inline">medication</div>
+            <div class="stat-icon">💊</div>
             <div class="stat-info">
               <div class="stat-num" id="inv-kpi-total">—</div>
               <div class="stat-label">Medicamentos activos</div>
             </div>
           </div>
           <div class="stat-card stat-card--soft">
-            <div class="stat-icon material-symbols-outlined icon-inline">check_circle</div>
+            <div class="stat-icon">✅</div>
             <div class="stat-info">
               <div class="stat-num" id="inv-kpi-stock">—</div>
               <div class="stat-label">En stock</div>
             </div>
           </div>
           <div class="stat-card stat-card--gold">
-            <div class="stat-icon material-symbols-outlined icon-inline">warning</div>
+            <div class="stat-icon">⚠️</div>
             <div class="stat-info">
               <div class="stat-num" id="inv-kpi-alerta">—</div>
               <div class="stat-label">En alerta</div>
             </div>
           </div>
           <div class="stat-card stat-card--dark">
-            <div class="stat-icon material-symbols-outlined icon-inline">warning</div>
+            <div class="stat-icon">🔴</div>
             <div class="stat-info">
               <div class="stat-num" id="inv-kpi-agotados">—</div>
               <div class="stat-label">Agotados</div>
@@ -449,12 +447,12 @@
             <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
               <div class="tabs" style="margin-bottom:0;width:auto;gap:4px;">
                 <button class="tab-btn active" onclick="repFiltrarInv('todos',this)">Todos</button>
-                <button class="tab-btn" onclick="repFiltrarInv('alerta',this)"> <span class="material-symbols-outlined icon-inline">warning</span> Alerta</button>
-                <button class="tab-btn" onclick="repFiltrarInv('agotado',this)"> <span class="material-symbols-outlined icon-inline">warning</span> Agotados</button>
-                <button class="tab-btn" onclick="repFiltrarInv('normal',this)"> <span class="material-symbols-outlined icon-inline">check_circle</span> Stock OK</button>
+                <button class="tab-btn" onclick="repFiltrarInv('alerta',this)">⚠️ Alerta</button>
+                <button class="tab-btn" onclick="repFiltrarInv('agotado',this)">🔴 Agotados</button>
+                <button class="tab-btn" onclick="repFiltrarInv('normal',this)">✅ Stock OK</button>
               </div>
               <button class="header-btn" style="display:flex;align-items:center;gap:6px;white-space:nowrap;" onclick="exportarPDFInventario()">
-                <span class="material-symbols-outlined icon-inline">description</span> Exportar PDF
+                📄 Exportar PDF
               </button>
             </div>
           </div>
@@ -483,7 +481,7 @@
   <div class="modal">
     <div class="modal__header">
       <h3 id="modal-med-titulo">Nuevo Medicamento</h3>
-      <button class="modal__close" onclick="cerrarModalMed()"> <span class="material-symbols-outlined icon-inline">close</span></button>
+      <button class="modal__close" onclick="cerrarModalMed()">✕</button>
     </div>
     <input type="hidden" id="med-id"/>
     <div class="form-row">
@@ -528,7 +526,7 @@
     </div>
     <div id="acciones-stock-modal" style="display:none;margin-bottom:14px;">
       <div style="display:flex;gap:8px;">
-        <button class="btn-cancelar" style="flex:1;font-size:13px;" onclick="abrirDesdeEditar('entrada')"> <span class="material-symbols-outlined icon-inline">add</span> Agregar stock</button>
+        <button class="btn-cancelar" style="flex:1;font-size:13px;" onclick="abrirDesdeEditar('entrada')">➕ Agregar stock</button>
         <button class="btn-cancelar" style="flex:1;font-size:13px;" onclick="abrirDesdeEditar('ajuste')">🔧 Ajustar stock</button>
       </div>
     </div>
@@ -545,8 +543,8 @@
 <div class="modal-overlay" id="modal-entrada">
   <div class="modal" style="max-width:460px;">
     <div class="modal__header">
-      <h3><span class="material-symbols-outlined icon-inline">inventory_2</span> Registrar Entrada de Stock</h3>
-      <button class="modal__close" onclick="cerrarModalEntrada()"> <span class="material-symbols-outlined icon-inline">close</span></button>
+      <h3>📦 Registrar Entrada de Stock</h3>
+      <button class="modal__close" onclick="cerrarModalEntrada()">✕</button>
     </div>
     <input type="hidden" id="entrada-id-med"/>
     <div style="background:rgba(42,107,94,0.07);border:1.5px solid rgba(42,107,94,0.15);border-radius:12px;padding:12px 16px;margin-bottom:18px;">
@@ -574,7 +572,7 @@
   <div class="modal" style="max-width:460px;">
     <div class="modal__header">
       <h3>🔧 Ajuste Manual de Stock</h3>
-      <button class="modal__close" onclick="cerrarModalAjuste()"> <span class="material-symbols-outlined icon-inline">close</span></button>
+      <button class="modal__close" onclick="cerrarModalAjuste()">✕</button>
     </div>
     <input type="hidden" id="ajuste-id-med"/>
     <div style="background:rgba(201,168,76,0.08);border:1.5px solid rgba(201,168,76,0.2);border-radius:12px;padding:12px 16px;margin-bottom:18px;">
@@ -603,7 +601,7 @@
   <div class="modal">
     <div class="modal__header">
       <h3 id="modal-titulo">Nuevo Usuario</h3>
-      <button class="modal__close" onclick="cerrarModal()"> <span class="material-symbols-outlined icon-inline">close</span></button>
+      <button class="modal__close" onclick="cerrarModal()">✕</button>
     </div>
     <input type="hidden" id="m-id"/>
     <div class="form-row">
@@ -653,7 +651,7 @@
   <div class="modal">
     <div class="modal__header">
       <h3 id="modal-medico-titulo">Nuevo Médico</h3>
-      <button class="modal__close" onclick="cerrarModalMedico()"> <span class="material-symbols-outlined icon-inline">close</span></button>
+      <button class="modal__close" onclick="cerrarModalMedico()">✕</button>
     </div>
     <input type="hidden" id="md-id"/>
     <div class="form-row">
@@ -726,7 +724,7 @@
   <!-- Header del PDF -->
   <div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #2a6b5e;padding-bottom:16px;margin-bottom:20px;">
     <div>
-      <div style="font-size:22px;font-weight:700;color:#2a6b5e;"> <span class="material-symbols-outlined icon-inline">medical_services</span> Medisync</div>
+      <div style="font-size:22px;font-weight:700;color:#2a6b5e;">✦ Medisync</div>
       <div style="font-size:13px;color:#666;margin-top:4px;">Sistema de Gestión Clínica</div>
     </div>
     <div style="text-align:right;">
@@ -762,6 +760,5 @@
 
 <script src="/js/dashboard-utils.js"></script>
 <script src="/js/dashboard-admin.js"></script>
-<script src="/js/sidebar-mobile.js"></script>
 </body>
 </html>
