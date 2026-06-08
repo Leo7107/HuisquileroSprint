@@ -4,7 +4,7 @@
 
 // ── AUTH ──────────────────────────────────────
 const usuario = JSON.parse(sessionStorage.getItem('usuario') || 'null');
-if (!usuario || usuario.rol !== 1) {
+if (!usuario || usuario.rol !== 30002) {
   window.location.href = '/';
 }
 
