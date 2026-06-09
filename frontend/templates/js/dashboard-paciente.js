@@ -1,14 +1,5 @@
 /**
  * dashboard-paciente.js — HU11: Portal de Autogestión del Paciente
- *
- * Funcionalidades nuevas:
- *   - Ver detalle completo de una cita
- *   - Cancelar cita (PENDIENTE o CONFIRMADA)
- *   - Reprogramar cita (UPDATE fecha/hora, valida duplicado en backend)
- *   - Descargar receta individual en PDF
- *   - Descargar historial clínico completo en PDF
- *   - Descargar diagnósticos en PDF
- *   - Estadísticas dinámicas en el panel inicio
  */
 
 // ─── Autenticación ────────────────────────────────────────────────────────────
@@ -142,12 +133,6 @@ function badgeEstado(estado) {
   const cls = mapa[estado] || 'pendiente';
   return `<span class="badge badge--${cls}">${esc(estado)}</span>`;
 }
-
-// ─── Fila de cita reutilizable ────────────────────────────────────────────────
-/* ============================================================
-   PATCH: filaCita con data-label + otras tablas con data-label
-   Reemplaza las funciones indicadas en dashboard-paciente.js
-   ============================================================ */
 
 // ── filaCita ──────────────────────────────────────────────
 function filaCita(c, compact) {
@@ -303,14 +288,14 @@ function abrirModalCita() {
   document.getElementById('cita-doctor').value              = '';
   document.getElementById('cita-motivo').value              = '';
 
-  document.getElementById('buscar-medicos-wrap').style.display    = '';
-  document.getElementById('medicos-disponibles-wrap').style.display = 'none';
-  document.getElementById('medicos-lista').innerHTML              = '';
-  document.getElementById('horario-info').style.display           = 'none';
-  document.getElementById('motivo-wrap').style.display            = 'none';
-  document.getElementById('btn-guardar-cita').style.display       = 'none';
-  document.getElementById('btn-buscar-medicos').disabled          = true;
-  document.getElementById('btn-buscar-medicos').textContent       = 'Ver médicos disponibles para esa fecha y hora';
+  // IMPORTANTE: mostrar el wrap padre pero ocultar solo el botón y la lista
+  document.getElementById('buscar-medicos-wrap').style.display      = '';       // visible — contiene la lista
+  document.getElementById('btn-buscar-medicos').style.display       = 'none';  // botón oculto — no se necesita
+  document.getElementById('medicos-disponibles-wrap').style.display = 'none';  // lista oculta hasta buscar
+  document.getElementById('medicos-lista').innerHTML                = '';
+  document.getElementById('horario-info').style.display             = 'none';
+  document.getElementById('motivo-wrap').style.display              = 'none';
+  document.getElementById('btn-guardar-cita').style.display         = 'none';
 
   document.getElementById('modal-cita').classList.add('active');
 }
@@ -332,11 +317,11 @@ function abrirReprogramar(idCita) {
   document.getElementById('cita-doctor').value             = c.idDoctor;
   document.getElementById('cita-motivo').value             = '';
 
-  document.getElementById('horario-texto').textContent        = doctorNombre + ' (doctor fijo)';
-  document.getElementById('horario-info').style.display       = 'block';
+  document.getElementById('horario-texto').textContent         = doctorNombre + ' (doctor fijo)';
+  document.getElementById('horario-info').style.display        = 'block';
   document.getElementById('buscar-medicos-wrap').style.display = 'none';
-  document.getElementById('motivo-wrap').style.display        = 'none';
-  document.getElementById('btn-guardar-cita').style.display   = '';
+  document.getElementById('motivo-wrap').style.display         = 'none';
+  document.getElementById('btn-guardar-cita').style.display    = '';
 
   document.getElementById('modal-cita').classList.add('active');
 }
@@ -351,16 +336,21 @@ function onFechaHoraChange() {
   if (_reprogramarIdCita) return;
   const fecha = document.getElementById('cita-fecha').value;
   const hora  = document.getElementById('cita-hora').value;
-  const btn   = document.getElementById('btn-buscar-medicos');
-  btn.disabled = !(fecha && hora);
+
+  // Limpiar selección anterior
+  document.getElementById('cita-doctor').value              = '';
+  document.getElementById('horario-info').style.display     = 'none';
+  document.getElementById('motivo-wrap').style.display      = 'none';
+  document.getElementById('btn-guardar-cita').style.display = 'none';
+  document.getElementById('medicos-lista').innerHTML        = '';
+
   if (!fecha || !hora) {
     document.getElementById('medicos-disponibles-wrap').style.display = 'none';
-    document.getElementById('motivo-wrap').style.display              = 'none';
-    document.getElementById('btn-guardar-cita').style.display         = 'none';
-    document.getElementById('horario-info').style.display             = 'none';
-    document.getElementById('cita-doctor').value                      = '';
-    document.getElementById('medicos-lista').innerHTML                = '';
+    return;
   }
+
+  // Buscar automáticamente al tener fecha Y hora
+  buscarMedicosDisponibles();
 }
 
 async function buscarMedicosDisponibles() {
@@ -368,12 +358,16 @@ async function buscarMedicosDisponibles() {
   const hora  = document.getElementById('cita-hora').value;
   if (!fecha || !hora) return;
 
-  const btn = document.getElementById('btn-buscar-medicos');
-  btn.disabled    = true;
-  btn.innerHTML = '<span class="material-symbols-outlined icon-inline">hourglass_empty</span> Buscando...';
-  document.getElementById('cita-doctor').value             = '';
-  document.getElementById('horario-info').style.display    = 'none';
-  document.getElementById('motivo-wrap').style.display     = 'none';
+  const listaEl = document.getElementById('medicos-lista');
+  listaEl.innerHTML = `
+    <div class="medicos-sin-resultado">
+      <span class="material-symbols-outlined" style="font-size:18px;vertical-align:middle;">hourglass_empty</span>
+      Buscando médicos disponibles...
+    </div>`;
+  document.getElementById('medicos-disponibles-wrap').style.display = 'block';
+  document.getElementById('cita-doctor').value              = '';
+  document.getElementById('horario-info').style.display     = 'none';
+  document.getElementById('motivo-wrap').style.display      = 'none';
   document.getElementById('btn-guardar-cita').style.display = 'none';
 
   try {
@@ -381,17 +375,17 @@ async function buscarMedicosDisponibles() {
     const data = await res.json();
     const lista = Array.isArray(data) ? data : [];
 
-    const listaEl = document.getElementById('medicos-lista');
     if (lista.length === 0) {
       listaEl.innerHTML = `
         <div class="medicos-sin-resultado">
-          <span class="material-symbols-outlined" style="font-size:18px;vertical-align:middle;">info</span> No hay médicos disponibles el <strong>${fecha}</strong> a las <strong>${hora}</strong>.<br>
+          <span class="material-symbols-outlined" style="font-size:18px;vertical-align:middle;">info</span>
+          No hay médicos disponibles el <strong>${fecha}</strong> a las <strong>${hora}</strong>.<br>
           Prueba con otra fecha u hora.
         </div>`;
     } else {
       listaEl.innerHTML = lista.map(d => {
-        const nombre   = `${esc(d.Nombres)} ${esc(d.Apellidos)}`;
-        const horario  = (d.hora_inicio && d.hora_fin)
+        const nombre  = `${esc(d.Nombres)} ${esc(d.Apellidos)}`;
+        const horario = (d.hora_inicio && d.hora_fin)
           ? d.hora_inicio.substring(0,5) + ' – ' + d.hora_fin.substring(0,5)
           : 'Sin horario';
         return `
@@ -407,38 +401,34 @@ async function buscarMedicosDisponibles() {
           </div>`;
       }).join('');
     }
-
-    document.getElementById('medicos-disponibles-wrap').style.display = 'block';
   } catch {
+    listaEl.innerHTML = `
+      <div class="medicos-sin-resultado">
+        <span class="material-symbols-outlined" style="font-size:18px;vertical-align:middle;">error</span>
+        Error al buscar médicos. Intenta de nuevo.
+      </div>`;
     toast('Error al buscar médicos disponibles. Intenta de nuevo.', 'error');
-  } finally {
-    btn.disabled    = false;
-    btn.textContent = 'Ver médicos disponibles para esa fecha y hora';
   }
 }
 
 function seleccionarMedicoDisponible(idDoctor, nombre, especialidad, horario) {
   document.getElementById('cita-doctor').value = idDoctor;
 
-  // Resaltar card seleccionada
   document.querySelectorAll('.medico-card').forEach(el => el.classList.remove('selected'));
   const card = document.getElementById('medico-card-' + idDoctor);
   if (card) card.classList.add('selected');
 
-  // Mostrar resumen del médico seleccionado
-  document.getElementById('horario-texto').textContent = `Dr(a). ${nombre} · ${especialidad} · ${horario}`;
-  document.getElementById('horario-info').style.display = 'block';
-
-  // Mostrar motivo y botón guardar
-  document.getElementById('motivo-wrap').style.display    = '';
+  document.getElementById('horario-texto').textContent      = `Dr(a). ${nombre} · ${especialidad} · ${horario}`;
+  document.getElementById('horario-info').style.display     = 'block';
+  document.getElementById('motivo-wrap').style.display      = '';
   document.getElementById('btn-guardar-cita').style.display = '';
   document.getElementById('cita-motivo').focus();
 }
 
 function resetSeleccionMedico() {
-  document.getElementById('cita-doctor').value             = '';
-  document.getElementById('horario-info').style.display    = 'none';
-  document.getElementById('motivo-wrap').style.display     = 'none';
+  document.getElementById('cita-doctor').value              = '';
+  document.getElementById('horario-info').style.display     = 'none';
+  document.getElementById('motivo-wrap').style.display      = 'none';
   document.getElementById('btn-guardar-cita').style.display = 'none';
   document.querySelectorAll('.medico-card').forEach(el => el.classList.remove('selected'));
 }
@@ -516,7 +506,6 @@ async function solicitarCita() {
     toast('Error de conexión. Intenta de nuevo.', 'error');
   }
 }
-
 
 // ─── CONSULTAS ───────────────────────────────────────────────────────────────
 async function cargarConsultas() {
@@ -720,7 +709,6 @@ function cerrarSesion() {
   sessionStorage.removeItem('usuario');
   window.location.href = '/';
 }
-
 
 // ─── INIT ─────────────────────────────────────────────────────────────────────
 (async () => {
