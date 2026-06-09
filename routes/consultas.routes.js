@@ -5,12 +5,13 @@ const auth = require("../middleware/auth");
 
 router.use(auth);
 
-router.get("/recientes",       consultasController.getRecientesConsultas);
-router.get("/by-cita/:idCita", consultasController.getConsultaByCita);
-router.get("/",                consultasController.getConsultas);
-router.get("/:id", consultasController.getConsultaById);
-router.post("/", consultasController.createConsulta);
-router.put("/:id", consultasController.updateConsulta);
-router.delete("/:id", consultasController.deleteConsulta);
+router.get("/recientes",                  consultasController.getRecientesConsultas);
+router.get("/by-cita/:idCita",            consultasController.getConsultaByCita);
+router.get("/paciente/:idPaciente",       consultasController.getConsultasByPaciente);
+router.get("/",                           consultasController.getConsultas);
+router.get("/:id",                        consultasController.getConsultaById);
+router.post("/",                          consultasController.createConsulta);
+router.put("/:id",                        consultasController.updateConsulta);
+router.delete("/:id",                     consultasController.deleteConsulta);
 
 module.exports = router;
