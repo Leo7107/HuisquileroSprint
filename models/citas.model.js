@@ -25,7 +25,7 @@ const Cita = {
     LEFT JOIN tbl_usuarios   u_pac ON p.idUsuario  = u_pac.idUsuario
     LEFT JOIN tbl_doctores   doc   ON c.idDoctor   = doc.idDoctor
     LEFT JOIN tbl_usuarios   u_doc ON doc.idUsuario = u_doc.idUsuario
-    WHERE c.idcita = ?
+    WHERE c.idCita = ?
   `, [id], cb),
 
   getByUsuarioPaciente: (idUsuario, cb) => db.query(`
@@ -74,8 +74,8 @@ const Cita = {
   ),
 
   create:    (data, cb) => db.query("INSERT INTO tbl_citas SET ?", data, cb),
-  update:    (id, data, cb) => db.query("UPDATE tbl_citas SET ? WHERE idcita = ?", [data, id], cb),
-  delete:    (id, cb) => db.query("DELETE FROM tbl_citas WHERE idcita = ?", [id], cb),
+  update:    (id, data, cb) => db.query("UPDATE tbl_citas SET ? WHERE idCita = ?", [data, id], cb),
+  delete:    (id, cb) => db.query("DELETE FROM tbl_citas WHERE idCita = ?", [id], cb),
   completar: (id, cb) => db.query("UPDATE tbl_citas SET estado = 'FINALIZADA' WHERE idCita = ?", [id], cb),
 
   // HU11

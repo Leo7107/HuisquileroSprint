@@ -449,19 +449,19 @@
     <div class="form-row">
       <div class="form-group">
         <label>Fecha</label>
-        <input type="date" id="cita-fecha" oninput="onFechaHoraChange()"/>
+        <input type="date" id="cita-fecha" onchange="onFechaHoraChange()"/>
       </div>
       <div class="form-group">
         <label>Hora</label>
         <input type="time" id="cita-hora" min="07:00" max="18:00" step="1800"
-          oninput="onFechaHoraChange()"/>
+          onchange="onFechaHoraChange()"/>
       </div>
     </div>
 
     <!-- Solo para nueva cita: buscar médicos disponibles -->
     <div id="buscar-medicos-wrap">
       <button type="button" class="btn-buscar-medicos" id="btn-buscar-medicos"
-        onclick="buscarMedicosDisponibles()" disabled>
+        onclick="buscarMedicosDisponibles()" disabled style="display:none">
         <span class="material-symbols-outlined icon-inline">search</span> Ver médicos disponibles para esa fecha y hora
       </button>
       <div id="medicos-disponibles-wrap" style="display:none">
