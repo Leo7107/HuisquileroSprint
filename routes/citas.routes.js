@@ -16,5 +16,8 @@ router.delete("/:id",                  auth, citasController.deleteCita);
 router.patch("/:id/completar",         auth, citasController.completarCita);
 router.patch("/:id/cancelar",          auth, citasController.cancelarCita);
 router.put("/:id/reprogramar",         auth, citasController.reprogramarCita);
+router.patch("/:id/inconveniente",     auth, citasController.reportarInconveniente);
+router.patch("/:id/reasignar",         auth, citasController.reasignarCita);
+router.patch("/:id/cancelar-recepcion",auth, citasController.cancelarPorRecepcion);
 
 module.exports = router;

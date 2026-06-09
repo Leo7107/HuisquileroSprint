@@ -18,13 +18,23 @@ const Receta = {
     //         tbl_recetas.idDiagnostico → tbl_diagnosticos → tbl_consultas → tbl_citas.idPaciente
     // ─────────────────────────────────────────────────────────────────────────
     getByPaciente: (idPaciente, cb) => db.query(
-        `SELECT r.*
+        `SELECT r.*,
+                c.idCita, c.fecha AS FechaCita, c.motivo AS MotivoCita,
+                u_doc.Nombres   AS NombreDoctor,
+                u_doc.Apellidos AS ApellidosDoctor,
+                doc.Especialidad,
+                d.descripcion   AS Diagnostico,
+                m.nombre        AS NombreMedicamento,
+                m.unidad_medida AS UnidadMed
          FROM tbl_recetas r
          INNER JOIN tbl_diagnosticos d   ON r.idDiagnostico = d.idDiagnostico
          INNER JOIN tbl_consultas    con ON d.idConsulta     = con.idConsulta
          INNER JOIN tbl_citas        c   ON con.idCita        = c.idCita
+         LEFT  JOIN tbl_doctores     doc   ON c.idDoctor      = doc.idDoctor
+         LEFT  JOIN tbl_usuarios     u_doc ON doc.idUsuario   = u_doc.idUsuario
+         LEFT  JOIN tbl_medicamentos m     ON r.idMedicamento = m.idMedicamento
          WHERE c.idPaciente = ?
-         ORDER BY r.idReceta DESC`,
+         ORDER BY c.fecha DESC, r.idReceta DESC`,
         [idPaciente], cb)
 };
 

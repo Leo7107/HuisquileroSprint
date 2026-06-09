@@ -151,3 +151,82 @@ exports.getDisponibilidad = (req, res) => {
     res.json(results);
   });
 };
+
+// ── FLUJO REASIGNACIÓN: doctor reporta inconveniente ──────────────────────────
+exports.reportarInconveniente = (req, res) => {
+  const idCita   = parseInt(req.params.id);
+  const idDoctor = parseInt(req.body.idDoctor);
+  if (!idDoctor) return res.status(400).json({ error: "idDoctor requerido" });
+  Cita.getById(idCita, (err, rows) => {
+    if (err) { console.error('[citas]', err); return res.status(500).json({ message: 'Error interno del servidor.' }); }
+    const cita = Array.isArray(rows) ? rows[0] : rows;
+    if (!cita) return res.status(404).json({ error: "Cita no encontrada" });
+    if (cita.idDoctor !== idDoctor)
+      return res.status(403).json({ error: "Esta cita no pertenece al doctor" });
+    if (!['PENDIENTE', 'CONFIRMADA'].includes(cita.estado))
+      return res.status(409).json({ error: "Solo se puede reportar inconveniente en citas pendientes o confirmadas" });
+    Cita.reportarInconveniente(idCita, idDoctor, (err, result) => {
+      if (err) { console.error('[citas]', err); return res.status(500).json({ message: 'Error interno del servidor.' }); }
+      if (result.affectedRows === 0)
+        return res.status(409).json({ error: "No se pudo reportar el inconveniente" });
+      res.json({ message: "Inconveniente reportado. La cita pasó a reasignación." });
+    });
+  });
+};
+
+// ── FLUJO REASIGNACIÓN: recepcionista asigna otro doctor ──────────────────────
+exports.reasignarCita = (req, res) => {
+  const idCita        = parseInt(req.params.id);
+  const nuevoIdDoctor = parseInt(req.body.idDoctor);
+  if (!nuevoIdDoctor) return res.status(400).json({ error: "idDoctor (nuevo) requerido" });
+  Cita.getById(idCita, (err, rows) => {
+    if (err) { console.error('[citas]', err); return res.status(500).json({ message: 'Error interno del servidor.' }); }
+    const cita = Array.isArray(rows) ? rows[0] : rows;
+    if (!cita) return res.status(404).json({ error: "Cita no encontrada" });
+    if (cita.estado !== 'REQUIERE_REASIGNACION')
+      return res.status(409).json({ error: "La cita no está en estado de reasignación" });
+    if (nuevoIdDoctor === cita.idDoctor)
+      return res.status(409).json({ error: "Debes elegir un doctor distinto al original" });
+
+    // Validar al menos 1 hora de anticipación antes de la cita
+    const fechaStr  = cita.fecha instanceof Date
+      ? cita.fecha.toISOString().split('T')[0]
+      : String(cita.fecha).split('T')[0];
+    const fechaHora = new Date(`${fechaStr}T${cita.hora}`);
+    const limite    = new Date(Date.now() + 60 * 60 * 1000);
+    if (isNaN(fechaHora.getTime()) || fechaHora < limite)
+      return res.status(409).json({ error: "La reasignación requiere al menos 1 hora de anticipación antes de la cita." });
+
+    // Validar que el nuevo doctor no tenga choque de horario
+    Cita.checkDuplicado(nuevoIdDoctor, fechaStr, cita.hora, idCita, (err, dup) => {
+      if (err) { console.error('[citas]', err); return res.status(500).json({ message: 'Error interno del servidor.' }); }
+      if (dup.length > 0)
+        return res.status(409).json({ error: "El nuevo médico ya tiene una cita en ese horario." });
+      Cita.reasignar(idCita, nuevoIdDoctor, (err, result) => {
+        if (err) { console.error('[citas]', err); return res.status(500).json({ message: 'Error interno del servidor.' }); }
+        if (result.affectedRows === 0)
+          return res.status(409).json({ error: "No se pudo reasignar la cita" });
+        res.json({ message: "Cita reasignada y confirmada con el nuevo médico." });
+      });
+    });
+  });
+};
+
+// ── FLUJO REASIGNACIÓN: recepcionista cancela por falta de doctores ───────────
+exports.cancelarPorRecepcion = (req, res) => {
+  const idCita = parseInt(req.params.id);
+  const motivo = (req.body.motivo || 'Cancelada por recepción: sin doctores disponibles').trim();
+  Cita.getById(idCita, (err, rows) => {
+    if (err) { console.error('[citas]', err); return res.status(500).json({ message: 'Error interno del servidor.' }); }
+    const cita = Array.isArray(rows) ? rows[0] : rows;
+    if (!cita) return res.status(404).json({ error: "Cita no encontrada" });
+    if (['CANCELADA', 'FINALIZADA'].includes(cita.estado))
+      return res.status(409).json({ error: "La cita ya está cerrada" });
+    Cita.cancelarPorRecepcion(idCita, motivo, (err, result) => {
+      if (err) { console.error('[citas]', err); return res.status(500).json({ message: 'Error interno del servidor.' }); }
+      if (result.affectedRows === 0)
+        return res.status(409).json({ error: "No se pudo cancelar la cita" });
+      res.json({ message: "Cita cancelada." });
+    });
+  });
+};

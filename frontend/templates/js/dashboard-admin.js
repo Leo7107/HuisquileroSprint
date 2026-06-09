@@ -900,6 +900,60 @@ function repFiltrarInv(filtro, btn) {
   _repRenderInv(lista);
 }
 
+// ── EXPORTAR PDF DEL REPORTE DE INVENTARIO ────
+function exportarPDFInventario() {
+  if (!Array.isArray(_repInvData) || !_repInvData.length) {
+    toast('No hay datos de inventario para exportar. Genera el reporte primero.', 'warn');
+    return;
+  }
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+
+  const fecha = new Date().toLocaleDateString('es-SV', { year: 'numeric', month: 'long', day: 'numeric' });
+  const estadoLabel = { agotado: 'Agotado', alerta: 'Alerta', normal: 'OK' };
+  const teal = [42, 107, 94];
+
+  // Cabecera
+  doc.setFillColor(...teal);
+  doc.rect(0, 0, 297, 18, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(14);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Reporte de Inventario — Medisync', 14, 12);
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'normal');
+  doc.text(`Generado el ${fecha} · ${_repInvData.length} medicamento(s)`, 200, 12);
+
+  // Tabla
+  doc.autoTable({
+    startY: 24,
+    head: [['Medicamento', 'Stock actual', 'Stock mínimo', 'Unidad', 'Precio unitario', 'Estado']],
+    body: _repInvData.map(m => [
+      m.nombre || '—',
+      m.stock_actual ?? '—',
+      m.stock_minimo ?? '—',
+      m.unidad_medida || '—',
+      m.precio_unitario != null ? '$' + Number(m.precio_unitario).toFixed(2) : '—',
+      estadoLabel[m.nivelStock] || m.estado || '—',
+    ]),
+    headStyles: { fillColor: teal, textColor: 255, fontStyle: 'bold', fontSize: 10 },
+    bodyStyles: { fontSize: 9.5 },
+    alternateRowStyles: { fillColor: [245, 250, 248] },
+    didParseCell(data) {
+      if (data.section === 'body' && data.column.index === 5) {
+        const v = data.cell.raw;
+        if (v === 'Agotado') data.cell.styles.textColor = [192, 48, 48];
+        else if (v === 'Alerta') data.cell.styles.textColor = [176, 120, 0];
+        else if (v === 'OK')     data.cell.styles.textColor = [42, 107, 94];
+      }
+    },
+    margin: { left: 14, right: 14 },
+  });
+
+  doc.save(`inventario-medisync-${new Date().toISOString().split('T')[0]}.pdf`);
+}
+
 // ══════════════════════════════════════════
 //  HU14 — Panel de Métricas Administrativas
 // ══════════════════════════════════════════

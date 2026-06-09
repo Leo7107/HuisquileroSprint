@@ -323,6 +323,8 @@ body::after {
   gap: 16px;
   animation: fadeUp 0.6s ease 0.1s both;
 }
+/* Variante de 3 columnas (paciente: 3 tarjetas, sin hueco a la derecha) */
+.stats-grid--3 { grid-template-columns: repeat(3, 1fr); }
 
 .stat-card {
   background: var(--white);
@@ -1120,14 +1122,24 @@ select.rol-select {
   transform-origin: center;
 }
  
-.menu-toggle.open { background: var(--teal); }
+.menu-toggle.open { background: var(--deep); }
 .menu-toggle.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
 .menu-toggle.open span:nth-child(2) { opacity: 0; transform: scaleX(0); }
 .menu-toggle.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
  
 /* ── Overlay ── */
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(26, 46, 42, 0.52);
+  z-index: 140;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.sidebar-overlay.active { display: block; }
 
- 
 /* ── Tabla responsive: cards en móvil ── */
 @media (max-width: 640px) {
   .tabla { display: block; }
@@ -1214,62 +1226,193 @@ select.rol-select {
 /* ── BREAKPOINT 768px ── */
 @media (max-width: 768px) {
   .layout { grid-template-columns: 1fr; }
- 
-.sidebar {
-  position: fixed;
-  top: 0;
-  left: 0;
-  height: 100vh;
-  width: 268px;
-  z-index: 150;
-  transform: translateX(-100%);
-  transition: transform 0.32s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: none;
-}
 
-.sidebar.open {
-  transform: translateX(0);
-  box-shadow: 6px 0 32px rgba(26,46,42,0.28);
-}
-
-.menu-toggle { display: flex; z-index: 160; }
- 
-  .main {
-    padding: 68px 16px 28px;
-    gap: 16px;
+  .sidebar {
+    position: fixed;
+    top: 0; left: 0;
+    height: 100vh;
+    width: min(80vw, 320px);
+    z-index: 150;
+    transform: translateX(-100%);
+    transition: transform 0.32s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: none;
   }
- 
-  .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
- 
+
+  .sidebar.open {
+    transform: translateX(0);
+    box-shadow: 6px 0 32px rgba(26,46,42,0.28);
+  }
+
+  .menu-toggle { display: flex; }
+
+  .main {
+    padding: 60px 14px 20px;
+    gap: 12px;
+  }
+
+  .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+
   .topbar {
     flex-direction: column;
     align-items: flex-start;
-    gap: 10px;
+    gap: 8px;
   }
- 
-  .topbar__title h1 { font-size: 1.45rem; }
-  .topbar__usuario { width: 100%; }
- 
-  .panels-row { gap: 14px; }
- 
-  .acciones-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
-  .accion-btn { padding: 20px 10px; font-size: 12.5px; }
-  .accion-btn span:first-child { font-size: 26px; }
+
+  .topbar__title h1 { font-size: 1.4rem; }
+  .topbar__title p { margin-top: 2px; }
+  .topbar__usuario { width: 100%; padding: 8px 14px; }
+
+  .panels-row { gap: 12px; }
+
+  .acciones-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
+  .accion-btn { padding: 14px 10px; font-size: 12.5px; }
+  .accion-btn span:first-child { font-size: 24px; }
+
+  /* Ajusta márgenes internos de sec-inicio a espaciado compacto */
+  #sec-inicio .stats-grid { margin-bottom: 10px; }
+  #sec-inicio .panels-row { margin-top: 0; margin-bottom: 10px; }
+  #sec-inicio .panels-row:last-child { margin-bottom: 0; }
+
+  /* Sidebar en móvil: el brand deja espacio para el botón hamburguesa */
+  .sidebar { padding: 14px 14px 20px; }
+  .sidebar__brand { padding: 4px 6px 16px 50px; }
+  .brand-icon { display: none; }
+  .brand-name { font-size: 1.2rem; }
+  .sidebar__rol { margin-bottom: 16px; font-size: 9.5px; }
+  .nav-item { padding: 9px 12px; font-size: 13px; }
 }
  
 /* ── BREAKPOINT 480px ── */
 @media (max-width: 480px) {
-  .stats-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
-  .stat-card { padding: 16px 12px; gap: 10px; }
-  .stat-icon { width: 42px; height: 42px; font-size: 20px; border-radius: 11px; }
-  .stat-num { font-size: 1.45rem; }
-  .stat-label { font-size: 11px; }
-  .panel { padding: 16px 14px; }
-  .panel__header { margin-bottom: 14px; }
-  .panel__header h2 { font-size: 0.98rem; }
+  .stats-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
+  .stat-card { padding: 12px 10px; gap: 8px; }
+  .stat-icon { width: 38px; height: 38px; font-size: 18px; border-radius: 10px; }
+  .stat-num { font-size: 1.3rem; }
+  .stat-label { font-size: 10.5px; }
+  .panel { padding: 14px 12px; }
+  .panel__header { margin-bottom: 10px; }
+  .panel__header h2 { font-size: 0.95rem; }
   .acciones-grid { gap: 8px; }
-  .accion-btn { padding: 16px 8px; font-size: 12px; }
+  .accion-btn { padding: 12px 8px; font-size: 12px; }
+  .accion-btn span:first-child { font-size: 22px; }
   .usuario-nombre { font-size: 12.5px; }
   .usuario-rol { font-size: 10.5px; }
+}
+
+/* ── BREAKPOINT 430px — iPhone 14 Pro Max ── */
+@media (max-width: 430px) {
+  .main { padding: 58px 12px 16px; gap: 10px; }
+
+  /* Stat cards apuntando a ~100px de alto */
+  .stat-card { padding: 10px 9px; gap: 8px; }
+  .stat-icon { width: 36px; height: 36px; font-size: 17px; }
+  .stat-num { font-size: 1.2rem; line-height: 1; }
+  .stat-label { font-size: 10px; margin-top: 3px; }
+
+  /* Paneles sin padding excesivo */
+  .panel { padding: 12px 10px; }
+  .panel__header { margin-bottom: 8px; gap: 8px; }
+  .panel__header h2 { font-size: 0.92rem; }
+
+  /* Topbar compacto */
+  .topbar { gap: 6px; }
+  .topbar__title h1 { font-size: 1.25rem; }
+  .topbar__usuario { padding: 7px 12px; border-radius: 11px; }
+  .avatar { width: 34px; height: 34px; font-size: 14px; }
+
+  /* Acciones rápidas compactas */
+  .acciones-grid { gap: 7px; }
+  .accion-btn { padding: 11px 6px; gap: 5px; font-size: 11.5px; border-radius: 12px; }
+  .accion-btn span:first-child { font-size: 20px; }
+
+  /* Panel inventario crítico: override del margin-top inline del HTML */
+  #panelInventarioCritico { margin-top: 10px !important; }
+
+  /* Tabla responsive */
+  .tabla { font-size: 12.5px; }
+  .tabla th { font-size: 9.5px; padding: 6px 8px; }
+  .tabla td { padding: 10px 8px; }
+
+  /* Tabs compactos */
+  .tab-btn { font-size: 11.5px; padding: 6px 8px; }
+  .rep-tab { padding: 8px 18px; font-size: 12.5px; }
+}
+
+/* ============================================================
+   DOCUMENTOS DESCARGABLES (panel "Mis Documentos")
+   ============================================================ */
+.docs-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
+  gap: 18px;
+}
+.doc-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 22px 20px;
+  background: var(--cream);
+  border: 1.5px solid var(--border);
+  border-radius: 16px;
+  cursor: pointer;
+  overflow: hidden;
+  transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+}
+.doc-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 4px;
+  background: linear-gradient(90deg, var(--teal), var(--teal-light));
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform .25s ease;
+}
+.doc-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 14px 32px rgba(26, 46, 42, 0.13);
+  border-color: var(--teal-light);
+}
+.doc-card:hover::before { transform: scaleX(1); }
+.doc-card__icon {
+  width: 52px; height: 52px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, var(--teal), var(--teal-light));
+  color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 6px 16px rgba(42, 107, 94, 0.25);
+}
+.doc-card__icon .material-symbols-outlined { font-size: 27px; }
+.doc-card__title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--deep);
+}
+.doc-card__desc {
+  font-size: 12.5px;
+  color: var(--text-soft);
+  line-height: 1.55;
+  flex: 1;
+}
+.doc-card__action {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--teal);
+}
+.doc-card__action .material-symbols-outlined { font-size: 18px; }
+.doc-card__badge {
+  position: absolute;
+  top: 18px; right: 18px;
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--teal);
+  background: rgba(42, 107, 94, 0.1);
+  border-radius: 100px;
+  padding: 3px 11px;
 }
  

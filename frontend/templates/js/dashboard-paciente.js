@@ -63,7 +63,6 @@ function nav(seccion, linkEl) {
   if (seccion === 'citas')       cargarCitas();
   if (seccion === 'consultas')   cargarConsultas();
   if (seccion === 'recetas')     cargarRecetas();
-  if (seccion === 'documentos')  cargarDocumentos();
   if (seccion === 'perfil')      cargarPerfil();
 }
 
@@ -434,11 +433,18 @@ function resetSeleccionMedico() {
 }
 
 // ─── Guardar: nueva cita O reprogramar ───────────────────────────────────────
+let _enviandoCita = false;
 async function guardarCitaModal() {
-  if (_reprogramarIdCita) {
-    await reprogramarCita();
-  } else {
-    await solicitarCita();
+  if (_enviandoCita) return;            // evita doble submit
+  _enviandoCita = true;
+  try {
+    if (_reprogramarIdCita) {
+      await reprogramarCita();
+    } else {
+      await solicitarCita();
+    }
+  } finally {
+    _enviandoCita = false;
   }
 }
 
@@ -539,56 +545,58 @@ async function cargarRecetas() {
       '<tr><td colspan="6" style="text-align:center;color:var(--text-soft);padding:20px;">No se encontró tu registro de paciente</td></tr>';
     return;
   }
-  try {
-    const res  = await fetch(`/api/recetas/paciente/${pac.idPaciente}`, { headers: H });
-    const data = await res.json();
-    document.getElementById('tbody-recetas').innerHTML = Array.isArray(data) && data.length
-      ? data.map(r => `
-          <tr>
-            <td>${esc(r.medicamento  || '—')}</td>
-            <td>${esc(r.dosis        || '—')}</td>
-            <td>${esc(r.frecuencia   || '—')}</td>
-            <td>${esc(r.duracion     || '—')}</td>
-            <td>${esc(r.indicaciones || '—')}</td>
-            <td>
-              <button class="btn-pdf" onclick="descargarReceta(${r.idReceta})">
-                <span class="material-symbols-outlined" style="vertical-align:middle;">download</span> PDF
-              </button>
-            </td>
-          </tr>`).join('')
-      : '<tr><td colspan="6" style="text-align:center;color:var(--text-soft);padding:20px;">No tienes recetas registradas</td></tr>';
-  } catch {
-    document.getElementById('tbody-recetas').innerHTML =
-      '<tr><td colspan="6" style="text-align:center;color:#c03030;padding:20px;">Error al cargar recetas</td></tr>';
-  }
-}
-
-// ─── DOCUMENTOS ───────────────────────────────────────────────────────────────
-async function cargarDocumentos() {
-  const pac = await obtenerMiPaciente();
-  if (!pac) return;
-
+  const cont = document.getElementById('recetas-por-cita');
   try {
     const res  = await fetch(`/api/recetas/paciente/${pac.idPaciente}`, { headers: H });
     const data = await res.json();
 
-    document.getElementById('tbody-recetas-docs').innerHTML = Array.isArray(data) && data.length
-      ? data.map(r => `
-          <tr>
-            <td>${esc(r.medicamento || '—')}</td>
-            <td>${esc(r.dosis       || '—')}</td>
-            <td>${esc(r.frecuencia  || '—')}</td>
-            <td>${esc(r.duracion    || '—')}</td>
-            <td>
-              <button class="btn-pdf" onclick="descargarReceta(${r.idReceta})">
-                <span class="material-symbols-outlined" style="vertical-align:middle;">download</span> Descargar PDF
-              </button>
-            </td>
-          </tr>`).join('')
-      : '<tr><td colspan="5" style="text-align:center;color:var(--text-soft);padding:20px;">No tienes recetas registradas</td></tr>';
+    if (!Array.isArray(data) || !data.length) {
+      cont.innerHTML = '<p style="text-align:center;color:var(--text-soft);padding:24px;">No tienes recetas registradas</p>';
+      return;
+    }
+
+    // Agrupar por cita (los datos ya vienen ordenados por fecha DESC)
+    const grupos = new Map();
+    data.forEach(r => {
+      const key = r.idCita ?? `sin-cita-${r.idReceta}`;
+      if (!grupos.has(key)) grupos.set(key, []);
+      grupos.get(key).push(r);
+    });
+
+    cont.innerHTML = [...grupos.values()].map(meds => {
+      const c        = meds[0];
+      const fecha    = c.FechaCita ? c.FechaCita.split('T')[0] : '—';
+      const doctor   = c.NombreDoctor ? `Dr/Dra. ${esc(c.NombreDoctor)} ${esc(c.ApellidosDoctor || '')}`.trim() : 'Médico';
+      const sub      = [esc(c.Especialidad || ''), `${meds.length} medicamento${meds.length !== 1 ? 's' : ''}`, c.MotivoCita ? esc(c.MotivoCita) : '']
+                         .filter(Boolean).join(' · ');
+      const filas    = meds.map(m => `
+        <tr>
+          <td><strong>${esc(m.NombreMedicamento || m.medicamento || '—')}</strong></td>
+          <td>${esc(m.dosis        || '—')}</td>
+          <td>${esc(m.frecuencia   || '—')}</td>
+          <td>${esc(m.duracion     || '—')}</td>
+          <td>${esc(m.indicaciones || '—')}</td>
+        </tr>`).join('');
+      return `
+        <div style="border:1.5px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:16px;">
+          <div style="display:flex;align-items:center;gap:12px;padding:14px 18px;background:rgba(42,107,94,0.06);border-bottom:1.5px solid var(--border);">
+            <span class="material-symbols-outlined icon-inline" style="color:var(--teal);">event</span>
+            <div style="flex:1;min-width:0;">
+              <strong style="display:block;font-size:13.5px;color:var(--deep);">${fecha} · ${doctor}</strong>
+              <span style="font-size:11.5px;color:var(--text-soft);">${sub}</span>
+            </div>
+            <button class="btn-pdf" onclick="descargarReceta(${c.idReceta})">
+              <span class="material-symbols-outlined" style="vertical-align:middle;">download</span> Receta PDF
+            </button>
+          </div>
+          <table class="tabla" style="margin:0;">
+            <thead><tr><th>Medicamento</th><th>Dosis</th><th>Frecuencia</th><th>Duración</th><th>Indicaciones</th></tr></thead>
+            <tbody>${filas}</tbody>
+          </table>
+        </div>`;
+    }).join('');
   } catch {
-    document.getElementById('tbody-recetas-docs').innerHTML =
-      '<tr><td colspan="5" style="text-align:center;color:#c03030;padding:20px;">Error al cargar recetas</td></tr>';
+    cont.innerHTML = '<p style="text-align:center;color:#c03030;padding:24px;">Error al cargar recetas</p>';
   }
 }
 

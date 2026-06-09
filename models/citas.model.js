@@ -115,6 +115,29 @@ const Cita = {
     ORDER BY c.fecha DESC, c.hora ASC
   `, [idDoctor], cb),
 
+  // ── FLUJO REASIGNACIÓN: el doctor reporta un inconveniente ────────────────
+  // Marca la cita como REQUIERE_REASIGNACION solo si pertenece a ese doctor
+  // y todavía no fue atendida ni cancelada.
+  reportarInconveniente: (idCita, idDoctor, cb) => db.query(`
+    UPDATE tbl_citas SET estado = 'REQUIERE_REASIGNACION'
+    WHERE idCita = ? AND idDoctor = ?
+      AND estado IN ('PENDIENTE', 'CONFIRMADA')`,
+    [idCita, idDoctor], cb),
+
+  // ── FLUJO REASIGNACIÓN: la recepcionista asigna otro doctor ───────────────
+  // Cambia el doctor y deja la cita CONFIRMADA para continuar el flujo normal.
+  reasignar: (idCita, nuevoIdDoctor, cb) => db.query(`
+    UPDATE tbl_citas SET idDoctor = ?, estado = 'CONFIRMADA'
+    WHERE idCita = ? AND estado = 'REQUIERE_REASIGNACION'`,
+    [nuevoIdDoctor, idCita], cb),
+
+  // ── FLUJO REASIGNACIÓN: cancelar por falta de doctores disponibles ────────
+  cancelarPorRecepcion: (idCita, motivo, cb) => db.query(`
+    UPDATE tbl_citas SET estado = 'CANCELADA', motivo = ?
+    WHERE idCita = ?
+      AND estado IN ('PENDIENTE', 'CONFIRMADA', 'REQUIERE_REASIGNACION')`,
+    [motivo, idCita], cb),
+
 };
 
 module.exports = Cita;

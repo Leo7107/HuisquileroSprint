@@ -30,7 +30,7 @@ function headerDoc(doc, titulo, subtitulo = '') {
   doc.rect(0, 0, doc.page.width, 90).fill(C.deep);
   doc.rect(0, 86, doc.page.width, 4).fill(C.gold);
   doc.fontSize(20).fillColor(C.white).font('Helvetica-Bold')
-     .text('MedySync', 40, 22);
+     .text('Medisync', 40, 22);
   doc.fontSize(9).fillColor(C.gold).font('Helvetica')
      .text('Sistema de Gestion Clinica', 40, 46);
   doc.fontSize(13).fillColor(C.white).font('Helvetica-Bold')
@@ -80,11 +80,14 @@ function twoCol(doc, items) {
 
 function footerDoc(doc) {
   const bottom = doc.page.height - 40;
+  // Anular el margen inferior evita que pdfkit agregue una página en blanco
+  // al escribir texto dentro de la zona de margen.
+  doc.page.margins.bottom = 0;
   doc.rect(0, bottom - 6, doc.page.width, 1).fill(C.gold);
   doc.fontSize(7.5).fillColor(C.textSoft).font('Helvetica')
      .text(
-       `Generado el ${new Date().toLocaleDateString('es-SV', { year:'numeric', month:'long', day:'numeric', hour:'2-digit', minute:'2-digit' })}  •  MedySync — Documento oficial`,
-       40, bottom + 2, { align: 'center', width: doc.page.width - 80 }
+       `Generado el ${new Date().toLocaleDateString('es-SV', { year:'numeric', month:'long', day:'numeric', hour:'2-digit', minute:'2-digit' })}  •  Medisync — Documento oficial`,
+       40, bottom + 2, { align: 'center', width: doc.page.width - 80, lineBreak: false }
      );
 }
 
@@ -105,89 +108,200 @@ function query(sql, params = []) {
   });
 }
 
+// ─── Helpers específicos de receta ───────────────────────────────────────────
+function fmtFecha(v) {
+  if (!v) return '—';
+  const d = new Date(v);
+  if (isNaN(d.getTime())) return '—';
+  const dd = String(d.getDate()).padStart(2, '0');
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  return `${dd}/${mm}/${d.getFullYear()}`;
+}
+
+function calcEdad(nac) {
+  if (!nac) return null;
+  const d = new Date(nac);
+  if (isNaN(d.getTime())) return null;
+  const e = Math.floor((Date.now() - d.getTime()) / (365.25 * 24 * 3600 * 1000));
+  return (e >= 0 && e < 130) ? e : null;
+}
+
+// Dibuja un "chip" redondeado (etiqueta: valor) y devuelve el siguiente X.
+function chip(doc, x, y, label, value) {
+  const txt = `${label}: ${value}`;
+  doc.font('Helvetica-Bold').fontSize(8.5);
+  const w = doc.widthOfString(txt) + 16;
+  doc.roundedRect(x, y, w, 18, 5).fill('#eaf3f0');
+  doc.fillColor(C.teal).font('Helvetica-Bold').fontSize(8.5)
+     .text(txt, x + 8, y + 5, { lineBreak: false });
+  return x + w + 6;
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
-// 1. PDF DE RECETA INDIVIDUAL
+// 1. PDF DE RECETA (agrupa todos los medicamentos de la misma consulta)
 // GET /api/pdf/receta/:idReceta
 // ─────────────────────────────────────────────────────────────────────────────
 exports.pdfReceta = async (req, res) => {
   const idReceta = parseInt(req.params.idReceta);
 
   try {
-    // ── FIX JOIN pdfReceta ──────────────────────────────────────────────────
-    // ANTES: JOIN iba por r.idConsulta — campo que NO existe en tbl_recetas.
-    // CAMBIO: JOIN por r.idDiagnostico:
-    //         tbl_recetas → tbl_diagnosticos → tbl_consultas → tbl_citas
-    // ───────────────────────────────────────────────────────────────────────
-    const rows = await query(`
-      SELECT r.*,
-             u_pac.Nombres    AS NombrePaciente,
-             u_pac.Apellidos  AS ApellidosPaciente,
-             u_doc.Nombres    AS NombreDoctor,
-             u_doc.Apellidos  AS ApellidosDoctor,
+    // 1) Resolver la consulta a la que pertenece la receta clickeada.
+    const linkRows = await query(`
+      SELECT diag.idConsulta
+      FROM tbl_recetas r
+      LEFT JOIN tbl_diagnosticos diag ON r.idDiagnostico = diag.idDiagnostico
+      WHERE r.idReceta = ?`, [idReceta]);
+
+    if (!linkRows.length) return res.status(404).json({ error: 'Receta no encontrada' });
+    const idConsulta = linkRows[0].idConsulta;
+
+    // 2) Traer TODOS los medicamentos de esa consulta (o solo la receta si no
+    //    tiene consulta asociada).
+    const baseSelect = `
+      SELECT r.idReceta, r.medicamento, r.dosis, r.frecuencia, r.duracion,
+             r.indicaciones, r.cantidad,
+             u_pac.Nombres   AS NombrePaciente,
+             u_pac.Apellidos AS ApellidosPaciente,
+             u_pac.Sexo      AS SexoPaciente,
+             u_pac.Fecha_nacimiento AS NacPaciente,
+             p.numero_expediente    AS Expediente,
+             u_doc.Nombres   AS NombreDoctor,
+             u_doc.Apellidos AS ApellidosDoctor,
              doc.Especialidad,
              doc.numero_junta_medica AS JuntaMedica,
+             doc.Consultorio,
              c.fecha          AS FechaCita,
+             con.fecha_consulta AS FechaConsulta,
+             diag.descripcion AS Diagnostico,
              m.nombre         AS NombreMedicamento,
              m.unidad_medida  AS UnidadMed
       FROM tbl_recetas r
-      LEFT JOIN tbl_diagnosticos d     ON r.idDiagnostico  = d.idDiagnostico
-      LEFT JOIN tbl_consultas    con   ON d.idConsulta      = con.idConsulta
-      LEFT JOIN tbl_citas        c     ON con.idCita         = c.idCita
-      LEFT JOIN tbl_paciente     p     ON c.idPaciente       = p.idPaciente
-      LEFT JOIN tbl_usuarios     u_pac ON p.idUsuario        = u_pac.idUsuario
-      LEFT JOIN tbl_doctores     doc   ON c.idDoctor         = doc.idDoctor
-      LEFT JOIN tbl_usuarios     u_doc ON doc.idUsuario      = u_doc.idUsuario
-      LEFT JOIN tbl_medicamentos m     ON r.idMedicamento    = m.idMedicamento
-      WHERE r.idReceta = ?`, [idReceta]);
+      LEFT JOIN tbl_diagnosticos diag ON r.idDiagnostico = diag.idDiagnostico
+      LEFT JOIN tbl_consultas    con  ON diag.idConsulta  = con.idConsulta
+      LEFT JOIN tbl_citas        c    ON con.idCita        = c.idCita
+      LEFT JOIN tbl_paciente     p    ON c.idPaciente      = p.idPaciente
+      LEFT JOIN tbl_usuarios     u_pac ON p.idUsuario       = u_pac.idUsuario
+      LEFT JOIN tbl_doctores     doc   ON c.idDoctor        = doc.idDoctor
+      LEFT JOIN tbl_usuarios     u_doc ON doc.idUsuario     = u_doc.idUsuario
+      LEFT JOIN tbl_medicamentos m     ON r.idMedicamento   = m.idMedicamento`;
+
+    const rows = idConsulta
+      ? await query(baseSelect + ` WHERE diag.idConsulta = ? ORDER BY r.idReceta`, [idConsulta])
+      : await query(baseSelect + ` WHERE r.idReceta = ?`, [idReceta]);
 
     if (!rows.length) return res.status(404).json({ error: 'Receta no encontrada' });
 
-    const r = rows[0];
+    const r    = rows[0];                 // datos compartidos (paciente, doctor)
+    const meds = rows;                    // lista de medicamentos
+    const W    = 595.28;                  // ancho A4 en pt
+    const LM   = 40, RM = 40;             // márgenes laterales
+    const innerW = W - LM - RM;
 
-    const doc = new PDFDocument({ size: 'A4', margins: { top: 100, bottom: 60, left: 40, right: 40 } });
+    const doc = new PDFDocument({ size: 'A4', margins: { top: 100, bottom: 60, left: LM, right: RM } });
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="receta-${idReceta}.pdf"`);
     doc.pipe(res);
 
-    headerDoc(doc, 'RECETA MEDICA', `No. ${idReceta}`);
-    doc.y = 110;
+    const fechaDoc = r.FechaConsulta || r.FechaCita;
+    headerDoc(doc, 'RECETA MEDICA', `Folio No. ${idReceta}  •  ${fmtFecha(fechaDoc)}`);
 
-    sectionTitle(doc, 'Datos del Paciente');
-    twoCol(doc, [
-      ['Paciente',     `${r.NombrePaciente || ''} ${r.ApellidosPaciente || ''}`],
-      ['Fecha',        r.FechaCita ? new Date(r.FechaCita).toLocaleDateString('es-SV') : '—'],
-      ['Doctor',       `Dr/Dra. ${r.NombreDoctor || ''} ${r.ApellidosDoctor || ''}`],
-      ['Especialidad',  r.Especialidad || '—'],
-      ['Junta Medica',  r.JuntaMedica  || '—'],
-    ]);
-    doc.moveDown(0.5);
+    // ── Tarjeta del paciente ──────────────────────────────────────────────────
+    let y = 110;
+    const cardH = 58;
+    doc.roundedRect(LM, y, innerW, cardH, 8).fill(C.cream);
+    doc.roundedRect(LM, y, 4, cardH, 2).fill(C.teal);
 
-    sectionTitle(doc, 'Medicamento Prescrito');
-    twoCol(doc, [
-      ['Medicamento', r.NombreMedicamento || r.medicamento || '—'],
-      ['Cantidad',    r.cantidad ? `${r.cantidad} ${r.UnidadMed || ''}` : '—'],
-      ['Dosis',       r.dosis      || '—'],
-      ['Frecuencia',  r.frecuencia || '—'],
-      ['Duracion',    r.duracion   || '—'],
-    ]);
-    doc.moveDown(0.5);
+    doc.fillColor(C.deep).font('Helvetica-Bold').fontSize(13)
+       .text(`${r.NombrePaciente || ''} ${r.ApellidosPaciente || ''}`.trim() || 'Paciente', LM + 16, y + 12);
 
-    if (r.indicaciones) {
-      sectionTitle(doc, 'Indicaciones');
-      doc.fontSize(9.5).fillColor(C.deep).font('Helvetica')
-         .text(r.indicaciones, 40, doc.y, { width: doc.page.width - 80, lineGap: 3 });
-      doc.moveDown(1);
+    const edad = calcEdad(r.NacPaciente);
+    const metaPac = [
+      r.Expediente ? `Exp. ${r.Expediente}` : null,
+      r.SexoPaciente ? (r.SexoPaciente === 'F' ? 'Femenino' : r.SexoPaciente === 'M' ? 'Masculino' : r.SexoPaciente) : null,
+      edad != null ? `${edad} años` : null,
+      `Fecha: ${fmtFecha(fechaDoc)}`,
+    ].filter(Boolean).join('   •   ');
+    doc.fillColor(C.textSoft).font('Helvetica').fontSize(9)
+       .text(metaPac, LM + 16, y + 34);
+
+    y += cardH + 14;
+
+    // ── Diagnóstico (si existe) ───────────────────────────────────────────────
+    if (r.Diagnostico) {
+      doc.fillColor(C.textSoft).font('Helvetica-Bold').fontSize(8.5)
+         .text('DIAGNOSTICO', LM, y);
+      doc.fillColor(C.deep).font('Helvetica').fontSize(10)
+         .text(r.Diagnostico, LM, y + 12, { width: innerW, lineGap: 2 });
+      y = doc.y + 12;
     }
 
-    doc.moveDown(3);
-    const firmaY = doc.y;
-    doc.moveTo(doc.page.width / 2 - 60, firmaY)
-       .lineTo(doc.page.width / 2 + 60, firmaY)
-       .strokeColor(C.deep).lineWidth(0.5).stroke();
-    doc.fontSize(8).fillColor(C.textSoft).font('Helvetica')
-       .text(`Dr/Dra. ${r.NombreDoctor || ''} ${r.ApellidosDoctor || ''}`, 0, firmaY + 6, { align: 'center' });
-    doc.fontSize(7.5).fillColor(C.textSoft)
-       .text(r.Especialidad || 'Medico', 0, firmaY + 18, { align: 'center' });
+    // ── Encabezado de la zona de prescripción ─────────────────────────────────
+    doc.roundedRect(LM, y, innerW, 26, 6).fill(C.teal);
+    doc.fillColor(C.white).font('Helvetica-Bold').fontSize(15)
+       .text('Rp.', LM + 14, y + 5);
+    doc.fillColor(C.white).font('Helvetica-Bold').fontSize(10)
+       .text(`PRESCRIPCION  (${meds.length} medicamento${meds.length !== 1 ? 's' : ''})`, LM + 50, y + 8);
+    y = y + 26 + 14;
+
+    // ── Tarjetas de medicamento ───────────────────────────────────────────────
+    meds.forEach((med, i) => {
+      // salto de página si no hay espacio
+      if (y + 90 > doc.page.height - 70) { doc.addPage(); y = 50; }
+
+      // número
+      doc.circle(LM + 12, y + 10, 10).fill(C.teal);
+      doc.fillColor(C.white).font('Helvetica-Bold').fontSize(10)
+         .text(String(i + 1), LM + 7, y + 5, { width: 10, align: 'center', lineBreak: false });
+
+      // nombre del medicamento
+      doc.fillColor(C.deep).font('Helvetica-Bold').fontSize(13)
+         .text(med.NombreMedicamento || med.medicamento || '—', LM + 32, y + 2, { width: innerW - 32 });
+      let chipY = doc.y + 6;
+
+      // chips: dosis, frecuencia, duración, cantidad
+      let cx = LM + 32;
+      const datos = [
+        ['Dosis',      med.dosis      || '—'],
+        ['Frecuencia', med.frecuencia || '—'],
+        ['Duracion',   med.duracion   || '—'],
+        ['Cantidad',   med.cantidad ? `${med.cantidad} ${med.UnidadMed || ''}`.trim() : '—'],
+      ];
+      datos.forEach(([l, v]) => {
+        doc.font('Helvetica-Bold').fontSize(8.5);
+        const wChip = doc.widthOfString(`${l}: ${v}`) + 16;
+        if (cx + wChip > W - RM) { cx = LM + 32; chipY += 24; }
+        cx = chip(doc, cx, chipY, l, v);
+      });
+      let endY = chipY + 24;
+
+      // indicaciones (Sig.)
+      if (med.indicaciones) {
+        doc.fillColor(C.textSoft).font('Helvetica-Oblique').fontSize(9)
+           .text(`Sig.: ${med.indicaciones}`, LM + 32, endY, { width: innerW - 40, lineGap: 2 });
+        endY = doc.y + 6;
+      }
+
+      // separador
+      if (i < meds.length - 1) {
+        doc.moveTo(LM, endY + 4).lineTo(W - RM, endY + 4)
+           .strokeColor('#e2ece9').lineWidth(0.5).stroke();
+      }
+      y = endY + 14;
+    });
+
+    // ── Firma ─────────────────────────────────────────────────────────────────
+    if (y + 80 > doc.page.height - 70) { doc.addPage(); y = 60; }
+    y += 24;
+    const cx2 = W / 2;
+    doc.moveTo(cx2 - 90, y).lineTo(cx2 + 90, y)
+       .strokeColor(C.deep).lineWidth(0.6).stroke();
+    doc.fillColor(C.deep).font('Helvetica-Bold').fontSize(9.5)
+       .text(`Dr/Dra. ${r.NombreDoctor || ''} ${r.ApellidosDoctor || ''}`.trim(), cx2 - 150, y + 6, { width: 300, align: 'center' });
+    doc.fillColor(C.textSoft).font('Helvetica').fontSize(8)
+       .text(
+         [r.Especialidad || 'Medico', r.JuntaMedica ? `Junta Medica No. ${r.JuntaMedica}` : null].filter(Boolean).join('  •  '),
+         cx2 - 150, y + 20, { width: 300, align: 'center' }
+       );
 
     footerDoc(doc);
     doc.end();

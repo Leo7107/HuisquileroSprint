@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>MedySync – Paciente</title>
+  <title>Medisync – Paciente</title>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,400,0,0" />
 
@@ -133,34 +133,6 @@
     .detalle-item__value { font-size: 14px; font-weight: 600; color: var(--deep); }
     .detalle-item--full { grid-column: 1 / -1; }
 
-    /* ── Sección de documentos ───────────────────────────────── */
-    .docs-grid {
-      display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px;
-      margin-top: 8px;
-    }
-    .doc-card {
-      display: flex; flex-direction: column; align-items: center; justify-content: center;
-      gap: 8px; padding: 20px 12px; background: var(--cream);
-      border: 1.5px solid var(--border); border-radius: 14px; cursor: pointer;
-      font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 600;
-      color: var(--text); transition: all 0.22s; text-align: center;
-      position: relative; overflow: hidden;
-    }
-    .doc-card::before {
-      content: ''; position: absolute; inset: 0;
-      background: linear-gradient(135deg, var(--teal), var(--teal-light));
-      opacity: 0; transition: opacity 0.25s;
-    }
-    .doc-card:hover::before { opacity: 1; }
-    .doc-card:hover { color: white; border-color: var(--teal); transform: translateY(-2px); box-shadow: 0 8px 20px rgba(42,107,94,0.22); }
-    .doc-card span { position: relative; z-index: 1; }
-    .doc-card span:first-child { font-size: 28px; }
-    .doc-card__badge {
-      position: relative; z-index: 1; font-size: 10px; padding: 2px 8px;
-      background: rgba(42,107,94,0.12); color: var(--teal); border-radius: 100px;
-    }
-    .doc-card:hover .doc-card__badge { background: rgba(255,255,255,0.2); color: white; }
-
     /* ── Recetas tabla con botón PDF ─────────────────────────── */
     .btn-pdf {
       display: inline-flex; align-items: center; gap: 5px;
@@ -209,7 +181,7 @@
   <aside class="sidebar">
     <div class="sidebar__brand">
       <span class="brand-icon material-symbols-outlined icon-inline">medical_services</span>
-      <span class="brand-name">MedySync</span>
+      <span class="brand-name">Medisync</span>
     </div>
     <div class="sidebar__rol sidebar__rol--paciente">Paciente</div>
     <nav class="sidebar__nav">
@@ -217,7 +189,6 @@
       <a href="#" class="nav-item"         onclick="nav('citas',this);return false;"><span class="nav-icon material-symbols-outlined icon-inline">calendar_today</span> Mis Citas</a>
       <a href="#" class="nav-item"         onclick="nav('consultas',this);return false;"><span class="nav-icon material-symbols-outlined icon-inline">medical_services</span> Mis Consultas</a>
       <a href="#" class="nav-item"         onclick="nav('recetas',this);return false;"><span class="nav-icon material-symbols-outlined icon-inline">medication</span> Mis Recetas</a>
-      <a href="#" class="nav-item"         onclick="nav('documentos',this);return false;"><span class="nav-icon material-symbols-outlined icon-inline">description</span> Mis Documentos</a>
       <a href="#" class="nav-item"         onclick="nav('perfil',this);return false;"><span class="nav-icon material-symbols-outlined icon-inline">person</span> Mi Perfil</a>
     </nav>
     <button class="sidebar__logout" onclick="cerrarSesion()"><span class="material-symbols-outlined icon-inline">power_settings_new</span> Cerrar sesión</button>
@@ -234,14 +205,14 @@
         <div class="avatar avatar--paciente" id="avatar-inicial">P</div>
         <div>
           <div class="usuario-nombre" id="usuario-nombre">Paciente</div>
-          <div class="usuario-rol">MedySync</div>
+          <div class="usuario-rol">Paciente</div>
         </div>
       </div>
     </header>
 
     <!-- ══ INICIO ══ -->
     <div id="sec-inicio">
-      <section class="stats-grid">
+      <section class="stats-grid stats-grid--3">
         <div class="stat-card stat-card--teal">
           <div class="stat-icon material-symbols-outlined icon-inline">calendar_today</div>
           <div class="stat-info">
@@ -282,8 +253,28 @@
           <div class="acciones-grid">
             <button class="accion-btn" onclick="abrirModalCita()"><span class="material-symbols-outlined icon-inline">calendar_today</span><span>Nueva Cita</span></button>
             <button class="accion-btn" onclick="nav('citas',this)"><span class="material-symbols-outlined icon-inline">article</span><span>Mis Citas</span></button>
-            <button class="accion-btn" onclick="nav('documentos',this)"><span class="material-symbols-outlined icon-inline">description</span><span>Documentos</span></button>
+            <button class="accion-btn" onclick="nav('consultas',this)"><span class="material-symbols-outlined icon-inline">medical_services</span><span>Mis Consultas</span></button>
             <button class="accion-btn" onclick="nav('recetas',this)"><span class="material-symbols-outlined icon-inline">medication</span><span>Mis Recetas</span></button>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel" style="margin-top:24px;">
+        <div class="panel__header"><h2>Documentos médicos</h2></div>
+        <div class="docs-grid">
+          <div class="doc-card" onclick="descargarHistorial()">
+            <span class="doc-card__badge">PDF</span>
+            <div class="doc-card__icon"><span class="material-symbols-outlined">article</span></div>
+            <div class="doc-card__title">Historial Clínico Completo</div>
+            <div class="doc-card__desc">Documento integral con tus datos personales, antecedentes, consultas, diagnósticos y recetas.</div>
+            <div class="doc-card__action"><span class="material-symbols-outlined">download</span> Descargar PDF</div>
+          </div>
+          <div class="doc-card" onclick="descargarDiagnosticos()">
+            <span class="doc-card__badge">PDF</span>
+            <div class="doc-card__icon"><span class="material-symbols-outlined">biotech</span></div>
+            <div class="doc-card__title">Diagnósticos</div>
+            <div class="doc-card__desc">Listado completo de tus diagnósticos por consulta, con fecha y médico responsable.</div>
+            <div class="doc-card__action"><span class="material-symbols-outlined">download</span> Descargar PDF</div>
           </div>
         </div>
       </div>
@@ -327,59 +318,8 @@
     <div id="sec-recetas" style="display:none;">
       <div class="panel">
         <div class="panel__header"><h2>Mis Recetas</h2></div>
-        <table class="tabla">
-          <thead>
-            <tr>
-              <th>Medicamento</th><th>Dosis</th><th>Frecuencia</th>
-              <th>Duración</th><th>Indicaciones</th><th>PDF</th>
-            </tr>
-          </thead>
-          <tbody id="tbody-recetas">
-            <tr><td colspan="6" style="text-align:center;color:var(--text-soft);padding:20px;">Cargando...</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- ══ DOCUMENTOS ══ -->
-    <div id="sec-documentos" style="display:none;">
-      <div class="panel">
-        <div class="panel__header">
-          <h2>Mis Documentos</h2>
-        </div>
-        <p style="font-size:13px;color:var(--text-soft);margin-bottom:22px;">
-          Descarga tus documentos médicos en PDF. Generados en tiempo real con tu información actualizada.
-        </p>
-        <div class="docs-grid">
-          <div class="doc-card" onclick="descargarHistorial()">
-            <span class="material-symbols-outlined icon-inline">article</span>
-            <span>Historial Clínico Completo</span>
-            <span class="doc-card__badge">PDF · Completo</span>
-          </div>
-          <div class="doc-card" onclick="descargarDiagnosticos()">
-            <span>🔬</span>
-            <span>Diagnósticos</span>
-            <span class="doc-card__badge">PDF · Por consulta</span>
-          </div>
-        </div>
-
-        <div style="margin-top:32px;">
-          <div class="panel__header">
-            <h2>Recetas Individuales</h2>
-          </div>
-          <p style="font-size:13px;color:var(--text-soft);margin-bottom:16px;">
-            Descarga cada receta por separado.
-          </p>
-          <table class="tabla">
-            <thead>
-              <tr>
-                <th>Medicamento</th><th>Dosis</th><th>Frecuencia</th><th>Duración</th><th>Descargar</th>
-              </tr>
-            </thead>
-            <tbody id="tbody-recetas-docs">
-              <tr><td colspan="5" style="text-align:center;color:var(--text-soft);padding:20px;">Cargando...</td></tr>
-            </tbody>
-          </table>
+        <div id="recetas-por-cita">
+          <p style="text-align:center;color:var(--text-soft);padding:20px;">Cargando...</p>
         </div>
       </div>
     </div>

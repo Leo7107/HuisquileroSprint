@@ -69,6 +69,7 @@ let fechaDia        = new Date();
 let fechaSemana     = new Date();
 let diaSeleccionado = null;
 let todosPacientes  = [];
+let _todasConsultas = [];
 
 // ── NAVEGACIÓN ────────────────────────────────────────────────────────────────
 function nav(seccion, linkEl) {
@@ -93,8 +94,10 @@ function estadoDot(estado) {
     'FINALIZADA':  'finalizada',
     'CANCELADA':   'cancelada',
     'COMPLETADA':  'finalizada',
+    'REQUIERE_REASIGNACION': 'pendiente',
   };
-  return `<span class="estado-dot estado-dot--${mapa[estado] || 'pendiente'}">${esc(estado)}</span>`;
+  const etiqueta = { 'REQUIERE_REASIGNACION': 'Reasignación' };
+  return `<span class="estado-dot estado-dot--${mapa[estado] || 'pendiente'}">${esc(etiqueta[estado] || estado)}</span>`;
 }
 
 function nombrePaciente(c) {
@@ -143,8 +146,9 @@ async function cargarStats() {
     const consultas = await conRes.json();
     const recetas   = await rRes.json();
 
-    todasLasCitas  = Array.isArray(citas) ? citas : [];
-    todosPacientes = Array.isArray(pacientes) ? pacientes : [];
+    todasLasCitas   = Array.isArray(citas) ? citas : [];
+    todosPacientes  = Array.isArray(pacientes) ? pacientes : [];
+    _todasConsultas = Array.isArray(consultas) ? consultas : [];
 
     const hoy      = new Date().toISOString().split('T')[0];
     const citasHoy = todasLasCitas.filter(c => c.fecha && String(c.fecha).startsWith(hoy));
@@ -199,6 +203,22 @@ async function cargarStats() {
       : '<tr><td colspan="4" style="text-align:center;color:var(--text-soft);padding:16px;">Sin consultas registradas</td></tr>';
 
   } catch (e) { console.error(e); }
+}
+
+// ── VER DETALLE DE CONSULTA ───────────────────────────────────────────────────
+async function verDetalleConsulta(idConsulta) {
+  const con = _todasConsultas.find(c => c.idConsulta === idConsulta);
+  if (!con) { toast('No se encontró la consulta.', 'warning'); return; }
+
+  // Reutiliza el modal de historial buscando la cita asociada.
+  const cita = todasLasCitas.find(c => c.idCita === con.idCita);
+  const idPaciente = cita?.idPaciente ?? con.idPaciente;
+
+  if (con.idCita && idPaciente != null) {
+    abrirHistorialPaciente(con.idCita, idPaciente);
+  } else {
+    toast('Esta consulta no tiene una cita asociada para mostrar el detalle.', 'warning');
+  }
 }
 
 // ── MODAL HISTORIAL PACIENTE ──────────────────────────────────────────────────
@@ -651,6 +671,7 @@ async function cargarCitas() {
               <div class="action-icons">
                 <button class="btn-tabla" onclick="abrirHistorialPaciente(${c.idCita}, ${c.idPaciente})"><span class="material-symbols-outlined icon-inline">article</span> Ver</button>
                 ${atendible ? `<button class="btn-atender" onclick="abrirAtencion(${c.idCita}, ${c.idPaciente})"><span class="material-symbols-outlined icon-inline">medical_services</span> Atender</button>` : ''}
+                ${atendible ? `<button class="btn-tabla" style="color:#b07800;border-color:rgba(176,120,0,0.3);" title="No puedo atender esta cita" onclick="reportarInconveniente(${c.idCita})"><span class="material-symbols-outlined icon-inline">event_busy</span> Inconveniente</button>` : ''}
               </div>
             </td>
           </tr>`;
@@ -659,6 +680,28 @@ async function cargarCitas() {
   } catch {
     document.getElementById('tbody-citas').innerHTML =
       '<tr><td colspan="7" style="text-align:center;color:#c03030;padding:20px;">Error al cargar</td></tr>';
+  }
+}
+
+// ── REPORTAR INCONVENIENTE (el doctor no puede atender) ───────────────────────
+async function reportarInconveniente(idCita) {
+  if (!confirm('¿Reportar un inconveniente con esta cita?\n\nPasará a la recepción para reasignar a otro doctor o reprogramar.')) return;
+  const doc = await obtenerMiDoctor();
+  if (!doc?.idDoctor) { toast('No se encontró tu perfil de doctor.', 'error'); return; }
+  try {
+    const res  = await fetch(`/api/citas/${idCita}/inconveniente`, {
+      method: 'PATCH', headers: H, body: JSON.stringify({ idDoctor: doc.idDoctor })
+    });
+    const data = await res.json();
+    if (res.ok) {
+      toast('Inconveniente reportado. La recepción gestionará la reasignación.');
+      cargarCitas();
+      cargarStats();
+    } else {
+      toast('Error: ' + (data.error || 'No se pudo reportar el inconveniente'), 'warning');
+    }
+  } catch {
+    toast('Error de conexión.', 'error');
   }
 }
 

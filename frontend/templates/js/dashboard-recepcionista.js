@@ -160,20 +160,25 @@ function renderCitas(lista) {
       ? `${esc(c.NombreDoctor)} ${esc(c.ApellidosDoctor || '')}`.trim()
       : `#${c.idDoctor}`;
     const confirmable  = c.estado === 'PENDIENTE';
+    const reasignable  = c.estado === 'REQUIERE_REASIGNACION';
     const tienePre     = _idsConPreconsulta.has(String(c.idCita));
+    const badge = reasignable
+      ? '<span class="badge" style="background:rgba(176,120,0,0.14);color:#b07800;">Reasignación</span>'
+      : `<span class="badge badge--${['CONFIRMADA','FINALIZADA','COMPLETADA'].includes(c.estado) ? 'activo' : 'pendiente'}">${c.estado}</span>`;
     return `
-      <tr>
+      <tr${reasignable ? ' style="background:rgba(176,120,0,0.05);"' : ''}>
         <td>#${c.idCita}</td>
         <td>${c.fecha ? c.fecha.split('T')[0] : '—'}</td>
         <td>${c.hora  || '—'}</td>
         <td>${paciente}</td>
         <td>${doctor}</td>
         <td>
-          <span class="badge badge--${['CONFIRMADA','FINALIZADA','COMPLETADA'].includes(c.estado) ? 'activo' : 'pendiente'}">${c.estado}</span>
+          ${badge}
           ${tienePre ? '<span title="Preconsulta registrada" style="margin-left:5px;font-size:11px;background:rgba(42,107,94,0.12);color:var(--teal);border-radius:6px;padding:2px 6px;font-weight:700;">Pre ✓</span>' : ''}
         </td>
         <td>
           <div class="action-icons">
+            ${reasignable ? `<button class="icon-btn" style="background:rgba(176,120,0,0.15);color:#b07800;" title="Reasignar doctor" onclick="abrirReasignacion(${c.idCita})"><span class="material-symbols-outlined">published_with_changes</span></button>` : ''}
             ${confirmable ? `<button class="icon-btn icon-btn--confirm" title="Confirmar cita" onclick="confirmarCita(${c.idCita})">✔</button>` : ''}
             <button class="icon-btn icon-btn--edit"   title="Editar"   onclick="abrirModalEditarCita(${c.idCita})"><span class="material-symbols-outlined">edit</span></button>
             <button class="icon-btn icon-btn--cancel" title="Cancelar" onclick="cancelarCita(${c.idCita})"><span class="material-symbols-outlined">close</span></button>
@@ -202,6 +207,120 @@ async function cancelarCita(id) {
   if (!confirm('¿Cancelar esta cita?')) return;
   await fetch(`/api/citas/${id}`, { method:'PUT', headers:H, body:JSON.stringify({ estado:'CANCELADA' }) });
   cargarCitas();
+}
+
+// ── FLUJO REASIGNACIÓN ────────────────────────
+// Abre el panel para asignar otro doctor a una cita con inconveniente.
+async function abrirReasignacion(idCita) {
+  const c = _mapCitasRec.get(idCita);
+  if (!c) { toast('Cita no encontrada', 'error'); return; }
+
+  const fecha    = c.fecha ? c.fecha.split('T')[0] : '';
+  const hora     = c.hora || '';
+  const paciente = c.NombrePaciente ? `${c.NombrePaciente} ${c.ApellidosPaciente || ''}`.trim() : `#${c.idPaciente}`;
+  const docOrig  = c.NombreDoctor   ? `${c.NombreDoctor} ${c.ApellidosDoctor || ''}`.trim()     : `#${c.idDoctor}`;
+
+  let modal = document.getElementById('modal-reasignacion');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'modal-reasignacion';
+    modal.className = 'modal-overlay';
+    document.body.appendChild(modal);
+  }
+  modal.innerHTML = `
+    <div class="modal" style="max-width:560px;">
+      <h3>Reasignar cita #${idCita}</h3>
+      <div style="font-size:13px;color:var(--text-soft);line-height:1.6;margin-bottom:6px;">
+        <strong style="color:var(--deep);">${esc(paciente)}</strong> · ${fecha} ${hora}<br/>
+        Doctor original: <strong style="color:#b07800;">${esc(docOrig)}</strong> (reportó inconveniente)
+      </div>
+      <div id="reasignar-lista" style="margin-top:12px;">
+        <p style="text-align:center;color:var(--text-soft);padding:20px;font-size:13px;">Buscando doctores disponibles...</p>
+      </div>
+      <div style="margin-top:16px;border-top:1.5px solid var(--border);padding-top:14px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;">
+        <span style="font-size:11.5px;color:var(--text-soft);">Si el paciente no acepta otro doctor, usa <strong>Editar</strong> para reprogramar.</span>
+        <button class="icon-btn icon-btn--cancel" style="width:auto;padding:8px 14px;font-size:12.5px;font-weight:600;" onclick="cancelarSinDoctor(${idCita})">
+          <span class="material-symbols-outlined icon-inline">event_busy</span> Cancelar (sin doctores)
+        </button>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-cancelar" onclick="cerrarReasignacion()">Cerrar</button>
+      </div>
+    </div>`;
+  modal.classList.add('active');
+
+  // Validación de anticipación (≥1h) en el cliente, solo informativa
+  const fechaHora = new Date(`${fecha}T${hora}`);
+  const cont      = document.getElementById('reasignar-lista');
+  if (!isNaN(fechaHora.getTime()) && fechaHora < new Date(Date.now() + 60 * 60 * 1000)) {
+    cont.innerHTML = '<p style="text-align:center;color:#c03030;padding:18px;font-size:13px;">No se puede reasignar: la cita es en menos de 1 hora. Cancela o reprograma.</p>';
+    return;
+  }
+
+  // Buscar doctores disponibles (excluyendo al original)
+  try {
+    const res  = await fetch(`/api/citas/disponibilidad?fecha=${fecha}&hora=${encodeURIComponent(hora)}`, { headers: H });
+    let docs   = await res.json();
+    docs = (Array.isArray(docs) ? docs : []).filter(d => d.idDoctor !== c.idDoctor);
+
+    cont.innerHTML = docs.length
+      ? docs.map(d => `
+          <div style="display:flex;align-items:center;gap:12px;padding:11px 12px;border:1.5px solid var(--border);border-radius:11px;margin-bottom:8px;">
+            <div style="width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,var(--teal),var(--teal-light));color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;flex-shrink:0;">${esc((d.Nombres || 'D')[0])}</div>
+            <div style="flex:1;">
+              <strong style="display:block;font-size:13.5px;color:var(--deep);">${esc(d.Nombres || '')} ${esc(d.Apellidos || '')}</strong>
+              <span style="font-size:11.5px;color:var(--text-soft);">${esc(d.Especialidad || '—')}${d.Consultorio ? ' · Consultorio ' + esc(d.Consultorio) : ''}</span>
+            </div>
+            <button class="header-btn" style="padding:7px 14px;font-size:12.5px;" onclick="reasignarCita(${idCita}, ${d.idDoctor})">Asignar</button>
+          </div>`).join('')
+      : '<p style="text-align:center;color:#c03030;padding:18px;font-size:13px;">No hay otros doctores disponibles en ese horario. Cancela la cita o reprográmala.</p>';
+  } catch {
+    cont.innerHTML = '<p style="text-align:center;color:#c03030;padding:18px;font-size:13px;">Error al cargar disponibilidad.</p>';
+  }
+}
+
+function cerrarReasignacion() {
+  const modal = document.getElementById('modal-reasignacion');
+  if (modal) modal.classList.remove('active');
+}
+
+async function reasignarCita(idCita, idDoctor) {
+  try {
+    const res  = await fetch(`/api/citas/${idCita}/reasignar`, {
+      method: 'PATCH', headers: H, body: JSON.stringify({ idDoctor })
+    });
+    const data = await res.json();
+    if (res.ok) {
+      toast(data.message || 'Cita reasignada y confirmada.');
+      cerrarReasignacion();
+      cargarCitas();
+      cargarStats();
+    } else {
+      toast('Error: ' + (data.error || 'No se pudo reasignar'), 'warn');
+    }
+  } catch {
+    toast('Error de conexión.', 'error');
+  }
+}
+
+async function cancelarSinDoctor(idCita) {
+  if (!confirm('¿Cancelar esta cita por falta de doctores disponibles?')) return;
+  try {
+    const res  = await fetch(`/api/citas/${idCita}/cancelar-recepcion`, {
+      method: 'PATCH', headers: H, body: JSON.stringify({ motivo: 'Sin doctores disponibles' })
+    });
+    const data = await res.json();
+    if (res.ok) {
+      toast('Cita cancelada.');
+      cerrarReasignacion();
+      cargarCitas();
+      cargarStats();
+    } else {
+      toast('Error: ' + (data.error || 'No se pudo cancelar'), 'warn');
+    }
+  } catch {
+    toast('Error de conexión.', 'error');
+  }
 }
 
 // ── MODAL CITA ────────────────────────────────
@@ -884,7 +1003,9 @@ function alertarVital(campo, valor) {
   }
 }
 
+let _enviandoPreconsulta = false;
 async function guardarPreconsulta() {
+  if (_enviandoPreconsulta) return;     // evita doble submit
   if (!_prePaciente) { toast('Selecciona un paciente primero.', 'warn'); return; }
   if (!_preCita)     { toast('Selecciona la cita a atender.', 'warn'); return; }
 
@@ -947,6 +1068,7 @@ async function guardarPreconsulta() {
   }
   // ── Fin validaciones ───────────────────────────────────────────────────────
 
+  _enviandoPreconsulta = true;
   try {
     // Verificar duplicado eficientemente: solo consulta esa cita
     const checkRes = await fetch(`/api/consultas/by-cita/${_preCita.idCita}`, { headers: H });
@@ -998,6 +1120,8 @@ async function guardarPreconsulta() {
   } catch (err) {
     toast('Error de conexión.', 'error');
     console.error(err);
+  } finally {
+    _enviandoPreconsulta = false;
   }
 }
 
