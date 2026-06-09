@@ -12,7 +12,7 @@ exports.getCitas = (req, res) => {
 exports.getCitaById = (req, res) => {
   Cita.getById(req.params.id, (err, result) => {
     if (err) { console.error('[citas]', err); return res.status(500).json({ message: 'Error interno del servidor.' }); }
-    res.json(result);
+    res.json(Array.isArray(result) ? result[0] : result);
   });
 };
 
