@@ -67,9 +67,9 @@ const ReportesModel = {
       LEFT  JOIN tbl_diagnosticos di ON di.idConsulta    = co.idConsulta
       LEFT  JOIN tbl_recetas      r  ON r.idDiagnostico  = di.idDiagnostico
       WHERE ci.idDoctor = ?
-        AND ci.fecha BETWEEN ? AND ?
+        AND ci.fecha >= ? AND ci.fecha < DATE_ADD(?, INTERVAL 1 DAY)
     `;
-    db.query(sql, [idDoctor, fechaInicio, fechaFin], cb);
+    db.query(sql, [idDoctor, fechaInicio, fechaFin, fechaFin], cb);
   },
 
   // ── Top 5 diagnósticos — GROUP BY columna seleccionada ────────────────────
@@ -82,12 +82,12 @@ const ReportesModel = {
       INNER JOIN tbl_consultas co ON di.idConsulta = co.idConsulta
       INNER JOIN tbl_citas     ci ON co.idCita     = ci.idCita
       WHERE ci.idDoctor = ?
-        AND ci.fecha BETWEEN ? AND ?
+        AND ci.fecha >= ? AND ci.fecha < DATE_ADD(?, INTERVAL 1 DAY)
       GROUP BY di.descripcion
       ORDER BY frecuencia DESC
       LIMIT 5
     `;
-    db.query(sql, [idDoctor, fechaInicio, fechaFin], cb);
+    db.query(sql, [idDoctor, fechaInicio, fechaFin, fechaFin], cb);
   },
 
   // ── Últimas 10 recetas — sin GROUP BY, solo ORDER BY ──────────────────────
@@ -109,11 +109,11 @@ const ReportesModel = {
       INNER JOIN tbl_usuarios     up ON pa.idUsuario    = up.idUsuario
       LEFT  JOIN tbl_medicamentos m  ON r.idMedicamento = m.idMedicamento
       WHERE ci.idDoctor = ?
-        AND ci.fecha BETWEEN ? AND ?
+        AND ci.fecha >= ? AND ci.fecha < DATE_ADD(?, INTERVAL 1 DAY)
       ORDER BY ci.fecha DESC
       LIMIT 10
     `;
-    db.query(sql, [idDoctor, fechaInicio, fechaFin], cb);
+    db.query(sql, [idDoctor, fechaInicio, fechaFin, fechaFin], cb);
   },
 
   // ── KPIs inventario (solo agregados — sin GROUP BY) ───────────────────────

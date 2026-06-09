@@ -8,6 +8,7 @@
  * 4. Todas las tablas: nombres en vez de IDs
  * 5. Diagnósticos recientes: muestra nombre del paciente
  * 6. HU12: reportes médico integrados en nav()
+ * 7. Modal historial: tarjetas por cita (consulta, diagnóstico, receta de ESA cita)
  */
 
 const usuario = JSON.parse(sessionStorage.getItem('usuario') || 'null');
@@ -54,12 +55,12 @@ function toast(msg, tipo = 'success') {
 }
 
 // ── MAPS PARA ONCLICK SEGURO ──────────────────────────────────────────────────
-const _mapPacCon   = new Map(); // pacientes en sección consulta
-const _mapCitaCon  = new Map(); // citas en sección consulta
-const _mapPacDiag  = new Map(); // pacientes en sección diagnóstico
-const _mapConDiag  = new Map(); // consultas en sección diagnóstico
-const _mapPacRec   = new Map(); // pacientes en sección receta
-const _mapMedRec   = new Map(); // medicamentos en sección receta
+const _mapPacCon   = new Map();
+const _mapCitaCon  = new Map();
+const _mapPacDiag  = new Map();
+const _mapConDiag  = new Map();
+const _mapPacRec   = new Map();
+const _mapMedRec   = new Map();
 
 // ── ESTADO GLOBAL ─────────────────────────────────────────────────────────────
 let todasLasCitas   = [];
@@ -204,7 +205,7 @@ async function cargarStats() {
 async function abrirHistorialPaciente(idCita, idPaciente) {
   document.getElementById('modal-historial-paciente').classList.add('active');
   document.getElementById('modal-historial-contenido').innerHTML =
-    '<p style="text-align:center;color:var(--text-soft);padding:30px;">Cargando historial...</p>';
+    '<p style="text-align:center;color:var(--text-soft);padding:30px;">Cargando...</p>';
 
   document.getElementById('btn-atender-modal').onclick = () => {
     cerrarModalHistorial();
@@ -212,65 +213,162 @@ async function abrirHistorialPaciente(idCita, idPaciente) {
   };
 
   try {
-    const [pRes, conRes, diagRes, recRes] = await Promise.all([
+    const cita = todasLasCitas.find(c => c.idCita === idCita);
+
+    const [pRes, conCitaRes, allDiagRes, allRecRes] = await Promise.all([
       fetch(`/api/pacientes/${idPaciente}`, { headers: H }),
-      fetch('/api/consultas', { headers: H }),
+      fetch(`/api/consultas/by-cita/${idCita}`, { headers: H }),
       fetch('/api/diagnosticos', { headers: H }),
       fetch('/api/recetas', { headers: H }),
     ]);
 
     const paciente     = await pRes.json();
-    const consultas    = await conRes.json();
-    const diagnosticos = await diagRes.json();
-    const recetas      = await recRes.json();
+    const consultaCita = await conCitaRes.json();
+    const allDiag      = await allDiagRes.json();
+    const allRec       = await allRecRes.json();
+
     const p = Array.isArray(paciente) ? paciente[0] : paciente;
 
+    const idConsulta = consultaCita?.idConsulta || null;
+    const diagsCita  = Array.isArray(allDiag)
+      ? allDiag.filter(d => d.idConsulta === idConsulta)
+      : [];
+    const recsCita   = Array.isArray(allRec)
+      ? allRec.filter(r => diagsCita.some(d => d.idDiagnostico === r.idDiagnostico))
+      : [];
+
+    const fechaCita = cita?.fecha ? cita.fecha.split('T')[0] : '–';
+    const horaCita  = cita?.hora  ? cita.hora.substring(0,5)  : '–';
+
     document.getElementById('modal-historial-contenido').innerHTML = `
-      <div style="display:flex;align-items:center;gap:14px;padding:14px;background:var(--cream);border-radius:14px;margin-bottom:18px;border:1px solid var(--border);">
-        <div style="width:46px;height:46px;border-radius:12px;background:linear-gradient(135deg,var(--teal),var(--teal-light));color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:18px;flex-shrink:0;">
+
+      <!-- Cabecera paciente -->
+      <div style="display:flex;align-items:center;gap:14px;padding:16px;background:var(--cream);border-radius:14px;margin-bottom:20px;border:1px solid var(--border);">
+        <div style="width:48px;height:48px;border-radius:13px;background:linear-gradient(135deg,var(--teal),var(--teal-light));color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:20px;flex-shrink:0;">
           ${esc((p?.Nombres || 'P')[0])}
         </div>
-        <div>
-          <strong style="display:block;font-size:14px;color:var(--deep);">${esc(p?.Nombres || '–')} ${esc(p?.Apellidos || '')}</strong>
-          <span style="font-size:12px;color:var(--text-soft);">Exp: ${esc(p?.numero_expediente || '–')} · Sangre: ${esc(p?.tipo_sangre || 'N/A')}</span>
+        <div style="flex:1;">
+          <strong style="display:block;font-size:15px;color:var(--deep);">${esc(p?.Nombres||'–')} ${esc(p?.Apellidos||'')}</strong>
+          <span style="font-size:12px;color:var(--text-soft);">Exp: ${esc(p?.numero_expediente||'–')} &nbsp;·&nbsp; Sangre: ${esc(p?.tipo_sangre||'N/A')}</span>
         </div>
-        ${p?.alergias ? `<div style="margin-left:auto;background:rgba(200,50,50,0.07);border:1px solid rgba(200,50,50,0.15);border-radius:10px;padding:8px 12px;font-size:11.5px;color:#c03030;">Alergia: ${esc(p.alergias)}</div>` : ''}
+        ${p?.alergias ? `
+          <div style="background:rgba(200,50,50,0.07);border:1px solid rgba(200,50,50,0.15);border-radius:10px;padding:8px 12px;font-size:11.5px;color:#c03030;flex-shrink:0;">
+            ⚠ ${esc(p.alergias)}
+          </div>` : ''}
       </div>
-      <h4 style="font-size:12.5px;font-weight:700;color:var(--deep);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.06em;">Últimas Consultas</h4>
-      <div class="historial-mini" style="margin-bottom:18px;">
-        ${Array.isArray(consultas) && consultas.length
-          ? consultas.slice(0,3).map(c => `
-              <div class="historial-mini__item">
-                <h4>${c.fecha_consulta ? c.fecha_consulta.split('T')[0] : '–'} · ${c.NombrePaciente ? esc(c.NombrePaciente) + ' ' + esc(c.ApellidosPaciente||'') : 'Cita #' + c.idCita}</h4>
-                <p>Peso: ${c.peso || '–'} kg · Presión: ${esc(c.presion_arterial || '–')} · Temp: ${c.temperatura || '–'}°C</p>
-                <p style="margin-top:4px;">${esc(c.observaciones || 'Sin observaciones')}</p>
-              </div>`).join('')
-          : '<p style="color:var(--text-soft);font-size:12.5px;">Sin consultas registradas</p>'}
+
+      <!-- Tarjeta: Datos de la Cita -->
+      <div style="border:1.5px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:14px;">
+        <div style="display:flex;align-items:center;gap:10px;padding:12px 18px;background:rgba(42,107,94,0.06);border-bottom:1.5px solid var(--border);">
+          <span class="material-symbols-outlined icon-inline" style="color:var(--teal);">calendar_today</span>
+          <strong style="font-size:13px;color:var(--deep);">Datos de la Cita #${idCita}</strong>
+          <span style="margin-left:auto;">${estadoDot(cita?.estado || '–')}</span>
+        </div>
+        <div style="padding:16px 18px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
+          ${_tarjetaDato('Fecha', fechaCita)}
+          ${_tarjetaDato('Hora', horaCita)}
+          ${_tarjetaDato('Motivo', cita?.motivo || '–')}
+        </div>
       </div>
-      <h4 style="font-size:12.5px;font-weight:700;color:var(--deep);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.06em;">🔬 Diagnósticos Recientes</h4>
-      <div class="historial-mini" style="margin-bottom:18px;">
-        ${Array.isArray(diagnosticos) && diagnosticos.length
-          ? diagnosticos.slice(0,3).map(d => `
-              <div class="historial-mini__item">
-                <h4>Diagnóstico #${d.idDiagnostico} · ${d.fecha_diagnostico ? d.fecha_diagnostico.split('T')[0] : '–'}</h4>
-                <p>${esc(d.descripcion || 'Sin descripción')}</p>
-              </div>`).join('')
-          : '<p style="color:var(--text-soft);font-size:12.5px;">Sin diagnósticos registrados</p>'}
+
+      <!-- Tarjeta: Consulta de esta Cita -->
+      <div style="border:1.5px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:14px;">
+        <div style="display:flex;align-items:center;gap:10px;padding:12px 18px;background:rgba(42,107,94,0.06);border-bottom:1.5px solid var(--border);">
+          <span class="material-symbols-outlined icon-inline" style="color:var(--teal);">stethoscope</span>
+          <strong style="font-size:13px;color:var(--deep);">Consulta de la Cita</strong>
+          ${idConsulta
+            ? `<span style="margin-left:auto;font-size:11px;color:var(--teal);font-weight:600;background:rgba(42,107,94,0.1);padding:3px 10px;border-radius:20px;">Registrada</span>`
+            : `<span style="margin-left:auto;font-size:11px;color:var(--text-soft);font-weight:600;background:rgba(0,0,0,0.05);padding:3px 10px;border-radius:20px;">Sin registro</span>`}
+        </div>
+        <div style="padding:16px 18px;">
+          ${idConsulta ? `
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;margin-bottom:${consultaCita.observaciones ? '14px' : '0'};">
+              ${_tarjetaDato('Peso', consultaCita.peso ? consultaCita.peso + ' kg' : '–')}
+              ${_tarjetaDato('Talla', consultaCita.altura ? consultaCita.altura + ' cm' : '–')}
+              ${_tarjetaDato('Presión', consultaCita.presion_arterial || '–')}
+              ${_tarjetaDato('Temperatura', consultaCita.temperatura ? consultaCita.temperatura + '°C' : '–')}
+            </div>
+            ${consultaCita.observaciones ? `
+              <div style="background:var(--cream);border-radius:10px;padding:12px 14px;font-size:13px;color:var(--text);line-height:1.6;">
+                <span style="font-size:11px;font-weight:600;color:var(--text-soft);display:block;margin-bottom:4px;">OBSERVACIONES</span>
+                ${esc(consultaCita.observaciones)}
+              </div>` : ''}
+          ` : `
+            <p style="font-size:13px;color:var(--text-soft);text-align:center;padding:10px 0;">No hay consulta registrada para esta cita.</p>
+          `}
+        </div>
       </div>
-      <h4 style="font-size:12.5px;font-weight:700;color:var(--deep);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.06em;">Recetas Recientes</h4>
-      <div class="historial-mini">
-        ${Array.isArray(recetas) && recetas.length
-          ? recetas.slice(0,3).map(r => `
-              <div class="historial-mini__item">
-                <h4>${esc(r.medicamento)} — ${esc(r.dosis || '–')}</h4>
-                <p>${esc(r.frecuencia || '–')} · ${esc(r.duracion || '–')}</p>
-              </div>`).join('')
-          : '<p style="color:var(--text-soft);font-size:12.5px;">Sin recetas registradas</p>'}
+
+      <!-- Tarjeta: Diagnóstico de la Cita -->
+      <div style="border:1.5px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:14px;">
+        <div style="display:flex;align-items:center;gap:10px;padding:12px 18px;background:rgba(42,107,94,0.06);border-bottom:1.5px solid var(--border);">
+          <span class="material-symbols-outlined icon-inline" style="color:var(--teal);">lab_research</span>
+          <strong style="font-size:13px;color:var(--deep);">Diagnóstico de la Cita</strong>
+          ${diagsCita.length
+            ? `<span style="margin-left:auto;font-size:11px;color:var(--teal);font-weight:600;background:rgba(42,107,94,0.1);padding:3px 10px;border-radius:20px;">${diagsCita.length} registro${diagsCita.length > 1 ? 's' : ''}</span>`
+            : `<span style="margin-left:auto;font-size:11px;color:var(--text-soft);font-weight:600;background:rgba(0,0,0,0.05);padding:3px 10px;border-radius:20px;">Sin registro</span>`}
+        </div>
+        <div style="padding:16px 18px;">
+          ${diagsCita.length
+            ? diagsCita.map(d => `
+                <div style="border-left:3px solid var(--teal);padding:10px 14px;border-radius:0 10px 10px 0;background:rgba(42,107,94,0.04);margin-bottom:10px;">
+                  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+                    <span style="font-size:11px;font-weight:700;color:var(--teal);">DX #${d.idDiagnostico}</span>
+                    <span style="font-size:11px;color:var(--text-soft);">${d.fecha_diagnostico ? d.fecha_diagnostico.split('T')[0] : '–'}</span>
+                  </div>
+                  <p style="font-size:13px;color:var(--deep);margin:0;">${esc(d.descripcion || 'Sin descripción')}</p>
+                </div>`).join('')
+            : `<p style="font-size:13px;color:var(--text-soft);text-align:center;padding:10px 0;">No hay diagnóstico registrado para esta cita.</p>`}
+        </div>
+      </div>
+
+      <!-- Tarjeta: Receta de la Cita -->
+      <div style="border:1.5px solid var(--border);border-radius:14px;overflow:hidden;">
+        <div style="display:flex;align-items:center;gap:10px;padding:12px 18px;background:rgba(42,107,94,0.06);border-bottom:1.5px solid var(--border);">
+          <span class="material-symbols-outlined icon-inline" style="color:var(--teal);">medication</span>
+          <strong style="font-size:13px;color:var(--deep);">Receta de la Cita</strong>
+          ${recsCita.length
+            ? `<span style="margin-left:auto;font-size:11px;color:var(--teal);font-weight:600;background:rgba(42,107,94,0.1);padding:3px 10px;border-radius:20px;">${recsCita.length} medicamento${recsCita.length > 1 ? 's' : ''}</span>`
+            : `<span style="margin-left:auto;font-size:11px;color:var(--text-soft);font-weight:600;background:rgba(0,0,0,0.05);padding:3px 10px;border-radius:20px;">Sin registro</span>`}
+        </div>
+        <div style="padding:16px 18px;">
+          ${recsCita.length
+            ? `<table style="width:100%;border-collapse:collapse;font-size:13px;">
+                <thead>
+                  <tr style="font-size:11px;color:var(--text-soft);border-bottom:1.5px solid var(--border);">
+                    <th style="text-align:left;padding:6px 8px;font-weight:600;">Medicamento</th>
+                    <th style="text-align:left;padding:6px 8px;font-weight:600;">Dosis</th>
+                    <th style="text-align:left;padding:6px 8px;font-weight:600;">Frecuencia</th>
+                    <th style="text-align:left;padding:6px 8px;font-weight:600;">Duración</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${recsCita.map(r => `
+                    <tr style="border-bottom:1px solid rgba(42,107,94,0.07);">
+                      <td style="padding:9px 8px;font-weight:600;color:var(--deep);">${esc(r.medicamento||'–')}</td>
+                      <td style="padding:9px 8px;color:var(--text-soft);">${esc(r.dosis||'–')}</td>
+                      <td style="padding:9px 8px;color:var(--text-soft);">${esc(r.frecuencia||'–')}</td>
+                      <td style="padding:9px 8px;color:var(--text-soft);">${esc(r.duracion||'–')}</td>
+                    </tr>`).join('')}
+                </tbody>
+              </table>`
+            : `<p style="font-size:13px;color:var(--text-soft);text-align:center;padding:10px 0;">No hay receta registrada para esta cita.</p>`}
+        </div>
       </div>`;
+
   } catch {
     document.getElementById('modal-historial-contenido').innerHTML =
       '<p style="color:#c03030;text-align:center;padding:20px;">Error al cargar historial</p>';
   }
+}
+
+// ── HELPER MINI-TARJETA DE DATO ───────────────────────────────────────────────
+function _tarjetaDato(label, valor) {
+  return `
+    <div style="background:var(--cream);border-radius:10px;padding:10px 12px;">
+      <span style="font-size:10.5px;font-weight:600;color:var(--text-soft);display:block;margin-bottom:3px;text-transform:uppercase;letter-spacing:0.05em;">${label}</span>
+      <span style="font-size:13.5px;font-weight:600;color:var(--deep);">${esc(String(valor))}</span>
+    </div>`;
 }
 
 function cerrarModalHistorial() {
@@ -293,17 +391,14 @@ async function abrirAtencion(idCita, idPaciente) {
   const fechaStr = cita?.fecha ? cita.fecha.split('T')[0] : '';
   const horaStr  = cita?.hora  ? cita.hora.substring(0,5)  : '';
 
-  // Mostrar panel y cabecera
   document.getElementById('panel-atencion').style.display = 'block';
   document.getElementById('atencion-paciente-info').innerHTML =
     `<span class="material-symbols-outlined icon-inline">person</span> <strong>${esc(nombre)}</strong> · Cita #${idCita} · ${fechaStr} ${horaStr ? '— ' + horaStr : ''}`;
 
-  // Resetear accordions
   _setAccordion('consulta',    true,  '', '');
   _setAccordion('diagnostico', false, '· opcional', '');
   _setAccordion('receta',      false, '· opcional', '');
 
-  // Limpiar formularios
   ['con-peso','con-altura','con-presion','con-temp','con-obs'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = '';
@@ -311,7 +406,6 @@ async function abrirAtencion(idCita, idPaciente) {
   document.getElementById('diag-descripcion').value = '';
   document.getElementById('diag-fecha').value       = '';
 
-  // Obtener historial del paciente
   let idHistorial = null;
   try {
     const hRes = await fetch(`/api/historial/by-paciente?idPaciente=${idPaciente}`, { headers: H });
@@ -320,17 +414,14 @@ async function abrirAtencion(idCita, idPaciente) {
     idHistorial = h?.idHistorial || null;
   } catch {}
 
-  // Configurar estado para guardarConsulta()
   _citaSeleccionada = { idCita, idPaciente, nombre, fecha: fechaStr, hora: horaStr, idHistorial };
   document.getElementById('con-cita').value     = idCita;
   document.getElementById('con-historial').value = idHistorial || '';
 
-  // Configurar estado para diagnóstico
   _consultaSeleccionada = null;
   document.getElementById('diag-consulta').value = '';
   document.getElementById('diagnostico-consulta-info').style.display = 'none';
 
-  // Verificar si ya existe una consulta para esta cita
   try {
     const conRes = await fetch(`/api/consultas/by-cita/${idCita}`, { headers: H });
     const con    = await conRes.json();
@@ -347,7 +438,6 @@ async function abrirAtencion(idCita, idPaciente) {
     }
   } catch {}
 
-  // Configurar estado para receta
   _recPacienteId = idPaciente;
   _recLineas     = [];
   _recMedActual  = null;
@@ -355,10 +445,8 @@ async function abrirAtencion(idCita, idPaciente) {
   if (!listaMedsActivos.length) cargarMedicamentosActivos();
   cargarDiagnosticosPacienteParaReceta(idPaciente);
 
-  // Cargar preconsulta
   cargarPreconsulta(idCita);
 
-  // Scroll suave al panel
   setTimeout(() => document.getElementById('panel-atencion').scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
 }
 
@@ -397,7 +485,6 @@ async function finalizarCita() {
   cargarStats();
 }
 
-// Helpers de accordions
 function toggleAccordion(seccion) {
   const body  = document.getElementById(`acc-body-${seccion}`);
   const arrow = document.getElementById(`acc-arrow-${seccion}`);
@@ -517,7 +604,6 @@ async function guardarConsulta() {
   const res  = await fetch('/api/consultas', { method:'POST', headers: H, body: JSON.stringify(payload) });
   const data = await res.json();
   if (data.id) {
-    // Marcar la cita como COMPLETADA automáticamente al registrar la consulta
     await fetch(`/api/citas/${_citaSeleccionada.idCita}/completar`, { method:'PATCH', headers: H });
 
     toast('Consulta registrada.');
@@ -525,7 +611,6 @@ async function guardarConsulta() {
     document.getElementById('finalizar-cita-hint').style.display = 'none';
     cargarCitas();
 
-    // Auto-vincular al accordion de diagnóstico
     _consultaSeleccionada = {
       idConsulta:     data.id,
       nombrePaciente: _citaSeleccionada.nombre,
@@ -535,7 +620,6 @@ async function guardarConsulta() {
     document.getElementById('diag-fecha').value    = new Date().toISOString().slice(0,16);
     renderConsultaSeleccionada();
 
-    // Abrir siguiente paso
     _setAccordion('diagnostico', true, '· opcional', '');
     cargarStats();
   } else {
@@ -739,7 +823,6 @@ async function guardarDiagnostico() {
     toast('Diagnóstico registrado');
     _marcarAccordionDone('diagnostico', '· Registrado');
 
-    // Agregar el nuevo diagnóstico al selector de receta
     const sel = document.getElementById('rec-diagnostico-sel');
     const opt = document.createElement('option');
     opt.value    = data.id;
@@ -747,7 +830,6 @@ async function guardarDiagnostico() {
     opt.selected = true;
     sel.appendChild(opt);
 
-    // Abrir siguiente paso
     _setAccordion('receta', true, '· opcional', '');
   } else {
     toast('Error: ' + (data.error?.sqlMessage || data.error || 'No se pudo registrar'), 'error');
@@ -788,7 +870,6 @@ function limpiarCamposMed() {
   if (cant) cant.value = '1';
 }
 
-
 function buscarMedicamentoReceta() {
   const input = document.getElementById('rec-medicamento-nombre');
   const sug   = document.getElementById('sug-medicamento');
@@ -804,8 +885,7 @@ function buscarMedicamentoReceta() {
   lista.forEach(m => _mapMedRec.set(m.idMedicamento, m));
   sug.innerHTML = lista.length
     ? lista.map(m => `
-        <div class="autocomplete-item"
-          onclick="seleccionarMedicamento(${m.idMedicamento})">
+        <div class="autocomplete-item" onclick="seleccionarMedicamento(${m.idMedicamento})">
           <strong>${esc(m.nombre)}</strong>
           <span>Stock: ${m.stock_actual} ${esc(m.unidad_medida)} · $${parseFloat(m.precio_unitario || 0).toFixed(2)}</span>
         </div>`).join('')
@@ -886,8 +966,7 @@ function renderLineasReceta() {
       <td>${esc(l.duracion)}</td>
       <td>${l.cantidad} ${esc(l.med.unidad)}</td>
       <td style="font-weight:600;color:var(--teal);">$${l.subtotal.toFixed(2)}</td>
-      <td><button onclick="eliminarLineaReceta(${i})"
-        style="width:28px;height:28px;border:none;border-radius:7px;background:rgba(200,50,50,0.1);color:#c03030;cursor:pointer;font-size:13px;"><span class="material-symbols-outlined">close</span></button></td>
+      <td><button onclick="eliminarLineaReceta(${i})" style="width:28px;height:28px;border:none;border-radius:7px;background:rgba(200,50,50,0.1);color:#c03030;cursor:pointer;font-size:13px;"><span class="material-symbols-outlined">close</span></button></td>
     </tr>`).join('');
   const total = _recLineas.reduce((s, l) => s + l.subtotal, 0);
   document.getElementById('rec-total').textContent = total.toFixed(2);
@@ -1156,7 +1235,7 @@ function _repmRenderKPIs(r) {
 function _repmRenderDiagnosticos(lista) {
   const el = document.getElementById('repm-diagnosticos');
   if (!lista?.length) {
-    el.innerHTML = `<p style="text-align:center;color:var(--text-soft);padding:20px;font-size:13px;">Sin diagnósticos en el período seleccionado.</p>`;
+    el.innerHTML = '<p style="text-align:center;color:var(--text-soft);padding:20px;font-size:13px;">Sin diagnósticos en el período seleccionado.</p>';
     return;
   }
   const max = lista[0].frecuencia;
@@ -1175,7 +1254,7 @@ function _repmRenderDiagnosticos(lista) {
 function _repmRenderRecetas(lista) {
   const tbody = document.getElementById('repm-tbody-recetas');
   if (!lista?.length) {
-    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--text-soft);padding:20px;">Sin recetas en el período seleccionado.</td></tr>`;
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-soft);padding:20px;">Sin recetas en el período seleccionado.</td></tr>';
     return;
   }
   tbody.innerHTML = lista.map(r => `
