@@ -28,7 +28,22 @@ const Consulta = {
 
     create: (data, cb) => db.query("INSERT INTO tbl_consultas SET ?", data, cb),
     update: (id, data, cb) => db.query("UPDATE tbl_consultas SET ? WHERE idConsulta = ?", [data, id], cb),
-    delete: (id, cb) => db.query("DELETE FROM tbl_consultas WHERE idConsulta = ?", [id], cb)
-};
+    delete: (id, cb) => db.query("DELETE FROM tbl_consultas WHERE idConsulta = ?", [id], cb),
+
+    getByPaciente: (idPaciente, cb) => db.query(`
+        SELECT tbl_consultas.*,
+               u.Nombres   AS NombreDoctor,
+               u.Apellidos AS ApellidosDoctor,
+               tbl_citas.motivo,
+               tbl_citas.hora,
+               tbl_citas.fecha
+        FROM tbl_consultas
+        LEFT JOIN tbl_historial_clinico ON tbl_consultas.idHistorial = tbl_historial_clinico.idHistorial
+        LEFT JOIN tbl_citas             ON tbl_consultas.idCita = tbl_citas.idCita
+        LEFT JOIN tbl_doctores          ON tbl_citas.idDoctor = tbl_doctores.idDoctor
+        LEFT JOIN tbl_usuarios u        ON tbl_doctores.idUsuario = u.idUsuario
+        WHERE tbl_historial_clinico.idPaciente = ?
+        ORDER BY tbl_consultas.idConsulta DESC`, [idPaciente], cb)  // ← sin coma, cierra el método
+};  
 
 module.exports = Consulta;

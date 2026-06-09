@@ -518,16 +518,15 @@ async function cargarConsultas() {
   const pac = await obtenerMiPaciente();
   if (!pac) return;
   try {
-    const res   = await fetch(`/api/citas/porpaciente/${pac.idPaciente}`, { headers: H });
-    const data  = await res.json();
-    const comp  = Array.isArray(data) ? data.filter(c => c.estado === 'COMPLETADA') : [];
-    document.getElementById('tbody-consultas').innerHTML = comp.length
-      ? comp.map(c => `
+    const res  = await fetch(`/api/consultas/paciente/${pac.idPaciente}`, { headers: H });
+    const data = await res.json();
+    document.getElementById('tbody-consultas').innerHTML = Array.isArray(data) && data.length
+      ? data.map(c => `
           <tr>
             <td>${c.fecha ? c.fecha.split('T')[0] : '—'}</td>
-            <td>${c.NombreDoctor ? `${esc(c.NombreDoctor)} ${esc(c.ApellidosDoctor)}` : `#${c.idDoctor}`}</td>
-            <td>${esc(c.motivo || '—')}</td>
-            <td>${c.hora  ? c.hora.substring(0,5) : '—'}</td>
+            <td>${c.NombreDoctor ? `${esc(c.NombreDoctor)} ${esc(c.ApellidosDoctor)}` : '—'}</td>
+            <td>${esc(c.motivo || c.diagnostico || '—')}</td>
+            <td>${c.hora ? c.hora.substring(0,5) : '—'}</td>
             <td><span class="badge badge--completada">Completada</span></td>
           </tr>`).join('')
       : '<tr><td colspan="5" style="text-align:center;color:var(--text-soft);padding:20px;">No tienes consultas anteriores</td></tr>';

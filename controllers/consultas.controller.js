@@ -49,3 +49,10 @@ exports.deleteConsulta = (req, res) => {
         res.json({ message: "Consulta eliminada" });
     });
 };
+
+exports.getConsultasByPaciente = (req, res) => {
+    Consulta.getByPaciente(req.params.idPaciente, (err, results) => {
+        if (err) { console.error('[consultas]', err); return res.status(500).json({ message: 'Error interno del servidor.' }); }
+        res.json(results);
+    });
+};
