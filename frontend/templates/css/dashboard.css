@@ -967,6 +967,11 @@ body::after {
   position: relative;
 }
 
+.pre-bloque,
+.panel {
+  overflow: visible !important;
+}
+
 .autocomplete-lista {
   display: none;
   position: absolute;
@@ -978,8 +983,23 @@ body::after {
   border-radius: 11px;
   box-shadow: var(--shadow-lg);
   z-index: 100;
-  max-height: 180px;
+  max-height: 320px;
   overflow-y: auto;
+  scroll-behavior: smooth;
+}
+
+.autocomplete-lista::-webkit-scrollbar {
+  width: 5px;
+}
+.autocomplete-lista::-webkit-scrollbar-track {
+  background: transparent;
+}
+.autocomplete-lista::-webkit-scrollbar-thumb {
+  background: rgba(42,107,94,0.25);
+  border-radius: 10px;
+}
+.autocomplete-lista::-webkit-scrollbar-thumb:hover {
+  background: rgba(42,107,94,0.45);
 }
 
 .autocomplete-item {
@@ -1791,4 +1811,26 @@ select.rol-select {
   border-radius: 100px;
   padding: 3px 11px;
 }
- 
+
+/* ── BOTÓN REGISTRAR PACIENTE ── */
+.btn-registrar-paciente {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: fit-content;
+  padding: 10px 20px;
+  margin-top: 8px;
+  margin-bottom: 20px;  /* ← separa de "Pacientes Recientes" */
+  border: none;
+  border-radius: 13px;
+  background: linear-gradient(135deg, var(--teal), var(--teal-light));
+  color: #fff;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;      /* ← un poco más pequeño */
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(42,107,94,0.28);
+  transition: opacity 0.2s, transform 0.15s, box-shadow 0.2s;
+}

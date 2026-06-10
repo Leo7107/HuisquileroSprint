@@ -1018,15 +1018,28 @@ function _preDoBuscar() {
         `${p.Nombres} ${p.Apellidos}`.toLowerCase().includes(q) ||
         (p.numero_expediente || '').toLowerCase().includes(q))
     : [];
-  pacs.slice(0,8).forEach(p => _mapPrePacRec.set(p.idPaciente, p));
+  pacs.slice(0,15).forEach(p => _mapPrePacRec.set(p.idPaciente, p));
   lista.innerHTML = pacs.length
-    ? pacs.slice(0,8).map(p => `
+    ? pacs.slice(0,15).map(p => `
         <div class="autocomplete-item"
           onclick="preSeleccionarPaciente(${p.idPaciente})">
           <strong>${esc(p.Nombres || '')} ${esc(p.Apellidos || '')}</strong>
           <span>Exp: ${esc(p.numero_expediente || '–')} · ${esc(p.tipo_sangre || 'N/A')}</span>
         </div>`).join('')
     : '<div class="autocomplete-item" style="color:var(--text-soft);">Sin resultados</div>';
+  lista.style.display = 'block';
+}
+
+function preMostrarTodos() {
+  const lista = document.getElementById('pre-sug-paciente');
+  if (!Array.isArray(listaPacientes) || !listaPacientes.length) return;
+  listaPacientes.slice(0,15).forEach(p => _mapPrePacRec.set(p.idPaciente, p));
+  lista.innerHTML = listaPacientes.slice(0,15).map(p => `
+      <div class="autocomplete-item"
+        onclick="preSeleccionarPaciente(${p.idPaciente})">
+        <strong>${esc(p.Nombres || '')} ${esc(p.Apellidos || '')}</strong>
+        <span>Exp: ${esc(p.numero_expediente || '–')} · ${esc(p.tipo_sangre || 'N/A')}</span>
+      </div>`).join('');
   lista.style.display = 'block';
 }
 

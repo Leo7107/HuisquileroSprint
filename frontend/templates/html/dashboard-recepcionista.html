@@ -152,7 +152,8 @@
               <label>Estado</label>
               <select id="pac-estado"><option value="ACTIVO">Activo</option><option value="INACTIVO">Inactivo</option></select>
             </div>
-            <button class="btn-full" onclick="registrarPaciente()">Registrar Paciente</button>
+            <button class="btn-registrar-paciente" onclick="registrarPaciente()"><span class="material-symbols-outlined icon-inline">person_add</span>Registrar Paciente
+           </button>
           </div>
           <div>
             <h3>Pacientes Recientes</h3>
@@ -239,13 +240,12 @@
         <div class="panel">
           <div class="panel__header"><h2>Registrar Preconsulta</h2></div>
 
-          <div class="pre-bloque">
-            <div class="pre-bloque__label">Paso 1 — Seleccionar Paciente</div>
+          <div class="pre-bloque" style="overflow:visible;">
+           <div class="pre-bloque__label">Paso 1 — Seleccionar Paciente</div>
             <div class="autocomplete-wrap" style="margin-bottom:10px;">
               <label class="pre-lbl">Buscar paciente por nombre o expediente</label>
-              <input type="text" id="pre-buscar-paciente" class="pre-inp"
-                placeholder="Ej: María González o EXP-001..."
-                oninput="preBuscarPaciente()" autocomplete="off"/>
+              <input type="text" id="pre-buscar-paciente" class="pre-inp"placeholder="Ej: María González o EXP-001..."
+              oninput="preBuscarPaciente()" onfocus="preMostrarTodos()" autocomplete="off"/>
               <div id="pre-sug-paciente" class="autocomplete-lista"></div>
             </div>
             <div id="pre-alerta-alergias" class="pre-alerta" style="display:none;"></div>
