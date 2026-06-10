@@ -1834,3 +1834,25 @@ select.rol-select {
   box-shadow: 0 4px 16px rgba(42,107,94,0.28);
   transition: opacity 0.2s, transform 0.15s, box-shadow 0.2s;
 }
+
+/* ── BOTÓN IR A INVENTARIO ── */
+.btn-ir-inventario {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 18px;
+  border: none;
+  border-radius: 11px;
+  background: linear-gradient(135deg, var(--teal), var(--teal-light));
+  color: #fff;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 3px 12px rgba(42,107,94,0.25);
+  transition: opacity 0.2s, transform 0.15s;
+}
+.btn-ir-inventario:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
