@@ -393,11 +393,24 @@ async function cargarPacientesRecientes() {
     const recientes = Array.isArray(lista) ? lista.slice(-6).reverse() : [];
     document.getElementById('lista-recientes').innerHTML = recientes.length
       ? recientes.map(p => `
-          <div style="padding:10px 0;border-bottom:1px solid rgba(0,0,0,0.05);">
-            <strong>${esc(p.Nombres || '')} ${esc(p.Apellidos || '')}</strong><br>
-            <span style="font-size:12px;color:#666;">Expediente: ${esc(p.numero_expediente || '')} | ID: ${p.idPaciente}</span>
+          <div style="display:flex;align-items:center;gap:11px;padding:10px 0;border-bottom:1px solid rgba(42,107,94,0.07);">
+            <div style="width:36px;height:36px;border-radius:9px;flex-shrink:0;
+              background:linear-gradient(135deg,var(--teal),var(--teal-light));
+              color:#fff;font-weight:700;font-size:14px;
+              display:flex;align-items:center;justify-content:center;">
+              ${esc((p.Nombres||'?')[0].toUpperCase())}
+            </div>
+            <div style="flex:1;min-width:0;">
+              <strong style="display:block;font-size:13px;color:var(--deep);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                ${esc(p.Nombres||'')} ${esc(p.Apellidos||'')}
+              </strong>
+              <span style="font-size:11.5px;color:var(--text-soft);">Exp: ${esc(p.numero_expediente||'—')}</span>
+            </div>
+            <span style="font-size:10.5px;background:rgba(42,107,94,0.09);color:var(--teal);border-radius:6px;padding:2px 7px;font-weight:600;flex-shrink:0;">
+              ID: ${p.idPaciente}
+            </span>
           </div>`).join('')
-      : '<p>Sin pacientes registrados.</p>';
+      : '<p style="color:var(--text-soft);font-size:13px;text-align:center;padding:16px 0;">Sin pacientes registrados.</p>';
   } catch (e) { console.error(e); }
 }
 
@@ -484,14 +497,215 @@ function buscarPaciente() {
     (p.numero_expediente || '').toLowerCase().includes(q) ||
     String(p.idPaciente).includes(q)
   );
-  cont.innerHTML = resultados.length
+ cont.innerHTML = resultados.length
     ? resultados.map(p => `
-        <div class="resultado-item">
-          <strong>${esc(p.Nombres || '')} ${esc(p.Apellidos || '')}</strong><br>
-          <span>Exp: ${esc(p.numero_expediente || '')} | ID: ${p.idPaciente}</span>
+        <div onclick="verExpediente(${p.idPaciente})" style="
+          display:flex;align-items:center;gap:14px;
+          padding:13px 16px;margin-bottom:8px;
+          border:1.5px solid var(--border);border-radius:14px;
+          background:#fff;cursor:pointer;transition:box-shadow .15s,border-color .15s;
+          " onmouseover="this.style.borderColor='var(--teal)';this.style.boxShadow='0 2px 12px rgba(42,107,94,0.10)'"
+            onmouseout="this.style.borderColor='var(--border)';this.style.boxShadow='none'">
+          <div style="
+            width:42px;height:42px;border-radius:11px;flex-shrink:0;
+            background:linear-gradient(135deg,var(--teal),var(--teal-light));
+            color:#fff;font-weight:700;font-size:17px;
+            display:flex;align-items:center;justify-content:center;">
+            ${esc((p.Nombres||'?')[0].toUpperCase())}
+          </div>
+          <div style="flex:1;min-width:0;">
+            <strong style="display:block;font-size:14px;color:var(--deep);">${esc(p.Nombres||'')} ${esc(p.Apellidos||'')}</strong>
+            <span style="font-size:12px;color:var(--text-soft);">Exp: ${esc(p.numero_expediente||'—')}</span>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0;">
+            <span style="font-size:11px;background:rgba(42,107,94,0.09);color:var(--teal);border-radius:7px;padding:3px 9px;font-weight:600;">ID: ${p.idPaciente}</span>
+            <span style="font-size:11px;color:var(--text-soft);">Ver expediente →</span>
+          </div>
         </div>`).join('')
-    : `<p style="text-align:center;color:gray;">No se encontró "${esc(q)}"</p>`;
+    : `<div style="text-align:center;padding:32px 0;">
+        <span class="material-symbols-outlined" style="font-size:36px;color:var(--border);display:block;margin-bottom:8px;">search_off</span>
+        <p style="color:var(--text-soft);font-size:13.5px;margin:0;">No se encontró <strong>"${esc(q)}"</strong></p>
+      </div>`;
+    }
+async function verExpediente(idPaciente) {
+  const p = todosPacientes.find(x => x.idPaciente === idPaciente);
+  if (!p) return;
+
+  const nombreCompleto = `${esc(p.Nombres || '')} ${esc(p.Apellidos || '')}`.trim();
+
+  let modal = document.getElementById('modal-expediente');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'modal-expediente';
+    modal.className = 'modal-overlay';
+    document.body.appendChild(modal);
+  }
+
+  // Mostrar skeleton loading
+  modal.innerHTML = `
+    <div class="modal" style="max-width:820px;max-height:88vh;overflow-y:auto;padding:0;">
+      <div style="padding:20px 24px 14px;border-bottom:1.5px solid var(--border);display:flex;align-items:center;gap:14px;">
+        <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,var(--teal),var(--teal-light));color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:18px;flex-shrink:0;">${esc((p.Nombres||'P')[0])}</div>
+        <div><h3 style="margin:0;font-size:16px;color:var(--deep);">${nombreCompleto}</h3>
+        <span style="font-size:11.5px;color:var(--text-soft);">Exp: ${esc(p.numero_expediente||'—')} · ID: ${p.idPaciente}</span></div>
+      </div>
+      <div style="padding:28px;text-align:center;color:var(--text-soft);font-size:13px;">Cargando expediente...</div>
+    </div>`;
+  modal.classList.add('active');
+
+  // Cargar todo en paralelo
+  let citas = [], consultas = [], recetas = [];
+  await Promise.allSettled([
+    fetch(`/api/citas/porpaciente/${idPaciente}`, { headers: H })
+      .then(r => r.json()).then(d => { if (Array.isArray(d)) citas = d; }),
+    fetch(`/api/consultas/paciente/${idPaciente}`, { headers: H })
+      .then(r => r.json()).then(d => { if (Array.isArray(d)) consultas = d; }),
+    fetch(`/api/recetas/paciente/${idPaciente}`, { headers: H })
+      .then(r => r.json()).then(d => { if (Array.isArray(d)) recetas = d; }),
+  ]);
+
+  // Agrupar recetas por cita
+  const gruposRecetas = new Map();
+  recetas.forEach(r => {
+    const key = r.idCita ?? `sin-${r.idReceta}`;
+    if (!gruposRecetas.has(key)) gruposRecetas.set(key, []);
+    gruposRecetas.get(key).push(r);
+  });
+
+  const badgeEstado = estado => {
+    const m = { CONFIRMADA:'activo', FINALIZADA:'activo', COMPLETADA:'activo', PENDIENTE:'pendiente', CANCELADA:'cancelada', EN_ATENCION:'en-atencion' };
+    return `<span class="badge badge--${m[estado]||'pendiente'}">${esc(estado)}</span>`;
+  };
+
+  const seccionInfo = `
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:22px;">
+      <div style="padding:11px 14px;background:var(--cream);border-radius:11px;">
+        <span style="font-size:10.5px;color:var(--text-soft);display:block;margin-bottom:2px;">Tipo de Sangre</span>
+        <strong style="font-size:15px;color:var(--deep);">${esc(p.tipo_sangre||'—')}</strong>
+      </div>
+      <div style="padding:11px 14px;background:var(--cream);border-radius:11px;">
+        <span style="font-size:10.5px;color:var(--text-soft);display:block;margin-bottom:2px;">Estado</span>
+        <strong style="font-size:15px;color:var(--deep);">${esc(p.estado_paciente||'—')}</strong>
+      </div>
+      <div style="padding:11px 14px;background:var(--cream);border-radius:11px;">
+        <span style="font-size:10.5px;color:var(--text-soft);display:block;margin-bottom:2px;">Contacto Emergencia</span>
+        <strong style="font-size:13px;color:var(--deep);">${esc(p.contacto_emergencia||'No registrado')}</strong>
+      </div>
+      ${p.alergias ? `
+      <div style="padding:11px 14px;background:rgba(192,48,48,0.06);border:1.5px solid rgba(192,48,48,0.2);border-radius:11px;grid-column:1/-1;">
+        <span style="font-size:10.5px;color:#c03030;font-weight:700;display:block;margin-bottom:2px;">⚠ Alergias</span>
+        <strong style="color:#c03030;">${esc(p.alergias)}</strong>
+      </div>` : ''}
+      ${p.padecimientos_cronicos ? `
+      <div style="padding:11px 14px;background:var(--cream);border-radius:11px;grid-column:1/-1;">
+        <span style="font-size:10.5px;color:var(--text-soft);display:block;margin-bottom:2px;">Padecimientos Crónicos</span>
+        <strong style="color:var(--deep);">${esc(p.padecimientos_cronicos)}</strong>
+      </div>` : ''}
+    </div>`;
+
+  const seccionCitas = `
+    <div style="margin-bottom:22px;">
+      <div style="display:flex;align-items:center;gap:7px;margin-bottom:10px;">
+        <span class="material-symbols-outlined" style="color:var(--teal);font-size:17px;">calendar_month</span>
+        <h4 style="margin:0;font-size:13.5px;color:var(--deep);">Citas <span style="font-weight:400;color:var(--text-soft);font-size:12px;">(${citas.length})</span></h4>
+      </div>
+      <div style="border:1.5px solid var(--border);border-radius:12px;overflow:hidden;">
+        <table class="tabla" style="margin:0;">
+          <thead><tr><th>Fecha</th><th>Hora</th><th>Doctor</th><th>Motivo</th><th>Estado</th></tr></thead>
+          <tbody>${citas.length
+            ? citas.map(c => `<tr>
+                <td>${c.fecha ? c.fecha.split('T')[0] : '—'}</td>
+                <td>${c.hora ? c.hora.substring(0,5) : '—'}</td>
+                <td style="font-size:12.5px;">${c.NombreDoctor ? `${esc(c.NombreDoctor)} ${esc(c.ApellidosDoctor||'')}` : '—'}</td>
+                <td style="font-size:12.5px;">${esc(c.motivo||'—')}</td>
+                <td>${badgeEstado(c.estado)}</td>
+              </tr>`).join('')
+            : '<tr><td colspan="5" style="text-align:center;color:var(--text-soft);padding:16px;font-size:13px;">Sin citas registradas</td></tr>'
+          }</tbody>
+        </table>
+      </div>
+    </div>`;
+
+  const seccionConsultas = `
+    <div style="margin-bottom:22px;">
+      <div style="display:flex;align-items:center;gap:7px;margin-bottom:10px;">
+        <span class="material-symbols-outlined" style="color:var(--teal);font-size:17px;">stethoscope</span>
+        <h4 style="margin:0;font-size:13.5px;color:var(--deep);">Preconsultas / Signos Vitales <span style="font-weight:400;color:var(--text-soft);font-size:12px;">(${consultas.length})</span></h4>
+      </div>
+      <div style="border:1.5px solid var(--border);border-radius:12px;overflow:hidden;">
+        <table class="tabla" style="margin:0;">
+          <thead><tr><th>Fecha</th><th>Doctor</th><th>Motivo / Obs.</th><th>Peso</th><th>Presión</th><th>Temp.</th></tr></thead>
+          <tbody>${consultas.length
+            ? consultas.map(c => `<tr>
+                <td>${c.fecha ? c.fecha.split('T')[0] : '—'}</td>
+                <td style="font-size:12.5px;">${c.NombreDoctor ? `${esc(c.NombreDoctor)} ${esc(c.ApellidosDoctor||'')}` : '—'}</td>
+                <td style="font-size:12px;max-width:180px;">${esc(c.motivo||c.observaciones||'—')}</td>
+                <td>${c.peso ? c.peso + ' kg' : '—'}</td>
+                <td>${esc(c.presion_arterial||'—')}</td>
+                <td>${c.temperatura ? c.temperatura + '°C' : '—'}</td>
+              </tr>`).join('')
+            : '<tr><td colspan="6" style="text-align:center;color:var(--text-soft);padding:16px;font-size:13px;">Sin preconsultas registradas</td></tr>'
+          }</tbody>
+        </table>
+      </div>
+    </div>`;
+
+  const seccionRecetas = `
+    <div>
+      <div style="display:flex;align-items:center;gap:7px;margin-bottom:10px;">
+        <span class="material-symbols-outlined" style="color:var(--teal);font-size:17px;">medication</span>
+        <h4 style="margin:0;font-size:13.5px;color:var(--deep);">Recetas <span style="font-weight:400;color:var(--text-soft);font-size:12px;">(${gruposRecetas.size} consulta${gruposRecetas.size!==1?'s':''})</span></h4>
+      </div>
+      ${gruposRecetas.size
+        ? [...gruposRecetas.values()].map(meds => {
+            const c     = meds[0];
+            const fecha = c.FechaCita ? c.FechaCita.split('T')[0] : '—';
+            const doc   = c.NombreDoctor ? `Dr/Dra. ${esc(c.NombreDoctor)} ${esc(c.ApellidosDoctor||'')}`.trim() : 'Médico';
+            return `
+              <div style="border:1.5px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:10px;">
+                <div style="display:flex;align-items:center;gap:10px;padding:10px 16px;background:rgba(42,107,94,0.05);border-bottom:1.5px solid var(--border);">
+                  <span class="material-symbols-outlined" style="color:var(--teal);font-size:15px;">event</span>
+                  <div>
+                    <strong style="display:block;font-size:13px;color:var(--deep);">${fecha} · ${doc}</strong>
+                    <span style="font-size:11.5px;color:var(--text-soft);">${meds.length} medicamento${meds.length!==1?'s':''}</span>
+                  </div>
+                </div>
+                <table class="tabla" style="margin:0;">
+                  <thead><tr><th>Medicamento</th><th>Dosis</th><th>Frecuencia</th><th>Duración</th><th>Indicaciones</th></tr></thead>
+                  <tbody>${meds.map(m => `<tr>
+                    <td><strong style="font-size:12.5px;">${esc(m.NombreMedicamento||m.medicamento||'—')}</strong></td>
+                    <td style="font-size:12.5px;">${esc(m.dosis||'—')}</td>
+                    <td style="font-size:12.5px;">${esc(m.frecuencia||'—')}</td>
+                    <td style="font-size:12.5px;">${esc(m.duracion||'—')}</td>
+                    <td style="font-size:12px;">${esc(m.indicaciones||'—')}</td>
+                  </tr>`).join('')}</tbody>
+                </table>
+              </div>`; }).join('')
+        : '<p style="text-align:center;color:var(--text-soft);font-size:13px;padding:14px 0;">Sin recetas registradas</p>'
+      }
+    </div>`;
+
+  modal.innerHTML = `
+    <div class="modal" style="max-width:820px;max-height:88vh;overflow-y:auto;padding:0;">
+      <!-- Header sticky -->
+      <div style="padding:20px 24px 14px;border-bottom:1.5px solid var(--border);position:sticky;top:0;background:#fff;z-index:2;display:flex;align-items:center;gap:14px;">
+        <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,var(--teal),var(--teal-light));color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:18px;flex-shrink:0;">${esc((p.Nombres||'P')[0])}</div>
+        <div style="flex:1;">
+          <h3 style="margin:0;font-size:16px;color:var(--deep);">${nombreCompleto}</h3>
+          <span style="font-size:11.5px;color:var(--text-soft);">Exp: ${esc(p.numero_expediente||'—')} · ID: ${p.idPaciente}</span>
+        </div>
+        <button onclick="document.getElementById('modal-expediente').classList.remove('active')" style="background:none;border:none;cursor:pointer;color:var(--text-soft);font-size:20px;padding:4px 8px;">✕</button>
+      </div>
+      <!-- Contenido -->
+      <div style="padding:20px 24px 28px;">
+        ${seccionInfo}
+        ${seccionCitas}
+        ${seccionConsultas}
+        ${seccionRecetas}
+      </div>
+    </div>`;
 }
+
 
 // ── AUTOCOMPLETADO CITAS ──────────────────────
 let listaPacientes = [];
