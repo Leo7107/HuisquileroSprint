@@ -8,7 +8,31 @@
 (function () {
   // ── Inyectar botón hamburguesa y overlay ──────────────────
   function inyectarHamburguesa() {
-    if (document.getElementById('_menuToggle')) return;
+    // Si el botón ya existe (p. ej. fue insertado en la plantilla),
+    // no lo recreamos, pero sí nos aseguramos de que tenga el
+    // listener y que exista el overlay.
+    var existingBtn = document.getElementById('_menuToggle');
+    if (existingBtn) {
+      // Asegurar clases y HTML mínimo
+      existingBtn.classList.add('menu-toggle');
+      if (!existingBtn.querySelector('span')) existingBtn.innerHTML = '<span></span><span></span><span></span>';
+      // Evitar añadir múltiples listeners
+      if (!existingBtn.__hamburgerBound) {
+        existingBtn.addEventListener('click', toggleSidebar);
+        existingBtn.__hamburgerBound = true;
+      }
+      // Crear overlay si no existe
+      var existingOverlay = document.getElementById('_sidebarOverlay');
+      if (!existingOverlay) {
+        var overlay = document.createElement('div');
+        overlay.className = 'sidebar-overlay';
+        overlay.id = '_sidebarOverlay';
+        overlay.addEventListener('click', cerrarSidebar);
+        document.body.insertAdjacentElement('afterbegin', overlay);
+      }
+      bindMobileNavClicks();
+      return;
+    }
 
     var btn = document.createElement('button');
     btn.className = 'menu-toggle';
@@ -24,6 +48,7 @@
 
     document.body.insertAdjacentElement('afterbegin', overlay);
     document.body.insertAdjacentElement('afterbegin', btn);
+    bindMobileNavClicks();
   }
 
   // ── Toggle sidebar ────────────────────────────────────────
@@ -34,8 +59,8 @@
     if (!sidebar) return;
 
     var abierto = sidebar.classList.toggle('open');
-    btn.classList.toggle('open', abierto);
-    overlay.classList.toggle('active', abierto);
+    if (btn) btn.classList.toggle('open', abierto);
+    if (overlay) overlay.classList.toggle('active', abierto);
     document.body.style.overflow = abierto ? 'hidden' : '';
   }
 
@@ -46,9 +71,21 @@
     if (!sidebar) return;
 
     sidebar.classList.remove('open');
-    btn.classList.remove('open');
-    overlay.classList.remove('active');
+    if (btn) btn.classList.remove('open');
+    if (overlay) overlay.classList.remove('active');
     document.body.style.overflow = '';
+  }
+
+  function bindMobileNavClicks() {
+    document.querySelectorAll('.nav-item').forEach(function (item) {
+      if (item.__mobileNavBound) return;
+      item.addEventListener('click', function () {
+        if (window.innerWidth <= 768) {
+          setTimeout(cerrarSidebar, 180);
+        }
+      });
+      item.__mobileNavBound = true;
+    });
   }
 
   // Cerrar con Escape
@@ -81,6 +118,7 @@
         }
       };
     }
+    bindMobileNavClicks();
   });
 
   // Si el DOM ya cargó (script al final del body)

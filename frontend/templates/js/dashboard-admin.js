@@ -276,14 +276,14 @@ const iconoLog = { crear: iconHtml('add', 'log-icon-symbol'), editar: iconHtml('
 function renderLogs(contenedor, lista) {
   if (!contenedor) return;
   contenedor.innerHTML = lista.map(l => `
-    <div class="log-item">
+    <li class="log-item">
       <div class="log-icon log-icon--${l.tipo}">${iconoLog[l.tipo] || iconHtml('article', 'log-icon-symbol')}</div>
       <div class="log-body">
         <strong>${l.texto}</strong>
         <span>${l.sub}</span>
       </div>
       <span class="log-time">${l.tiempo}</span>
-    </div>`).join('');
+    </li>`).join('');
 }
 
 function cargarLogs() {
@@ -982,9 +982,9 @@ async function cargarResumen() {
         `${data.citasCompletadas ?? 0} completadas &nbsp;${data.citasCanceladas ?? 0} canceladas`;
     }
 
-    if ((data.alertasInventario ?? 0) > 0) {
-      const card = document.getElementById('cardAlertas');
-      if (card) card.style.borderColor = '#e74c3c';
+    const card = document.getElementById('cardAlertas');
+    if (card) {
+      card.classList.toggle('alerta-card--active', (data.alertasInventario ?? 0) > 0);
     }
   } catch (e) {
     console.error('HU14 cargarResumen:', e);
@@ -1000,8 +1000,9 @@ async function cargarInventarioCritico() {
 
     const badge = document.getElementById('badgeInventario');
     if (badge) {
-      badge.textContent      = lista.length;
-      badge.style.background = lista.length > 0 ? '#c0392b' : '#27ae60';
+      badge.textContent = lista.length;
+      badge.classList.toggle('badge-alerta--danger', lista.length > 0);
+      badge.classList.toggle('badge-alerta--ok', lista.length === 0);
     }
 
     const html = lista.length === 0
@@ -1042,11 +1043,14 @@ async function cargarActividad() {
     const htmlPreview = lista.length === 0
       ? '<li class="sin-datos">Sin actividad registrada aún.</li>'
       : lista.slice(0, 3).map(a => `
-          <li>
+          <li class="feed-item">
             <span class="feed-dot"></span>
-            <div>
-              <strong>${a.accion}</strong>${a.descripcion ? ' — ' + a.descripcion : ''}
-              <br><small style="color:#aaa">${a.nombreUsuario ?? 'Sistema'} · ${a.modulo ?? ''}</small>
+            <div class="feed-content">
+              <div class="feed-main">
+                <strong>${a.accion}</strong>
+                ${a.descripcion ? `<p class="feed-descripcion">${a.descripcion}</p>` : ''}
+              </div>
+              <div class="feed-meta">${a.nombreUsuario ?? 'Sistema'} · ${a.modulo ?? 'General'}</div>
             </div>
             <span class="feed-fecha">${_formatearFecha(a.fecha)}</span>
           </li>`).join('');
@@ -1054,11 +1058,14 @@ async function cargarActividad() {
     const htmlFull = lista.length === 0
       ? '<li class="sin-datos">Sin actividad registrada aún.</li>'
       : lista.map(a => `
-          <li>
+          <li class="feed-item">
             <span class="feed-dot"></span>
-            <div>
-              <strong>${a.accion}</strong>${a.descripcion ? ' — ' + a.descripcion : ''}
-              <br><small style="color:#aaa">${a.nombreUsuario ?? 'Sistema'} · ${a.modulo ?? ''}</small>
+            <div class="feed-content">
+              <div class="feed-main">
+                <strong>${a.accion}</strong>
+                ${a.descripcion ? `<p class="feed-descripcion">${a.descripcion}</p>` : ''}
+              </div>
+              <div class="feed-meta">${a.nombreUsuario ?? 'Sistema'} · ${a.modulo ?? 'General'}</div>
             </div>
             <span class="feed-fecha">${_formatearFecha(a.fecha)}</span>
           </li>`).join('');

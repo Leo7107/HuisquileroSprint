@@ -713,22 +713,22 @@ async function iniciarHorario() {
       const hi = doc.hora_inicio ? doc.hora_inicio.substring(0,5) : '–';
       const hf = doc.hora_fin    ? doc.hora_fin.substring(0,5)    : '–';
       document.getElementById('horario-info').innerHTML = `
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:20px;">
-          <div style="background:var(--cream);border:1.5px solid var(--border);border-radius:14px;padding:18px;text-align:center;">
-            <p style="font-size:10.5px;color:var(--text-soft);font-weight:600;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;">Horario</p>
-            <p style="font-family:'Playfair Display',serif;font-size:1.4rem;font-weight:700;color:var(--teal);">${hi} – ${hf}</p>
+        <div class="horario-info-grid">
+          <div class="horario-card">
+            <p class="horario-card__label">Horario</p>
+            <p class="horario-card__value" style="color:var(--teal);font-size:1.4rem;">${hi} – ${hf}</p>
           </div>
-          <div style="background:var(--cream);border:1.5px solid var(--border);border-radius:14px;padding:18px;text-align:center;">
-            <p style="font-size:10.5px;color:var(--text-soft);font-weight:600;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;">Consultorio</p>
-            <p style="font-family:'Playfair Display',serif;font-size:1.2rem;font-weight:700;color:var(--deep);">${esc(doc.Consultorio || '–')}</p>
+          <div class="horario-card">
+            <p class="horario-card__label">Consultorio</p>
+            <p class="horario-card__value">${esc(doc.Consultorio || '–')}</p>
           </div>
-          <div style="background:var(--cream);border:1.5px solid var(--border);border-radius:14px;padding:18px;text-align:center;">
-            <p style="font-size:10.5px;color:var(--text-soft);font-weight:600;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;">Especialidad</p>
-            <p style="font-family:'Playfair Display',serif;font-size:1rem;font-weight:700;color:var(--deep);">${esc(doc.Especialidad || '–')}</p>
+          <div class="horario-card">
+            <p class="horario-card__label">Especialidad</p>
+            <p class="horario-card__value">${esc(doc.Especialidad || '–')}</p>
           </div>
-          <div style="background:var(--cream);border:1.5px solid var(--border);border-radius:14px;padding:18px;text-align:center;">
-            <p style="font-size:10.5px;color:var(--text-soft);font-weight:600;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;">N° Junta Médica</p>
-            <p style="font-family:monospace;font-size:1rem;font-weight:700;color:var(--deep);">${esc(doc.numero_junta_medica || '–')}</p>
+          <div class="horario-card">
+            <p class="horario-card__label">N° Junta Médica</p>
+            <p class="horario-card__value">${esc(doc.numero_junta_medica || '–')}</p>
           </div>
         </div>`;
       if (!todasLasCitas.length && doc.idDoctor) {
