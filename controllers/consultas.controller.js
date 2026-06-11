@@ -1,4 +1,5 @@
-const Consulta = require("../models/consultas.model");
+const Consulta  = require("../models/consultas.model");
+const Auditoria = require("../models/auditoria.model");
 
 exports.getRecientesConsultas = (req, res) => {
     const limit = Math.min(parseInt(req.query.limit) || 6, 50);
@@ -32,6 +33,23 @@ exports.getConsultaById = (req, res) => {
 exports.createConsulta = (req, res) => {
     Consulta.create(req.body, (err, result) => {
         if (err) { console.error('[consultas]', err); return res.status(500).json({ message: 'Error interno del servidor.' }); }
+        const idCita = req.body.idCita;
+        if (idCita) {
+          const Cita = require('../models/citas.model');
+          Cita.getById(idCita, (e2, rows) => {
+            const c = Array.isArray(rows) ? rows[0] : rows;
+            const nombreDoc = c ? `Dr. ${c.NombreDoctor || ''} ${c.ApellidosDoctor || ''}`.trim() : 'Doctor';
+            const nombrePac = c ? `${c.NombrePaciente || ''} ${c.ApellidosPaciente || ''}`.trim() : 'Paciente';
+            const espec     = c && c.Especialidad ? ` (${c.Especialidad})` : '';
+            Auditoria.registrar({
+              accion: 'CONSULTA_REGISTRADA',
+              descripcion: `${nombreDoc}${espec} registró una consulta para ${nombrePac}`,
+              nombreUsuario: nombreDoc,
+              modulo: 'Consultas',
+              fecha: new Date(),
+            }, (e) => { if (e) console.error('[auditoria]', e.message); });
+          });
+        }
         res.json({ message: "Consulta creada", id: result.insertId });
     });
 };

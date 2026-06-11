@@ -1,13 +1,15 @@
-const Usuario = require("../models/usuarios.model");
-const bcrypt  = require("bcrypt");
-const jwt     = require('jsonwebtoken');
-const crypto  = require('crypto');
+const Usuario  = require("../models/usuarios.model");
+const bcrypt   = require("bcrypt");
+const jwt      = require('jsonwebtoken');
+const crypto   = require('crypto');
 const nodemailer = require('nodemailer');
 const { logFailedAuth, logSuccessAuth } = require('../middleware/auditLogger');
+const Auditoria = require('../models/auditoria.model');
 
 const BCRYPT_ROUNDS = 10;
 const BASE_URL = process.env.BASE_URL || 'http://localhost:3000';
 const ROLES = { ADMIN: 1, PACIENTE: 30001, DOCTOR: 30002, RECEPCIONISTA: 30003 };
+const NOMBRE_ROL = { 1: 'Administrador', 30001: 'Paciente', 30002: 'Doctor', 30003: 'Recepcionista' };
 
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST || 'smtp.gmail.com',
@@ -15,6 +17,11 @@ const transporter = nodemailer.createTransport({
   secure: false,
   auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
 });
+
+function log(accion, descripcion, nombreUsuario, modulo) {
+  Auditoria.registrar({ accion, descripcion, nombreUsuario, modulo, fecha: new Date() },
+    (e) => { if (e) console.error('[auditoria]', e.message); });
+}
 
 exports.getUsuarios = (req, res) => {
   Usuario.getAll((err, results) => {
@@ -44,6 +51,10 @@ exports.createUsuario = (req, res) => {
     Usuario.create({ Nombres, Apellidos, Sexo, Fecha_nacimiento, Telefono, Direccion,
                      Email, Password_hash: hash, Estado: 'ACTIVO', idRol: 30001 }, (err, result) => {
       if (err) return res.status(500).json({ message: 'Error interno.' });
+      const admin = req.user || {};
+      log('USUARIO_CREADO',
+        `Se registró el nuevo usuario ${Nombres} ${Apellidos || ''} (${Email}) con rol Paciente`,
+        admin.nombre || 'Admin', 'Usuarios');
       res.json({ message: "Usuario creado", id: result.insertId });
     });
   });
@@ -53,16 +64,37 @@ exports.updateUsuario = (req, res) => {
   const { Nombres, Apellidos, Sexo, Fecha_nacimiento, Telefono, Direccion, Email, Estado, idRol } = req.body;
   const data = { Nombres, Apellidos, Sexo, Fecha_nacimiento, Telefono, Direccion, Email, Estado, idRol };
   Object.keys(data).forEach(k => data[k] === undefined && delete data[k]);
-  Usuario.update(req.params.id, data, (err) => {
-    if (err) return res.status(500).json({ message: 'Error interno.' });
-    res.json({ message: "Usuario actualizado" });
+
+  // Buscar nombre actual para el log
+  Usuario.getById(req.params.id, (e0, rows) => {
+    const u = Array.isArray(rows) ? rows[0] : rows;
+    const nombreU = u ? `${u.Nombres} ${u.Apellidos || ''}`.trim() : `ID ${req.params.id}`;
+    Usuario.update(req.params.id, data, (err) => {
+      if (err) return res.status(500).json({ message: 'Error interno.' });
+      const admin = req.user || {};
+      let detalle = '';
+      if (Estado)  detalle += ` estado → ${Estado}`;
+      if (idRol)   detalle += ` rol → ${NOMBRE_ROL[idRol] || idRol}`;
+      log('USUARIO_ACTUALIZADO',
+        `Datos de ${nombreU} actualizados${detalle}`,
+        admin.nombre || 'Admin', 'Usuarios');
+      res.json({ message: "Usuario actualizado" });
+    });
   });
 };
 
 exports.deleteUsuario = (req, res) => {
-  Usuario.delete(req.params.id, (err) => {
-    if (err) return res.status(500).json({ message: 'Error interno.' });
-    res.json({ message: "Usuario eliminado" });
+  Usuario.getById(req.params.id, (e0, rows) => {
+    const u = Array.isArray(rows) ? rows[0] : rows;
+    const nombreU = u ? `${u.Nombres} ${u.Apellidos || ''}`.trim() : `ID ${req.params.id}`;
+    Usuario.delete(req.params.id, (err) => {
+      if (err) return res.status(500).json({ message: 'Error interno.' });
+      const admin = req.user || {};
+      log('USUARIO_ELIMINADO',
+        `El usuario ${nombreU} fue eliminado del sistema`,
+        admin.nombre || 'Admin', 'Usuarios');
+      res.json({ message: "Usuario eliminado" });
+    });
   });
 };
 
@@ -122,6 +154,9 @@ exports.forgotPassword = (req, res) => {
                <p>Enlace válido por 15 minutos: <a href="${resetLink}">Restablecer contraseña</a></p>`,
       }, (err) => {
         if (err) { console.error("[forgotPassword]", err.message); return res.status(500).json({ message: "No se pudo enviar el correo." }); }
+        log('CONTRASENA_RESET_SOLICITADA',
+          `${usuario.Nombres} solicitó restablecer su contraseña`,
+          usuario.Nombres, 'Usuarios');
         res.status(200).json({ message: "Si el correo existe, recibirás un enlace." });
       });
     });
@@ -144,6 +179,9 @@ exports.resetPassword = (req, res) => {
       if (err) return res.status(500).json({ message: 'Error interno.' });
       Usuario.updatePassword(results[0].idUsuario, hash, (err) => {
         if (err) return res.status(500).json({ message: 'Error interno.' });
+        log('CONTRASENA_ACTUALIZADA',
+          `${results[0].Nombres || 'Usuario'} actualizó su contraseña`,
+          results[0].Nombres || 'Usuario', 'Usuarios');
         res.json({ message: "Contraseña actualizada correctamente." });
       });
     });

@@ -65,7 +65,7 @@ function nav(seccion, linkEl) {
   if (seccion === 'usuarios')   cargarUsuarios();
   if (seccion === 'medicos')    cargarMedicos();
   if (seccion === 'roles')      cargarRoles();
-  if (seccion === 'logs')       { cargarLogs(); cargarInventarioCritico(); }
+  if (seccion === 'logs')       { cargarActividad(); cargarInventarioCritico(); iniciarPollingLogs(); }
   if (seccion === 'inventario') cargarInventario();
   if (seccion === 'reportes')  iniciarReportes(); // ← HU12
 }
@@ -263,31 +263,21 @@ async function toggleEstado(id, activo) {
   });
 }
 
-// ── LOGS ──────────────────────────────────────
-const logsEjemplo = [
-  { tipo:'crear',    texto:'Nuevo usuario registrado', sub:'Ana García · Paciente',         tiempo:'Hace 5 min'  },
-  { tipo:'editar',   texto:'Rol actualizado',           sub:'Carlos López → Doctor',         tiempo:'Hace 22 min' },
-  { tipo:'eliminar', texto:'Usuario desactivado',       sub:'Pedro Martínez',                tiempo:'Hace 1 h'    },
-  { tipo:'acceso',   texto:'Inicio de sesión',          sub:'admin@medisync.sv',             tiempo:'Hace 2 h'    },
-  { tipo:'crear',    texto:'Médico registrado',         sub:'Dra. Sofía Ramos · Pediatría',  tiempo:'Hace 3 h'    },
-];
-const iconoLog = { crear: iconHtml('add', 'log-icon-symbol'), editar: iconHtml('edit', 'log-icon-symbol'), eliminar: iconHtml('delete', 'log-icon-symbol'), acceso: iconHtml('vpn_key', 'log-icon-symbol') };
+// ── LOGS (tiempo real) ────────────────────────
+let _logsPollingInterval = null;
 
-function renderLogs(contenedor, lista) {
-  if (!contenedor) return;
-  contenedor.innerHTML = lista.map(l => `
-    <li class="log-item">
-      <div class="log-icon log-icon--${l.tipo}">${iconoLog[l.tipo] || iconHtml('article', 'log-icon-symbol')}</div>
-      <div class="log-body">
-        <strong>${l.texto}</strong>
-        <span>${l.sub}</span>
-      </div>
-      <span class="log-time">${l.tiempo}</span>
-    </li>`).join('');
-}
-
-function cargarLogs() {
-  renderLogs(document.getElementById('logs-full'), logsEjemplo);
+function iniciarPollingLogs() {
+  // Limpiar intervalo anterior si existía
+  if (_logsPollingInterval) clearInterval(_logsPollingInterval);
+  _logsPollingInterval = setInterval(() => {
+    const secLogs = document.getElementById('sec-logs');
+    if (secLogs && secLogs.style.display !== 'none') {
+      cargarActividad();
+    } else {
+      clearInterval(_logsPollingInterval);
+      _logsPollingInterval = null;
+    }
+  }, 15000);
 }
 
 // ── MÉDICOS ───────────────────────────────────
@@ -1040,35 +1030,59 @@ async function cargarActividad() {
     const res   = await fetch('/api/metricas/actividad-reciente', { headers: H });
     const lista = await res.json();
 
+    // ── Mapa de íconos y colores por acción ──
+    const _logIcono = {
+      LOGIN_EXITOSO:              { icon: 'login',              color: '#2e7d32' },
+      LOGIN_FALLIDO:              { icon: 'lock',               color: '#c62828' },
+      CITA_AGENDADA:              { icon: 'calendar_add_on',    color: '#1565c0' },
+      CITA_COMPLETADA:            { icon: 'task_alt',           color: '#2e7d32' },
+      CITA_CANCELADA:             { icon: 'event_busy',         color: '#c62828' },
+      CITA_CANCELADA_RECEPCION:   { icon: 'event_busy',         color: '#c62828' },
+      CITA_REASIGNADA:            { icon: 'swap_horiz',         color: '#e65100' },
+      CITA_REPROGRAMADA:          { icon: 'edit_calendar',      color: '#6a1b9a' },
+      INCONVENIENTE_REPORTADO:    { icon: 'warning',            color: '#e65100' },
+      CONSULTA_REGISTRADA:        { icon: 'medical_services',   color: '#00695c' },
+      USUARIO_CREADO:             { icon: 'person_add',         color: '#1565c0' },
+      USUARIO_ACTUALIZADO:        { icon: 'manage_accounts',    color: '#6a1b9a' },
+      USUARIO_ELIMINADO:          { icon: 'person_remove',      color: '#c62828' },
+      MEDICO_REGISTRADO:          { icon: 'stethoscope',        color: '#00695c' },
+      MEDICO_ACTUALIZADO:         { icon: 'edit',               color: '#6a1b9a' },
+      MEDICO_DESACTIVADO:         { icon: 'do_not_disturb_on',  color: '#c62828' },
+      MEDICO_ACTIVADO:            { icon: 'check_circle',       color: '#2e7d32' },
+      MEDICO_ELIMINADO:           { icon: 'delete',             color: '#c62828' },
+      PACIENTE_REGISTRADO:        { icon: 'person_add',         color: '#1565c0' },
+      PACIENTE_ACTUALIZADO:       { icon: 'edit',               color: '#6a1b9a' },
+      PACIENTE_ELIMINADO:         { icon: 'person_remove',      color: '#c62828' },
+      MEDICAMENTO_CREADO:         { icon: 'medication',         color: '#00695c' },
+      MEDICAMENTO_ACTUALIZADO:    { icon: 'edit',               color: '#6a1b9a' },
+      MEDICAMENTO_ESTADO:         { icon: 'toggle_on',          color: '#e65100' },
+      INVENTARIO_ENTRADA:         { icon: 'add_box',            color: '#2e7d32' },
+      INVENTARIO_AJUSTE:          { icon: 'tune',               color: '#e65100' },
+      INVENTARIO_DESCUENTO:       { icon: 'remove_circle',      color: '#c62828' },
+      CONTRASENA_RESET_SOLICITADA:{ icon: 'lock_reset',         color: '#e65100' },
+      CONTRASENA_ACTUALIZADA:     { icon: 'lock_open',          color: '#2e7d32' },
+    };
+    function _logItem(a) {
+      const cfg = _logIcono[a.accion] || { icon: 'info', color: '#546e7a' };
+      const texto = a.descripcion || a.accion;
+      return `
+        <li class="feed-item" style="display:flex;align-items:flex-start;gap:12px;padding:14px 18px;border-bottom:1px solid var(--border,#e8e8e8);">
+          <span class="material-symbols-outlined" style="font-size:22px;color:${cfg.color};margin-top:2px;flex-shrink:0;">${cfg.icon}</span>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:13.5px;font-weight:500;color:var(--text-main,#1a1a1a);line-height:1.4;">${texto}</div>
+            <div style="font-size:12px;color:var(--text-soft,#777);margin-top:3px;">${a.nombreUsuario ?? 'Sistema'} · ${a.modulo ?? 'General'}</div>
+          </div>
+          <span style="font-size:11.5px;color:var(--text-soft,#999);white-space:nowrap;margin-top:3px;">${_formatearFecha(a.fecha)}</span>
+        </li>`;
+    }
+
     const htmlPreview = lista.length === 0
       ? '<li class="sin-datos">Sin actividad registrada aún.</li>'
-      : lista.slice(0, 3).map(a => `
-          <li class="feed-item">
-            <span class="feed-dot"></span>
-            <div class="feed-content">
-              <div class="feed-main">
-                <strong>${a.accion}</strong>
-                ${a.descripcion ? `<p class="feed-descripcion">${a.descripcion}</p>` : ''}
-              </div>
-              <div class="feed-meta">${a.nombreUsuario ?? 'Sistema'} · ${a.modulo ?? 'General'}</div>
-            </div>
-            <span class="feed-fecha">${_formatearFecha(a.fecha)}</span>
-          </li>`).join('');
+      : lista.slice(0, 3).map(_logItem).join('');
 
     const htmlFull = lista.length === 0
       ? '<li class="sin-datos">Sin actividad registrada aún.</li>'
-      : lista.map(a => `
-          <li class="feed-item">
-            <span class="feed-dot"></span>
-            <div class="feed-content">
-              <div class="feed-main">
-                <strong>${a.accion}</strong>
-                ${a.descripcion ? `<p class="feed-descripcion">${a.descripcion}</p>` : ''}
-              </div>
-              <div class="feed-meta">${a.nombreUsuario ?? 'Sistema'} · ${a.modulo ?? 'General'}</div>
-            </div>
-            <span class="feed-fecha">${_formatearFecha(a.fecha)}</span>
-          </li>`).join('');
+      : lista.map(_logItem).join('');
 
     const preview = document.getElementById('logs-preview');
     const full    = document.getElementById('logs-full');

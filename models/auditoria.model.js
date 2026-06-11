@@ -2,12 +2,12 @@ const db = require('../config/db');
 
 const AuditoriaModel = {
 
-  // Últimas 10 acciones
+  // Últimas 50 acciones
   getRecientes: (cb) => db.query(
     `SELECT idAuditoria, accion, descripcion, nombreUsuario, modulo, fecha
      FROM tbl_auditoria
      ORDER BY fecha DESC
-     LIMIT 10`,
+     LIMIT 50`,
     cb
   ),
 

@@ -1,4 +1,12 @@
-const Cita = require("../models/citas.model");
+const Cita      = require("../models/citas.model");
+const Auditoria = require("../models/auditoria.model");
+
+// ── Helper: formatea fecha legible ───────────────────────────────────────────
+function fmtFecha(f) {
+  if (!f) return '—';
+  const d = f instanceof Date ? f : new Date(f);
+  return d.toLocaleDateString('es-SV', { day:'2-digit', month:'2-digit', year:'numeric' });
+}
 
 // ── EXISTENTES ────────────────────────────────────────────────────────────────
 
@@ -33,7 +41,22 @@ exports.createCita = (req, res) => {
       return res.status(409).json({ error: "El médico ya tiene una cita en ese horario. Se requieren al menos 90 minutos entre citas." });
     Cita.create(req.body, (err, result) => {
       if (err) { console.error('[citas]', err); return res.status(500).json({ message: 'Error interno del servidor.' }); }
-      res.json({ message: "Cita creada", id: result.insertId });
+      const idCita = result.insertId;
+      Cita.getById(idCita, (e2, rows) => {
+        const c = Array.isArray(rows) ? rows[0] : rows;
+        const nombrePac = c ? `${c.NombrePaciente || ''} ${c.ApellidosPaciente || ''}`.trim() : 'Paciente';
+        const nombreDoc = c ? `Dr. ${c.NombreDoctor || ''} ${c.ApellidosDoctor || ''}`.trim() : 'Doctor';
+        const espec     = c && c.Especialidad ? ` (${c.Especialidad})` : '';
+        const horaFmt   = hora.substring(0, 5);
+        Auditoria.registrar({
+          accion: 'CITA_AGENDADA',
+          descripcion: `${nombrePac} agendó una cita con ${nombreDoc}${espec} el ${fmtFecha(fecha)} a las ${horaFmt}`,
+          nombreUsuario: nombrePac,
+          modulo: 'Citas',
+          fecha: new Date(),
+        }, (e) => { if (e) console.error('[auditoria]', e.message); });
+      });
+      res.json({ message: "Cita creada", id: idCita });
     });
   });
 };
@@ -67,9 +90,23 @@ exports.deleteCita = (req, res) => {
 };
 
 exports.completarCita = (req, res) => {
-  Cita.completar(req.params.id, (err) => {
-    if (err) { console.error('[citas]', err); return res.status(500).json({ message: 'Error interno del servidor.' }); }
-    res.json({ message: "Cita completada" });
+  const idCita = req.params.id;
+  Cita.getById(idCita, (e0, rows0) => {
+    const c = Array.isArray(rows0) ? rows0[0] : rows0;
+    Cita.completar(idCita, (err) => {
+      if (err) { console.error('[citas]', err); return res.status(500).json({ message: 'Error interno del servidor.' }); }
+      const nombreDoc = c ? `Dr. ${c.NombreDoctor || ''} ${c.ApellidosDoctor || ''}`.trim() : 'Doctor';
+      const nombrePac = c ? `${c.NombrePaciente || ''} ${c.ApellidosPaciente || ''}`.trim() : 'Paciente';
+      const espec     = c && c.Especialidad ? ` (${c.Especialidad})` : '';
+      Auditoria.registrar({
+        accion: 'CITA_COMPLETADA',
+        descripcion: `${nombreDoc}${espec} completó la consulta con ${nombrePac}`,
+        nombreUsuario: nombreDoc,
+        modulo: 'Citas',
+        fecha: new Date(),
+      }, (e) => { if (e) console.error('[auditoria]', e.message); });
+      res.json({ message: "Cita completada" });
+    });
   });
 };
 
@@ -99,6 +136,15 @@ exports.cancelarCita = (req, res) => {
       if (err) { console.error('[citas]', err); return res.status(500).json({ message: 'Error interno del servidor.' }); }
       if (result.affectedRows === 0)
         return res.status(409).json({ error: "No se pudo cancelar." });
+      const nombrePac = `${cita.NombrePaciente || ''} ${cita.ApellidosPaciente || ''}`.trim() || 'Paciente';
+      const nombreDoc = `Dr. ${cita.NombreDoctor || ''} ${cita.ApellidosDoctor || ''}`.trim();
+      Auditoria.registrar({
+        accion: 'CITA_CANCELADA',
+        descripcion: `${nombrePac} canceló su cita con ${nombreDoc} del ${fmtFecha(cita.fecha)}`,
+        nombreUsuario: nombrePac,
+        modulo: 'Citas',
+        fecha: new Date(),
+      }, (e) => { if (e) console.error('[auditoria]', e.message); });
       res.json({ message: "Cita cancelada correctamente" });
     });
   });
@@ -127,6 +173,16 @@ exports.reprogramarCita = (req, res) => {
         if (err) { console.error('[citas]', err); return res.status(500).json({ message: 'Error interno del servidor.' }); }
         if (result.affectedRows === 0)
           return res.status(409).json({ error: "No se pudo reprogramar." });
+        const nombrePac = `${cita.NombrePaciente || ''} ${cita.ApellidosPaciente || ''}`.trim() || 'Paciente';
+        const nombreDoc = `Dr. ${cita.NombreDoctor || ''} ${cita.ApellidosDoctor || ''}`.trim();
+        const horaFmt   = hora.substring(0, 5);
+        Auditoria.registrar({
+          accion: 'CITA_REPROGRAMADA',
+          descripcion: `${nombrePac} reprogramó su cita con ${nombreDoc} para el ${fmtFecha(fecha)} a las ${horaFmt}`,
+          nombreUsuario: nombrePac,
+          modulo: 'Citas',
+          fecha: new Date(),
+        }, (e) => { if (e) console.error('[auditoria]', e.message); });
         res.json({ message: "Cita reprogramada correctamente" });
       });
     });
@@ -169,6 +225,15 @@ exports.reportarInconveniente = (req, res) => {
       if (err) { console.error('[citas]', err); return res.status(500).json({ message: 'Error interno del servidor.' }); }
       if (result.affectedRows === 0)
         return res.status(409).json({ error: "No se pudo reportar el inconveniente" });
+      const nombreDoc = `Dr. ${cita.NombreDoctor || ''} ${cita.ApellidosDoctor || ''}`.trim();
+      const nombrePac = `${cita.NombrePaciente || ''} ${cita.ApellidosPaciente || ''}`.trim() || 'Paciente';
+      Auditoria.registrar({
+        accion: 'INCONVENIENTE_REPORTADO',
+        descripcion: `${nombreDoc} reportó un inconveniente con la cita de ${nombrePac} del ${fmtFecha(cita.fecha)}`,
+        nombreUsuario: nombreDoc,
+        modulo: 'Citas',
+        fecha: new Date(),
+      }, (e) => { if (e) console.error('[auditoria]', e.message); });
       res.json({ message: "Inconveniente reportado. La cita pasó a reasignación." });
     });
   });
@@ -188,7 +253,6 @@ exports.reasignarCita = (req, res) => {
     if (nuevoIdDoctor === cita.idDoctor)
       return res.status(409).json({ error: "Debes elegir un doctor distinto al original" });
 
-    // Validar al menos 1 hora de anticipación antes de la cita
     const fechaStr  = cita.fecha instanceof Date
       ? cita.fecha.toISOString().split('T')[0]
       : String(cita.fecha).split('T')[0];
@@ -197,7 +261,6 @@ exports.reasignarCita = (req, res) => {
     if (isNaN(fechaHora.getTime()) || fechaHora < limite)
       return res.status(409).json({ error: "La reasignación requiere al menos 1 hora de anticipación antes de la cita." });
 
-    // Validar que el nuevo doctor no tenga choque de horario
     Cita.checkDuplicado(nuevoIdDoctor, fechaStr, cita.hora, idCita, (err, dup) => {
       if (err) { console.error('[citas]', err); return res.status(500).json({ message: 'Error interno del servidor.' }); }
       if (dup.length > 0)
@@ -206,6 +269,15 @@ exports.reasignarCita = (req, res) => {
         if (err) { console.error('[citas]', err); return res.status(500).json({ message: 'Error interno del servidor.' }); }
         if (result.affectedRows === 0)
           return res.status(409).json({ error: "No se pudo reasignar la cita" });
+        const nombrePac = `${cita.NombrePaciente || ''} ${cita.ApellidosPaciente || ''}`.trim() || 'Paciente';
+        const usuario   = req.user || {};
+        Auditoria.registrar({
+          accion: 'CITA_REASIGNADA',
+          descripcion: `Recepcionista reasignó la cita de ${nombrePac} a un nuevo médico (doctor ID ${nuevoIdDoctor})`,
+          nombreUsuario: usuario.nombre || 'Recepcionista',
+          modulo: 'Citas',
+          fecha: new Date(),
+        }, (e) => { if (e) console.error('[auditoria]', e.message); });
         res.json({ message: "Cita reasignada y confirmada con el nuevo médico." });
       });
     });
@@ -226,6 +298,15 @@ exports.cancelarPorRecepcion = (req, res) => {
       if (err) { console.error('[citas]', err); return res.status(500).json({ message: 'Error interno del servidor.' }); }
       if (result.affectedRows === 0)
         return res.status(409).json({ error: "No se pudo cancelar la cita" });
+      const nombrePac = `${cita.NombrePaciente || ''} ${cita.ApellidosPaciente || ''}`.trim() || 'Paciente';
+      const usuario   = req.user || {};
+      Auditoria.registrar({
+        accion: 'CITA_CANCELADA_RECEPCION',
+        descripcion: `Recepcionista canceló la cita de ${nombrePac} del ${fmtFecha(cita.fecha)}. Motivo: ${motivo}`,
+        nombreUsuario: usuario.nombre || 'Recepcionista',
+        modulo: 'Citas',
+        fecha: new Date(),
+      }, (e) => { if (e) console.error('[auditoria]', e.message); });
       res.json({ message: "Cita cancelada." });
     });
   });
