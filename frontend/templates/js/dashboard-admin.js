@@ -277,7 +277,7 @@ function iniciarPollingLogs() {
       clearInterval(_logsPollingInterval);
       _logsPollingInterval = null;
     }
-  }, 15000);
+  }, 60000);
 }
 
 // ── MÉDICOS ───────────────────────────────────
