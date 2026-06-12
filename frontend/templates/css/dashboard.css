@@ -455,6 +455,10 @@ body::after {
   height: 3px;
   background: linear-gradient(90deg, var(--teal), var(--gold));
   opacity: 0.55;
+  /* El panel usa overflow:visible (para los autocompletados), así que la barra
+     de acento debe redondear sus esquinas superiores para seguir la curva del panel. */
+  border-top-left-radius: 20px;
+  border-top-right-radius: 20px;
 }
 
 .rol-recep .panel::before {
@@ -967,8 +971,12 @@ body::after {
   position: relative;
 }
 
+/* Solo los paneles que contienen un autocompletado necesitan overflow visible
+   (para que la lista desplegable pueda salirse). El resto de los paneles
+   mantienen overflow:hidden para recortar la barra de acento superior a sus
+   esquinas redondeadas. */
 .pre-bloque,
-.panel {
+.panel:has(.autocomplete-wrap) {
   overflow: visible !important;
 }
 
@@ -1536,7 +1544,9 @@ select.rol-select {
 /* ── BREAKPOINT 1200px ── */
 @media (max-width: 1200px) {
   .panels-row { grid-template-columns: 1fr; }
+  .panels-row > .panel:last-child { min-width: 0; max-width: none; width: 100%; }
   .rol-admin .panels-row {
+    grid-template-columns: 1fr !important;
     grid-auto-rows: auto !important;
   }
   .rol-admin .panels-row > .panel {
@@ -1558,6 +1568,7 @@ select.rol-select {
   .panels-row { grid-template-columns: 1fr; }
   .panels-row > .panel:last-child { min-width: 0; max-width: none; width: 100%; }
   .rol-admin .panels-row {
+    grid-template-columns: 1fr !important;
     grid-auto-rows: auto !important;
   }
   .rol-admin .panels-row > .panel {
@@ -1591,6 +1602,7 @@ select.rol-select {
   .panels-row { grid-template-columns: 1fr; }
 
   .rol-admin .panels-row {
+    grid-template-columns: 1fr !important;
     grid-auto-rows: auto !important;
   }
   .rol-admin .panels-row > .panel {
@@ -1859,4 +1871,21 @@ select.rol-select {
 .btn-ir-inventario:hover {
   opacity: 0.9;
   transform: translateY(-1px);
+}
+
+/* ============================================================
+   ACCIONES RÁPIDAS — rellenar la altura en escritorio
+   En el layout de 2 columnas, "Últimas Acciones" suele ser más alto
+   que "Acciones Rápidas" y dejaba un hueco blanco debajo. Aquí igualamos
+   la altura de ambos paneles y hacemos que los 4 botones crezcan para
+   llenar el espacio. Solo aplica en escritorio (≥1201px); en responsive
+   los paneles ya se apilan en una columna.
+   ============================================================ */
+@media (min-width: 1201px) {
+  .rol-admin #sec-inicio .panels-row        { align-items: stretch; }
+  .rol-admin #sec-inicio .panels-row > .panel { align-self: stretch; }
+  .rol-admin #sec-inicio .acciones-grid {
+    align-content: stretch;
+    grid-auto-rows: 1fr;
+  }
 }
