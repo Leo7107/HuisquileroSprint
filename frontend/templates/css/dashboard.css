@@ -1238,12 +1238,16 @@ body::after {
 .icon-btn--del     { background: rgba(200,50,50,0.1);   color: #c03030; }
 .icon-btn--toggle  { background: rgba(201,168,76,0.15); color: #7a5c00; }
 .icon-btn--confirm { background: rgba(42,107,94,0.12);  color: #1a5c4a; }
+.icon-btn--off     { background: rgba(176,120,0,0.14);  color: #8a5e00; }
+.icon-btn--on      { background: rgba(42,107,94,0.12);  color: #1a5c4a; }
 
 .icon-btn--edit:hover    { background: var(--gold);  color: var(--deep); }
 .icon-btn--cancel:hover  { background: #c03030; color: var(--white); }
 .icon-btn--del:hover     { background: #c03030; color: var(--white); }
 .icon-btn--toggle:hover  { background: var(--gold);  color: var(--deep); }
 .icon-btn--confirm:hover { background: var(--teal);  color: var(--white); }
+.icon-btn--off:hover     { background: #b07800; color: var(--white); }
+.icon-btn--on:hover      { background: var(--teal); color: var(--white); }
 
 /* ============================================================
    HORARIO CHIP — para tabla de médicos

@@ -65,36 +65,97 @@ exports.updateUsuario = (req, res) => {
   const data = { Nombres, Apellidos, Sexo, Fecha_nacimiento, Telefono, Direccion, Email, Estado, idRol };
   Object.keys(data).forEach(k => data[k] === undefined && delete data[k]);
 
-  // Buscar nombre actual para el log
+  const admin   = req.user || {};
+  const esMismo = admin.id != null && String(admin.id) === String(req.params.id);
+
+  // Buscar el registro actual para validaciones y log
   Usuario.getById(req.params.id, (e0, rows) => {
+    if (e0) { console.error('[updateUsuario:getById]', e0); return res.status(500).json({ message: 'Error interno.' }); }
     const u = Array.isArray(rows) ? rows[0] : rows;
-    const nombreU = u ? `${u.Nombres} ${u.Apellidos || ''}`.trim() : `ID ${req.params.id}`;
-    Usuario.update(req.params.id, data, (err) => {
-      if (err) return res.status(500).json({ message: 'Error interno.' });
-      const admin = req.user || {};
-      let detalle = '';
-      if (Estado)  detalle += ` estado → ${Estado}`;
-      if (idRol)   detalle += ` rol → ${NOMBRE_ROL[idRol] || idRol}`;
-      log('USUARIO_ACTUALIZADO',
-        `Datos de ${nombreU} actualizados${detalle}`,
-        admin.nombre || 'Admin', 'Usuarios');
-      res.json({ message: "Usuario actualizado" });
-    });
+    if (!u) return res.status(404).json({ message: 'Usuario no encontrado.' });
+    const nombreU = `${u.Nombres} ${u.Apellidos || ''}`.trim() || `ID ${req.params.id}`;
+
+    // 1) Auto-protección: el admin no puede desactivarse ni degradarse a sí mismo
+    if (esMismo && Estado && Estado !== 'ACTIVO')
+      return res.status(400).json({ message: 'No puedes desactivar tu propia cuenta.' });
+    if (esMismo && idRol !== undefined && Number(idRol) !== ROLES.ADMIN)
+      return res.status(400).json({ message: 'No puedes quitarte a ti mismo el rol de administrador.' });
+
+    // 2) Protección del "último administrador": ningún cambio puede dejar al
+    //    sistema sin administradores activos.
+    const esAdminActivo = Number(u.idRol) === ROLES.ADMIN && u.Estado === 'ACTIVO';
+    const pierdeAdmin   = (Estado && Estado !== 'ACTIVO') ||
+                          (idRol !== undefined && Number(idRol) !== ROLES.ADMIN);
+
+    const aplicar = () => {
+      Usuario.update(req.params.id, data, (err) => {
+        if (err) { console.error('[updateUsuario]', err); return res.status(500).json({ message: 'Error interno.' }); }
+        let detalle = '';
+        if (Estado)  detalle += ` estado → ${Estado}`;
+        if (idRol)   detalle += ` rol → ${NOMBRE_ROL[idRol] || idRol}`;
+        log('USUARIO_ACTUALIZADO',
+          `Datos de ${nombreU} actualizados${detalle}`,
+          admin.nombre || 'Admin', 'Usuarios');
+        res.json({ message: "Usuario actualizado" });
+      });
+    };
+
+    if (esAdminActivo && pierdeAdmin) {
+      Usuario.countAdminsActivos((eC, rc) => {
+        if (eC) { console.error('[updateUsuario:countAdmins]', eC); return res.status(500).json({ message: 'Error interno.' }); }
+        const total = (rc && rc[0] && rc[0].total) || 0;
+        if (total <= 1)
+          return res.status(409).json({ message: 'Debe existir al menos un administrador activo. Asigna otro administrador antes de hacer este cambio.' });
+        aplicar();
+      });
+    } else {
+      aplicar();
+    }
   });
 };
 
 exports.deleteUsuario = (req, res) => {
+  const admin = req.user || {};
+
+  // Evitar que el administrador elimine su propia cuenta (riesgo de quedar bloqueado)
+  if (admin.id != null && String(admin.id) === String(req.params.id))
+    return res.status(400).json({ message: 'No puedes eliminar tu propia cuenta.' });
+
   Usuario.getById(req.params.id, (e0, rows) => {
+    if (e0) { console.error('[deleteUsuario:getById]', e0); return res.status(500).json({ message: 'Error interno.' }); }
     const u = Array.isArray(rows) ? rows[0] : rows;
-    const nombreU = u ? `${u.Nombres} ${u.Apellidos || ''}`.trim() : `ID ${req.params.id}`;
-    Usuario.delete(req.params.id, (err) => {
-      if (err) return res.status(500).json({ message: 'Error interno.' });
-      const admin = req.user || {};
-      log('USUARIO_ELIMINADO',
-        `El usuario ${nombreU} fue eliminado del sistema`,
-        admin.nombre || 'Admin', 'Usuarios');
-      res.json({ message: "Usuario eliminado" });
-    });
+    if (!u) return res.status(404).json({ message: 'Usuario no encontrado.' });
+
+    const nombreU = `${u.Nombres} ${u.Apellidos || ''}`.trim() || `ID ${req.params.id}`;
+
+    const ejecutarBorrado = () => {
+      Usuario.delete(req.params.id, (err) => {
+        if (err) {
+          console.error('[deleteUsuario]', err.code || '', err.sqlMessage || err.message);
+          // Si aún quedara alguna dependencia no contemplada, informar con claridad
+          if (err.code === 'ER_ROW_IS_REFERENCED_2' || err.errno === 1451)
+            return res.status(409).json({ message: 'No se puede eliminar: el usuario tiene registros asociados.' });
+          return res.status(500).json({ message: 'Error interno.' });
+        }
+        log('USUARIO_ELIMINADO',
+          `El usuario ${nombreU} fue eliminado del sistema`,
+          admin.nombre || 'Admin', 'Usuarios');
+        res.json({ message: "Usuario eliminado" });
+      });
+    };
+
+    // Protección del "último administrador": no permitir eliminar al único admin activo
+    if (Number(u.idRol) === ROLES.ADMIN && u.Estado === 'ACTIVO') {
+      Usuario.countAdminsActivos((eC, rc) => {
+        if (eC) { console.error('[deleteUsuario:countAdmins]', eC); return res.status(500).json({ message: 'Error interno.' }); }
+        const total = (rc && rc[0] && rc[0].total) || 0;
+        if (total <= 1)
+          return res.status(409).json({ message: 'No puedes eliminar al único administrador activo del sistema.' });
+        ejecutarBorrado();
+      });
+    } else {
+      ejecutarBorrado();
+    }
   });
 };
 
@@ -116,6 +177,13 @@ exports.login = (req, res) => {
       if (!coincide) {
         logFailedAuth(Email, ip, 'Contraseña incorrecta');
         return res.status(401).json({ message: "Credenciales inválidas." });
+      }
+      // Bloquear el acceso de cuentas desactivadas (sin eliminar su información).
+      // Se valida después de la contraseña para no revelar el estado de la cuenta
+      // a quien no posee las credenciales correctas.
+      if (usuario.Estado && usuario.Estado !== 'ACTIVO') {
+        logFailedAuth(Email, ip, 'Cuenta desactivada');
+        return res.status(403).json({ message: "Tu cuenta está desactivada. Contacta al administrador." });
       }
       const token = jwt.sign(
         { id: usuario.idUsuario, rol: usuario.idRol, nombre: usuario.Nombres },

@@ -123,6 +123,9 @@ function renderUsuarios(lista) {
       <td>
         <div class="action-icons">
           <button class="icon-btn icon-btn--edit" title="Editar" onclick="abrirModalEditar(${u.idUsuario})"><span class="material-symbols-outlined">edit</span></button>
+          ${u.Estado === 'ACTIVO'
+            ? `<button class="icon-btn icon-btn--off" title="Desactivar" onclick="toggleEstadoUsuario(${u.idUsuario})"><span class="material-symbols-outlined">block</span></button>`
+            : `<button class="icon-btn icon-btn--on"  title="Activar"    onclick="toggleEstadoUsuario(${u.idUsuario})"><span class="material-symbols-outlined">check_circle</span></button>`}
           <button class="icon-btn icon-btn--del"  title="Eliminar" onclick="eliminarUsuario(${u.idUsuario})"><span class="material-symbols-outlined">delete</span></button>
         </div>
       </td>
@@ -216,9 +219,42 @@ async function guardarUsuario() {
 
 async function eliminarUsuario(id) {
   if (!confirm('¿Eliminar este usuario?')) return;
-  await fetch(`/api/usuarios/${id}`, { method: 'DELETE', headers: H });
-  cargarUsuarios();
-  cargarStats();
+  try {
+    const res  = await fetch(`/api/usuarios/${id}`, { method: 'DELETE', headers: H });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      toast(data.message || 'No se pudo eliminar el usuario.', 'error');
+      return;
+    }
+    toast(data.message || 'Usuario eliminado', 'ok');
+    cargarUsuarios();
+    cargarStats();
+  } catch (e) {
+    toast('Error de conexión al eliminar el usuario.', 'error');
+  }
+}
+
+async function toggleEstadoUsuario(id) {
+  const u = _mapUsuarios.get(id);
+  if (!u) return;
+  const nuevoEstado = u.Estado === 'ACTIVO' ? 'INACTIVO' : 'ACTIVO';
+  const accion      = nuevoEstado === 'ACTIVO' ? 'activar' : 'desactivar';
+  if (!confirm(`¿Seguro que deseas ${accion} este usuario?`)) return;
+  try {
+    const res  = await fetch(`/api/usuarios/${id}`, {
+      method: 'PUT', headers: H, body: JSON.stringify({ Estado: nuevoEstado })
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      toast(data.message || `No se pudo ${accion} el usuario.`, 'error');
+      return;
+    }
+    toast(`Usuario ${nuevoEstado === 'ACTIVO' ? 'activado' : 'desactivado'}`, 'ok');
+    cargarUsuarios();
+    cargarStats();
+  } catch (e) {
+    toast(`Error de conexión al ${accion} el usuario.`, 'error');
+  }
 }
 
 // ── ROLES ─────────────────────────────────────
@@ -251,16 +287,42 @@ async function cargarRoles() {
 }
 
 async function cambiarRol(id, nuevoRol) {
-  await fetch(`/api/usuarios/${id}`, {
-    method: 'PUT', headers: H, body: JSON.stringify({ idRol: parseInt(nuevoRol) })
-  });
+  try {
+    const res  = await fetch(`/api/usuarios/${id}`, {
+      method: 'PUT', headers: H, body: JSON.stringify({ idRol: parseInt(nuevoRol) })
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      toast(data.message || 'No se pudo cambiar el rol.', 'error');
+    } else {
+      toast('Rol actualizado', 'ok');
+    }
+  } catch (e) {
+    toast('Error de conexión al cambiar el rol.', 'error');
+  }
+  // Recargar para reflejar el estado real (revierte el <select> si el cambio fue rechazado)
+  cargarRoles();
+  cargarUsuarios();
 }
 
 async function toggleEstado(id, activo) {
-  await fetch(`/api/usuarios/${id}`, {
-    method: 'PUT', headers: H,
-    body: JSON.stringify({ Estado: activo ? 'ACTIVO' : 'INACTIVO' })
-  });
+  try {
+    const res  = await fetch(`/api/usuarios/${id}`, {
+      method: 'PUT', headers: H,
+      body: JSON.stringify({ Estado: activo ? 'ACTIVO' : 'INACTIVO' })
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      toast(data.message || 'No se pudo cambiar el estado.', 'error');
+    } else {
+      toast(`Usuario ${activo ? 'activado' : 'desactivado'}`, 'ok');
+    }
+  } catch (e) {
+    toast('Error de conexión al cambiar el estado.', 'error');
+  }
+  // Recargar para reflejar el estado real (revierte el toggle si fue rechazado)
+  cargarRoles();
+  cargarUsuarios();
 }
 
 // ── LOGS (tiempo real) ────────────────────────
