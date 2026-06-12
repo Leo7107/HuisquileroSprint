@@ -118,7 +118,7 @@ exports.login = (req, res) => {
         return res.status(401).json({ message: "Credenciales inválidas." });
       }
       const token = jwt.sign(
-        { id: usuario.idUsuario, rol: usuario.idRol },
+        { id: usuario.idUsuario, rol: usuario.idRol, nombre: usuario.Nombres },
         process.env.JWT_SECRET,
         { expiresIn: "8h" }
       );

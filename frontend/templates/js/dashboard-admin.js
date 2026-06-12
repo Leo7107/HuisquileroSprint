@@ -1020,6 +1020,16 @@ async function cargarInventarioCritico() {
   }
 }
 
+function mostrarTodosLosLogs() {
+  const full = document.getElementById('logs-full');
+  if (full && full.dataset.htmlCompleto) full.innerHTML = full.dataset.htmlCompleto;
+}
+
+function mostrarMenosLogs() {
+  const full = document.getElementById('logs-full');
+  if (full && full.dataset.htmlReducido) full.innerHTML = full.dataset.htmlReducido;
+}
+
 async function cargarActividad() {
   const ids = ['logs-preview', 'logs-full'];
   ids.forEach(id => {
@@ -1035,6 +1045,8 @@ async function cargarActividad() {
       LOGIN_EXITOSO:              { icon: 'login',              color: '#2e7d32' },
       LOGIN_FALLIDO:              { icon: 'lock',               color: '#c62828' },
       CITA_AGENDADA:              { icon: 'calendar_add_on',    color: '#1565c0' },
+      CITA_CONFIRMADA:            { icon: 'event_available',    color: '#2e7d32' },
+      CITA_ACTUALIZADA:           { icon: 'edit_calendar',      color: '#1565c0' },
       CITA_COMPLETADA:            { icon: 'task_alt',           color: '#2e7d32' },
       CITA_CANCELADA:             { icon: 'event_busy',         color: '#c62828' },
       CITA_CANCELADA_RECEPCION:   { icon: 'event_busy',         color: '#c62828' },
@@ -1080,14 +1092,41 @@ async function cargarActividad() {
       ? '<li class="sin-datos">Sin actividad registrada aún.</li>'
       : lista.slice(0, 3).map(_logItem).join('');
 
-    const htmlFull = lista.length === 0
-      ? '<li class="sin-datos">Sin actividad registrada aún.</li>'
-      : lista.map(_logItem).join('');
+    const LIMITE_LOGS = 10;
+    let htmlFull, htmlCompleto;
+    if (lista.length === 0) {
+      htmlFull = htmlCompleto = '<li class="sin-datos">Sin actividad registrada aún.</li>';
+    } else {
+      const verMasBtn = `
+          <li id="logs-ver-mas-item" style="text-align:center;padding:14px 18px;">
+            <button type="button" class="btn-link" onclick="mostrarTodosLosLogs()" style="background:none;border:none;color:var(--primary,#00695c);font-weight:600;cursor:pointer;font-size:13.5px;">
+              Ver más
+            </button>
+          </li>`;
+      const verMenosBtn = `
+          <li id="logs-ver-menos-item" style="text-align:center;padding:14px 18px;">
+            <button type="button" class="btn-link" onclick="mostrarMenosLogs()" style="background:none;border:none;color:var(--primary,#00695c);font-weight:600;cursor:pointer;font-size:13.5px;">
+              Ver menos
+            </button>
+          </li>`;
+
+      htmlFull = lista.slice(0, LIMITE_LOGS).map(_logItem).join('');
+      htmlCompleto = lista.map(_logItem).join('');
+
+      if (lista.length > LIMITE_LOGS) {
+        htmlFull     += verMasBtn;
+        htmlCompleto += verMenosBtn;
+      }
+    }
 
     const preview = document.getElementById('logs-preview');
     const full    = document.getElementById('logs-full');
     if (preview) preview.innerHTML = htmlPreview;
-    if (full)    full.innerHTML    = htmlFull;
+    if (full) {
+      full.innerHTML = htmlFull;
+      full.dataset.htmlCompleto = htmlCompleto;
+      full.dataset.htmlReducido = htmlFull;
+    }
 
   } catch (e) {
     console.error('HU14 cargarActividad:', e);

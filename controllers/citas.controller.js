@@ -63,22 +63,48 @@ exports.createCita = (req, res) => {
 
 exports.updateCita = (req, res) => {
   const id = req.params.id;
-  const { idDoctor, fecha, hora } = req.body;
+  const { idDoctor, fecha, hora, estado } = req.body;
+
+  const guardarYResponder = () => {
+    Cita.update(id, req.body, (err) => {
+      if (err) { console.error('[citas]', err); return res.status(500).json({ message: 'Error interno del servidor.' }); }
+      if (estado) {
+        Cita.getById(id, (e0, rows0) => {
+          const c = Array.isArray(rows0) ? rows0[0] : rows0;
+          const nombrePac = c ? `${c.NombrePaciente || ''} ${c.ApellidosPaciente || ''}`.trim() : `Cita ${id}`;
+          const nombreDoc = c ? `Dr. ${c.NombreDoctor || ''} ${c.ApellidosDoctor || ''}`.trim() : '';
+          const espec     = c && c.Especialidad ? ` (${c.Especialidad})` : '';
+          const actor = req.user || {};
+          let accion, descripcion;
+          if (estado === 'CONFIRMADA') {
+            accion = 'CITA_CONFIRMADA';
+            descripcion = `${actor.nombre || 'Recepción'} confirmó la cita de ${nombrePac} con ${nombreDoc}${espec}`;
+          } else {
+            accion = 'CITA_ACTUALIZADA';
+            descripcion = `Cita de ${nombrePac} actualizada → estado: ${estado}`;
+          }
+          Auditoria.registrar({
+            accion,
+            descripcion,
+            nombreUsuario: actor.nombre || 'Recepción',
+            modulo: 'Citas',
+            fecha: new Date(),
+          }, (e) => { if (e) console.error('[auditoria]', e.message); });
+        });
+      }
+      res.json({ message: "Cita actualizada" });
+    });
+  };
+
   if (idDoctor && fecha && hora) {
     Cita.checkDuplicado(idDoctor, fecha, hora, id, (err, existing) => {
       if (err) { console.error('[citas]', err); return res.status(500).json({ message: 'Error interno del servidor.' }); }
       if (existing.length > 0)
         return res.status(409).json({ error: "El médico ya tiene una cita en ese horario. Se requieren al menos 90 minutos entre citas." });
-      Cita.update(id, req.body, (err) => {
-        if (err) { console.error('[citas]', err); return res.status(500).json({ message: 'Error interno del servidor.' }); }
-        res.json({ message: "Cita actualizada" });
-      });
+      guardarYResponder();
     });
   } else {
-    Cita.update(id, req.body, (err) => {
-      if (err) { console.error('[citas]', err); return res.status(500).json({ message: 'Error interno del servidor.' }); }
-      res.json({ message: "Cita actualizada" });
-    });
+    guardarYResponder();
   }
 };
 
