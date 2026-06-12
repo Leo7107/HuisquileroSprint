@@ -1013,8 +1013,9 @@ function exportarPDFInventario() {
 function _formatearFecha(fechaStr) {
   if (!fechaStr) return '—';
   const d = new Date(fechaStr);
-  return d.toLocaleDateString('es-SV', { day: '2-digit', month: 'short', year: 'numeric' })
-    + ' ' + d.toLocaleTimeString('es-SV', { hour: '2-digit', minute: '2-digit' });
+  const opts = { timeZone: 'America/El_Salvador' };
+  return d.toLocaleDateString('es-SV', { ...opts, day: '2-digit', month: 'short', year: 'numeric' })
+    + ' ' + d.toLocaleTimeString('es-SV', { ...opts, hour: '2-digit', minute: '2-digit' });
 }
 
 async function cargarResumen() {
