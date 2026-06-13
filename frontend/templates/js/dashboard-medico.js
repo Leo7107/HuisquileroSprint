@@ -54,6 +54,24 @@ function toast(msg, tipo = 'success') {
   _toastTimer = setTimeout(() => { el.style.display = 'none'; }, 3500);
 }
 
+// ── ESTADOS DE CITA QUE PERMITEN ATENDER ──────────────────────────────────────
+// Una cita FINALIZADA, COMPLETADA, CANCELADA o REQUIERE_REASIGNACION ya cerró
+// su ventana de atención clínica. El médico no debe reabrirla por ninguna ruta
+// (tabla de citas, modal de historial o invocación directa).
+const ESTADOS_ATENDIBLES = ['CONFIRMADA', 'PENDIENTE', 'EN ATENCION'];
+const esCitaAtendible = (cita) => !!cita && ESTADOS_ATENDIBLES.includes(cita.estado);
+
+// ── ACCESO TOLERANTE A NOMBRES DE COLUMNA ────────────────────────────────────
+// tbl_diagnosticos y tbl_recetas tienen sus PK/FK en minúscula en el esquema
+// (`iddiagnostico`, `idconsulta`, `idreceta`) mientras que el resto del
+// proyecto consume las IDs en camelCase. mysql2 retorna las claves del JSON
+// con el case del esquema cuando se hace SELECT *, por lo que `d.idConsulta`
+// y `r.idDiagnostico` son `undefined` y todos los filtros fallan en silencio.
+// Estos getters aceptan ambas formas para que el dashboard no dependa del
+// case real de las columnas (que toca el backend y no se va a alterar aquí).
+const _idDx  = (o) => o && (o.idDiagnostico ?? o.iddiagnostico);
+const _idCon = (o) => o && (o.idConsulta    ?? o.idconsulta);
+
 // ── MAPS PARA ONCLICK SEGURO ──────────────────────────────────────────────────
 const _mapPacCon   = new Map();
 const _mapCitaCon  = new Map();
@@ -227,34 +245,67 @@ async function abrirHistorialPaciente(idCita, idPaciente) {
   document.getElementById('modal-historial-contenido').innerHTML =
     '<p style="text-align:center;color:var(--text-soft);padding:30px;">Cargando...</p>';
 
-  document.getElementById('btn-atender-modal').onclick = () => {
-    cerrarModalHistorial();
-    accesoCitaRapido(idCita, idPaciente);
-  };
+  // El botón Atender del modal solo se ofrece si la cita sigue abierta.
+  // Para citas FINALIZADA/CANCELADA/REQUIERE_REASIGNACION el modal queda en
+  // modo solo-lectura y se oculta el acceso al panel clínico.
+  const citaActual    = todasLasCitas.find(c => c.idCita === idCita);
+  const btnAtenderMod = document.getElementById('btn-atender-modal');
+  if (btnAtenderMod) {
+    if (esCitaAtendible(citaActual)) {
+      btnAtenderMod.style.display = '';
+      btnAtenderMod.onclick = () => {
+        cerrarModalHistorial();
+        accesoCitaRapido(idCita, idPaciente);
+      };
+    } else {
+      btnAtenderMod.style.display = 'none';
+      btnAtenderMod.onclick = null;
+    }
+  }
 
   try {
     const cita = todasLasCitas.find(c => c.idCita === idCita);
 
-    const [pRes, conCitaRes, allDiagRes, allRecRes] = await Promise.all([
+    // Traemos TODAS las consultas para luego encontrar todas las asociadas
+    // a esta cita. Una sola cita puede tener varias consultas si hubo
+    // preconsulta del recepcionista + consulta del médico, y los diagnósticos
+    // podrían estar ligados a cualquiera de ellas. Sin esto, /by-cita devuelve
+    // sólo una (LIMIT 1) y el modal se pierde los diagnósticos/recetas que
+    // quedaron ligados a la otra consulta.
+    const [pRes, allConsRes, allDiagRes, allRecRes] = await Promise.all([
       fetch(`/api/pacientes/${idPaciente}`, { headers: H }),
-      fetch(`/api/consultas/by-cita/${idCita}`, { headers: H }),
+      fetch('/api/consultas', { headers: H }),
       fetch('/api/diagnosticos', { headers: H }),
       fetch('/api/recetas', { headers: H }),
     ]);
 
-    const paciente     = await pRes.json();
-    const consultaCita = await conCitaRes.json();
-    const allDiag      = await allDiagRes.json();
-    const allRec       = await allRecRes.json();
+    const paciente = await pRes.json();
+    const allCons  = await allConsRes.json();
+    const allDiag  = await allDiagRes.json();
+    const allRec   = await allRecRes.json();
 
     const p = Array.isArray(paciente) ? paciente[0] : paciente;
 
-    const idConsulta = consultaCita?.idConsulta || null;
-    const diagsCita  = Array.isArray(allDiag)
-      ? allDiag.filter(d => d.idConsulta === idConsulta)
+    // Todas las consultas de esta cita (típicamente 1, pero puede haber más).
+    const consultasCita = Array.isArray(allCons)
+      ? allCons.filter(c => Number(c.idCita) === Number(idCita))
       : [];
-    const recsCita   = Array.isArray(allRec)
-      ? allRec.filter(r => diagsCita.some(d => d.idDiagnostico === r.idDiagnostico))
+    // La primera (más antigua por orden de inserción) es la que mostramos
+    // como "Consulta de la Cita". El médico ve un solo bloque de signos
+    // vitales, pero el filtro abarca todas para no perder registros.
+    const consultaCita = consultasCita[0] || null;
+    const idsConsulta  = consultasCita.map(c => Number(c.idConsulta));
+    // idConsulta es la variable que el render del modal usa para decidir si
+    // mostrar "Registrada" o "Sin registro" en la tarjeta de Consulta.
+    const idConsulta   = consultaCita?.idConsulta || null;
+
+    // _idCon / _idDx toleran el case del esquema (`idconsulta`, etc.).
+    // Number() resuelve BIGINT devuelto como string por mysql2.
+    const diagsCita = idsConsulta.length && Array.isArray(allDiag)
+      ? allDiag.filter(d => idsConsulta.includes(Number(_idCon(d))))
+      : [];
+    const recsCita  = Array.isArray(allRec)
+      ? allRec.filter(r => diagsCita.some(d => Number(_idDx(d)) === Number(_idDx(r))))
       : [];
 
     const fechaCita = cita?.fecha ? cita.fecha.split('T')[0] : '–';
@@ -333,7 +384,7 @@ async function abrirHistorialPaciente(idCita, idPaciente) {
             ? diagsCita.map(d => `
                 <div style="border-left:3px solid var(--teal);padding:10px 14px;border-radius:0 10px 10px 0;background:rgba(42,107,94,0.04);margin-bottom:10px;">
                   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
-                    <span style="font-size:11px;font-weight:700;color:var(--teal);">DX #${d.idDiagnostico}</span>
+                    <span style="font-size:11px;font-weight:700;color:var(--teal);">DX #${_idDx(d)}</span>
                     <span style="font-size:11px;color:var(--text-soft);">${d.fecha_diagnostico ? d.fecha_diagnostico.split('T')[0] : '–'}</span>
                   </div>
                   <p style="font-size:13px;color:var(--deep);margin:0;">${esc(d.descripcion || 'Sin descripción')}</p>
@@ -376,9 +427,17 @@ async function abrirHistorialPaciente(idCita, idPaciente) {
         </div>
       </div>`;
 
-  } catch {
+  } catch (err) {
+    // Mostramos el mensaje real del error para no esconder bugs como antes
+    // (un ReferenceError silencioso por una variable mal nombrada se mostraba
+    // como un simple "Error al cargar historial" y era imposible diagnosticar).
+    console.error('[abrirHistorialPaciente] fallo al renderizar:', err);
     document.getElementById('modal-historial-contenido').innerHTML =
-      '<p style="color:#c03030;text-align:center;padding:20px;">Error al cargar historial</p>';
+      `<div style="color:#c03030;text-align:center;padding:20px;">
+        <p style="font-weight:700;margin-bottom:6px;">Error al cargar historial</p>
+        <p style="font-size:12px;color:var(--text-soft);">${esc(err?.message || String(err))}</p>
+        <p style="font-size:11px;color:var(--text-soft);margin-top:10px;">Abre la consola (F12) para ver el stack completo.</p>
+      </div>`;
   }
 }
 
@@ -407,6 +466,16 @@ let _citaSeleccionada = null;
 
 async function abrirAtencion(idCita, idPaciente) {
   const cita    = todasLasCitas.find(c => c.idCita === idCita);
+
+  // Guard final: bloquea la apertura del panel clínico para citas ya cerradas.
+  // Aunque el botón Atender se oculta en la tabla y en el modal, este chequeo
+  // evita reabrir la atención por invocaciones directas (consola, deep-link,
+  // accesos rápidos con estado desactualizado).
+  if (cita && !esCitaAtendible(cita)) {
+    toast(`Esta cita está ${cita.estado} y ya no puede atenderse.`, 'warning');
+    return;
+  }
+
   const nombre  = cita ? nombrePaciente(cita) : `Paciente #${idPaciente}`;
   const fechaStr = cita?.fecha ? cita.fecha.split('T')[0] : '';
   const horaStr  = cita?.hora  ? cita.hora.substring(0,5)  : '';
@@ -549,9 +618,11 @@ async function cargarDiagnosticosPacienteParaReceta(idPaciente) {
     const consultas = await consRes.json();
     const idsCitas  = Array.isArray(citas)    ? citas.map(c => c.idCita)    : [];
     const idsCons   = Array.isArray(consultas) ? consultas.filter(c => idsCitas.includes(c.idCita)).map(c => c.idConsulta) : [];
-    const diagsPac  = Array.isArray(diags)    ? diags.filter(d => idsCons.includes(d.idConsulta)) : [];
+    // _idCon y _idDx toleran el case real del esquema (tbl_diagnosticos suele
+    // exponer `idconsulta` e `iddiagnostico` en minúsculas).
+    const diagsPac  = Array.isArray(diags)    ? diags.filter(d => idsCons.includes(_idCon(d))) : [];
     sel.innerHTML = '<option value="">— Sin diagnóstico asociado —</option>' +
-      diagsPac.map(d => `<option value="${d.idDiagnostico}">#${d.idDiagnostico} · ${d.fecha_diagnostico ? d.fecha_diagnostico.split('T')[0] : '–'} · ${esc((d.descripcion||'').substring(0,50))}</option>`).join('');
+      diagsPac.map(d => `<option value="${_idDx(d)}">#${_idDx(d)} · ${d.fecha_diagnostico ? d.fecha_diagnostico.split('T')[0] : '–'} · ${esc((d.descripcion||'').substring(0,50))}</option>`).join('');
   } catch {
     sel.innerHTML = '<option value="">— Sin diagnóstico asociado —</option>';
   }
@@ -621,29 +692,43 @@ async function guardarConsulta() {
     idCita:           _citaSeleccionada.idCita,
   };
 
-  const res  = await fetch('/api/consultas', { method:'POST', headers: H, body: JSON.stringify(payload) });
-  const data = await res.json();
-  if (data.id) {
-    await fetch(`/api/citas/${_citaSeleccionada.idCita}/completar`, { method:'PATCH', headers: H });
+  // Si ya existe una consulta para esta cita (caso típico: preconsulta del
+  // recepcionista, o el médico hizo doble click en "Registrar Consulta"),
+  // ACTUALIZAMOS esa consulta en vez de crear una nueva. Crear duplicados
+  // rompe el modelo 1 cita = 1 consulta y deja a los diagnósticos huérfanos
+  // (apuntan a la consulta duplicada, pero el modal busca por la primera).
+  const idConsultaExistente = _consultaSeleccionada?.idConsulta || null;
+  const url    = idConsultaExistente ? `/api/consultas/${idConsultaExistente}` : '/api/consultas';
+  const method = idConsultaExistente ? 'PUT' : 'POST';
 
-    toast('Consulta registrada.');
-    _marcarAccordionDone('consulta', '· Registrada');
+  const res  = await fetch(url, { method, headers: H, body: JSON.stringify(payload) });
+  const data = await res.json();
+  // Backend devuelve 200 con { id } al crear y 200 con solo { message } al
+  // actualizar. res.ok cubre ambos; los errores siempre vienen con 4xx/5xx.
+  if (res.ok) {
+    // La consulta se guarda como dato clínico, pero la cita NO se cierra aquí.
+    // El cierre es responsabilidad exclusiva del botón Finalizar Cita.
+    const idConsultaFinal = data.id || idConsultaExistente;
+    toast(idConsultaExistente
+      ? 'Consulta actualizada. Continúa con diagnóstico y receta, o presiona Finalizar Cita.'
+      : 'Consulta registrada. Continúa con diagnóstico y receta, o presiona Finalizar Cita.');
+    _marcarAccordionDone('consulta', idConsultaExistente ? '· Actualizada' : '· Registrada');
     document.getElementById('finalizar-cita-hint').style.display = 'none';
     cargarCitas();
 
     _consultaSeleccionada = {
-      idConsulta:     data.id,
+      idConsulta:     idConsultaFinal,
       nombrePaciente: _citaSeleccionada.nombre,
       fecha:          new Date().toISOString().split('T')[0],
     };
-    document.getElementById('diag-consulta').value = data.id;
+    document.getElementById('diag-consulta').value = idConsultaFinal;
     document.getElementById('diag-fecha').value    = new Date().toISOString().slice(0,16);
     renderConsultaSeleccionada();
 
     _setAccordion('diagnostico', true, '· opcional', '');
     cargarStats();
   } else {
-    toast('Error: ' + (data.error?.sqlMessage || data.error || 'No se pudo registrar'), 'error');
+    toast('Error: ' + (data.error?.sqlMessage || data.error || data.message || 'No se pudo registrar'), 'error');
   }
 }
 
@@ -658,7 +743,7 @@ async function cargarCitas() {
 
     document.getElementById('tbody-citas').innerHTML = todasLasCitas.length
       ? todasLasCitas.map(c => {
-          const atendible = ['CONFIRMADA', 'PENDIENTE', 'EN ATENCION'].includes(c.estado);
+          const atendible = esCitaAtendible(c);
           return `
           <tr>
             <td>#${c.idCita}</td>
@@ -1023,7 +1108,41 @@ function eliminarLineaReceta(idx) {
 async function guardarReceta() {
   if (!_recPacienteId) { toast('Selecciona un paciente primero.', 'warning'); return; }
   if (!_recLineas.length) { toast('Agrega al menos un medicamento.', 'warning'); return; }
-  const idDiagnostico = parseInt(document.getElementById('rec-diagnostico-sel').value) || null;
+  let idDiagnostico = parseInt(document.getElementById('rec-diagnostico-sel').value) || null;
+
+  // El esquema de datos vincula: receta → diagnóstico → consulta → cita.
+  // Si el médico no seleccionó un diagnóstico, la receta quedaría con
+  // idDiagnostico = null y NO aparecería al hacer "Ver detalle" de la cita,
+  // porque el modal del médico filtra recetas a través de los diagnósticos
+  // de esa consulta. Para evitar recetas huérfanas creamos un diagnóstico
+  // mínimo automáticamente, vinculado a la consulta actual.
+  if (!idDiagnostico && _consultaSeleccionada?.idConsulta) {
+    try {
+      const dRes = await fetch('/api/diagnosticos', {
+        method: 'POST', headers: H,
+        body: JSON.stringify({
+          descripcion:       'Receta sin diagnóstico específico',
+          fecha_diagnostico: new Date().toISOString().slice(0,19).replace('T',' '),
+          idConsulta:        _consultaSeleccionada.idConsulta,
+        }),
+      });
+      const dData = await dRes.json();
+      // res.ok descarta el caso en que el backend respondió 500 con
+      // { message: 'Error interno...' }, que antes pasaba como "éxito" por
+      // tener un message no vacío y dejaba al diagnóstico no creado.
+      if (dRes.ok && dData && dData.id) {
+        idDiagnostico = dData.id;
+      } else {
+        console.error('[guardarReceta] auto-diagnóstico falló:', dRes.status, dData);
+        toast('No se pudo crear el diagnóstico automático para esta receta. Selecciona uno manualmente.', 'warning');
+        return;
+      }
+    } catch (e) {
+      console.error('No se pudo crear diagnóstico automático para la receta:', e);
+      toast('Error de red al crear diagnóstico automático. Revisa tu conexión.', 'error');
+      return;
+    }
+  }
   try {
     let errores = 0;
     for (const linea of _recLineas) {
@@ -1040,14 +1159,18 @@ async function guardarReceta() {
       };
       const res  = await fetch('/api/recetas', { method:'POST', headers: H, body: JSON.stringify(payload) });
       const data = await res.json();
-      if (data.id || data.message) {
+      // Antes el check era `if (data.id || data.message)`: cualquier respuesta
+      // con `message` (incluido `{ message: 'Error interno del servidor.' }` de
+      // un 500) se contaba como éxito. La receta nunca se guardaba pero el
+      // usuario veía "Receta emitida". Ahora exigimos res.ok + id real.
+      if (res.ok && data.id) {
         await fetch(`/api/medicamentos/${linea.med.id}/descontar`, {
           method: 'POST', headers: H,
           body: JSON.stringify({ cantidad: linea.cantidad, idReceta: data.id })
         }).catch(() => {});
       } else {
         errores++;
-        console.error('Error en receta:', linea.med.nombre, data.error);
+        console.error('Error en receta:', linea.med.nombre, 'status:', res.status, 'data:', data);
       }
     }
     const total = _recLineas.reduce((s, l) => s + l.subtotal, 0);

@@ -74,13 +74,41 @@ const _mapCitasPac = new Map();
 const _mapDocSugPac = new Map();
 
 // ─── Obtener idPaciente del paciente logueado ─────────────────────────────────
+// Solo se cachea una respuesta válida (con idPaciente). Una respuesta nula o un
+// objeto vacío significan "expediente no creado" y deben tratarse como ausencia,
+// no como dato cacheado — así verificarExpediente() puede volver a chequear y
+// el resto del código sigue confiando en `if (!pac)` como hasta ahora.
 async function obtenerMiPaciente() {
-  if (miPaciente) return miPaciente;
+  if (miPaciente && miPaciente.idPaciente) return miPaciente;
   try {
     const res  = await fetch(`/api/pacientes/by-usuario/${usuario.id}`, { headers: H });
-    miPaciente = await res.json();
+    const data = await res.json();
+    miPaciente = (data && data.idPaciente) ? data : null;
     return miPaciente;
   } catch { return null; }
+}
+
+// ─── Verifica si el paciente tiene expediente y muestra/oculta la alerta ─────
+// Se llama al cargar el dashboard y cada vez que algo pueda haberlo cambiado
+// (por ejemplo, después de guardar el perfil — `guardarPerfil` crea el
+// expediente automáticamente si no existía, ver perfil.controller.js).
+async function verificarExpediente() {
+  const pac = await obtenerMiPaciente();
+  const tieneExpediente = !!(pac && pac.idPaciente);
+
+  const alerta = document.getElementById('alerta-sin-expediente');
+  if (alerta) alerta.classList.toggle('activa', !tieneExpediente);
+
+  // Sin expediente: bloquear "Nueva Cita" desde inicio y desde la sección Citas
+  // para evitar que el usuario solicite una cita y reciba un error confuso.
+  document.querySelectorAll('button[onclick="abrirModalCita()"]').forEach(btn => {
+    btn.disabled = !tieneExpediente;
+    btn.title = tieneExpediente
+      ? ''
+      : 'Necesitas tener tu expediente médico registrado para solicitar citas';
+  });
+
+  return tieneExpediente;
 }
 
 // ─── Cargar estadísticas del inicio ──────────────────────────────────────────
@@ -192,53 +220,179 @@ async function cargarCitas() {
 }
 
 // ─── VER DETALLE DE CITA ──────────────────────────────────────────────────────
+// Antes solo mostraba los datos básicos de la cita. Ahora también trae la
+// consulta clínica registrada por el médico, sus diagnósticos asociados y la
+// receta emitida (filtrados por idCita / idConsulta del paciente logueado).
+// Si alguna sección falta o falla, se muestra una tarjeta vacía — el modal
+// nunca queda en blanco por una respuesta parcial.
 async function verDetalleCita(idCita) {
   try {
     const res  = await fetch(`/api/citas/${idCita}`, { headers: H });
     const c    = await res.json();
-
     if (!c || c.error) { toast('No se pudo cargar el detalle', 'error'); return; }
+
+    // Cargas auxiliares — toleramos fallos individuales.
+    const pac = await obtenerMiPaciente();
+    let consulta = null, diagnosticos = [], recetas = [];
+
+    try {
+      const r = await fetch(`/api/consultas/by-cita/${idCita}`, { headers: H });
+      consulta = await r.json();
+    } catch {}
+
+    if (consulta && consulta.idConsulta) {
+      try {
+        const r = await fetch('/api/diagnosticos', { headers: H });
+        const all = await r.json();
+        if (Array.isArray(all))
+          diagnosticos = all.filter(d => d.idConsulta === consulta.idConsulta);
+      } catch {}
+    }
+
+    if (pac && pac.idPaciente) {
+      try {
+        const r = await fetch(`/api/recetas/paciente/${pac.idPaciente}`, { headers: H });
+        const all = await r.json();
+        if (Array.isArray(all))
+          recetas = all.filter(rec => rec.idCita === idCita);
+      } catch {}
+    }
 
     const fechaStr = c.fecha ? c.fecha.split('T')[0] : '—';
     const horaStr  = c.hora  ? c.hora.substring(0,5)  : '—';
 
     document.getElementById('detalle-contenido').innerHTML = `
-      <div class="detalle-item">
-        <div class="detalle-item__label">Número de Cita</div>
-        <div class="detalle-item__value">#${c.idCita}</div>
-      </div>
-      <div class="detalle-item">
-        <div class="detalle-item__label">Estado</div>
-        <div class="detalle-item__value">${badgeEstado(c.estado)}</div>
-      </div>
-      <div class="detalle-item">
-        <div class="detalle-item__label">Fecha</div>
-        <div class="detalle-item__value">${fechaStr}</div>
-      </div>
-      <div class="detalle-item">
-        <div class="detalle-item__label">Hora</div>
-        <div class="detalle-item__value">${horaStr}</div>
-      </div>
-      <div class="detalle-item">
-        <div class="detalle-item__label">Doctor</div>
-        <div class="detalle-item__value">
-          ${c.NombreDoctor ? `Dr/Dra. ${esc(c.NombreDoctor)} ${esc(c.ApellidosDoctor)}` : `#${c.idDoctor}`}
+      <div class="detalle-grid">
+        ${detalleItem('Número de Cita', '#' + c.idCita)}
+        <div class="detalle-item">
+          <div class="detalle-item__label">Estado</div>
+          <div class="detalle-item__value">${badgeEstado(c.estado)}</div>
+        </div>
+        ${detalleItem('Fecha', fechaStr)}
+        ${detalleItem('Hora',  horaStr)}
+        ${detalleItem('Doctor', c.NombreDoctor
+          ? `Dr/Dra. ${esc(c.NombreDoctor)} ${esc(c.ApellidosDoctor || '')}`
+          : '#' + c.idDoctor)}
+        ${detalleItem('Especialidad', esc(c.Especialidad || '—'))}
+        <div class="detalle-item detalle-item--full">
+          <div class="detalle-item__label">Motivo de la Cita</div>
+          <div class="detalle-item__value" style="font-size:13px;font-weight:400;">${esc(c.motivo || '—')}</div>
         </div>
       </div>
-      <div class="detalle-item">
-        <div class="detalle-item__label">Especialidad</div>
-        <div class="detalle-item__value">${esc(c.Especialidad || '—')}</div>
-      </div>
-      <div class="detalle-item detalle-item--full">
-        <div class="detalle-item__label">Motivo de la Cita</div>
-        <div class="detalle-item__value" style="font-size:13px;font-weight:400;">${esc(c.motivo || '—')}</div>
-      </div>
+      ${tarjetaConsultaHTML(consulta)}
+      ${tarjetaDiagnosticoHTML(diagnosticos)}
+      ${tarjetaRecetaHTML(recetas)}
     `;
 
     document.getElementById('modal-detalle').classList.add('active');
   } catch {
     toast('Error al cargar el detalle de la cita', 'error');
   }
+}
+
+// ─── Helpers de render para el modal de detalle ──────────────────────────────
+function detalleItem(label, valor) {
+  return `<div class="detalle-item">
+    <div class="detalle-item__label">${label}</div>
+    <div class="detalle-item__value">${valor}</div>
+  </div>`;
+}
+
+function tarjetaConsultaHTML(con) {
+  if (!con || !con.idConsulta) {
+    return `<div class="detalle-card">
+      <div class="detalle-card__header">
+        <span class="material-symbols-outlined">stethoscope</span>
+        <strong>Consulta médica</strong>
+        <span class="detalle-card__badge detalle-card__badge--vacia">Sin registro</span>
+      </div>
+      <p class="detalle-card__vacia-msg">No hay consulta registrada para esta cita.</p>
+    </div>`;
+  }
+  const tieneObs = con.observaciones && con.observaciones.trim();
+  return `<div class="detalle-card">
+    <div class="detalle-card__header">
+      <span class="material-symbols-outlined">stethoscope</span>
+      <strong>Consulta médica</strong>
+      <span class="detalle-card__badge">Registrada</span>
+    </div>
+    <div class="detalle-card__body">
+      <div class="detalle-grid">
+        ${detalleItem('Peso',        con.peso        ? con.peso + ' kg'        : '—')}
+        ${detalleItem('Talla',       con.altura      ? con.altura + ' cm'      : '—')}
+        ${detalleItem('Presión',     con.presion_arterial || '—')}
+        ${detalleItem('Temperatura', con.temperatura ? con.temperatura + '°C'  : '—')}
+      </div>
+      ${tieneObs ? `<div class="detalle-card__nota">
+        <span class="detalle-card__nota-label">OBSERVACIONES</span>
+        ${esc(con.observaciones)}
+      </div>` : ''}
+    </div>
+  </div>`;
+}
+
+function tarjetaDiagnosticoHTML(diags) {
+  if (!diags || !diags.length) {
+    return `<div class="detalle-card">
+      <div class="detalle-card__header">
+        <span class="material-symbols-outlined">lab_research</span>
+        <strong>Diagnóstico</strong>
+        <span class="detalle-card__badge detalle-card__badge--vacia">Sin registro</span>
+      </div>
+      <p class="detalle-card__vacia-msg">No hay diagnóstico registrado para esta cita.</p>
+    </div>`;
+  }
+  return `<div class="detalle-card">
+    <div class="detalle-card__header">
+      <span class="material-symbols-outlined">lab_research</span>
+      <strong>Diagnóstico</strong>
+      <span class="detalle-card__badge">${diags.length} registro${diags.length > 1 ? 's' : ''}</span>
+    </div>
+    <div class="detalle-card__body">
+      ${diags.map(d => `<div class="detalle-dx">
+        <div class="detalle-dx__head">
+          <span>DX #${d.idDiagnostico}</span>
+          <span>${d.fecha_diagnostico ? d.fecha_diagnostico.split('T')[0] : '—'}</span>
+        </div>
+        <p>${esc(d.descripcion || 'Sin descripción')}</p>
+      </div>`).join('')}
+    </div>
+  </div>`;
+}
+
+function tarjetaRecetaHTML(recs) {
+  if (!recs || !recs.length) {
+    return `<div class="detalle-card">
+      <div class="detalle-card__header">
+        <span class="material-symbols-outlined">medication</span>
+        <strong>Receta</strong>
+        <span class="detalle-card__badge detalle-card__badge--vacia">Sin registro</span>
+      </div>
+      <p class="detalle-card__vacia-msg">No hay receta registrada para esta cita.</p>
+    </div>`;
+  }
+  return `<div class="detalle-card">
+    <div class="detalle-card__header">
+      <span class="material-symbols-outlined">medication</span>
+      <strong>Receta</strong>
+      <span class="detalle-card__badge">${recs.length} medicamento${recs.length > 1 ? 's' : ''}</span>
+    </div>
+    <div class="detalle-card__body">
+      <table class="detalle-rec-table">
+        <thead><tr>
+          <th>Medicamento</th><th>Dosis</th><th>Frecuencia</th><th>Duración</th>
+        </tr></thead>
+        <tbody>
+          ${recs.map(r => `<tr>
+            <td>${esc(r.NombreMedicamento || r.medicamento || '—')}</td>
+            <td>${esc(r.dosis || '—')}</td>
+            <td>${esc(r.frecuencia || '—')}</td>
+            <td>${esc(r.duracion || '—')}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>
+  </div>`;
 }
 
 // ─── CANCELAR CITA ────────────────────────────────────────────────────────────
@@ -701,6 +855,12 @@ async function guardarPerfil() {
     const data = await res.json();
     if (data.message) {
       toast('Perfil actualizado correctamente');
+      // El backend (perfil.controller.js) crea el expediente automáticamente si
+      // no existía. Invalidamos el cache y re-evaluamos la alerta para que el
+      // banner desaparezca y "Nueva Cita" se rehabilite sin recargar la página.
+      miPaciente = null;
+      await verificarExpediente();
+      await cargarEstadisticas();
       cargarPerfil();
     } else {
       toast('Error: ' + (data.error?.sqlMessage || data.error || 'No se pudo actualizar'), 'error');
@@ -719,5 +879,6 @@ function cerrarSesion() {
 
 // ─── INIT ─────────────────────────────────────────────────────────────────────
 (async () => {
+  await verificarExpediente();   // muestra/oculta la alerta y bloquea Nueva Cita
   await cargarEstadisticas();
 })();

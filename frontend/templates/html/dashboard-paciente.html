@@ -133,6 +133,79 @@
     .detalle-item__value { font-size: 14px; font-weight: 600; color: var(--deep); }
     .detalle-item--full { grid-column: 1 / -1; }
 
+    /* ── Tarjetas clínicas dentro del modal de detalle ──────── */
+    .detalle-card {
+      border: 1.5px solid var(--border); border-radius: 14px;
+      overflow: hidden; margin-bottom: 14px; background: #fff;
+    }
+    .detalle-card__header {
+      display: flex; align-items: center; gap: 10px;
+      padding: 12px 16px; background: rgba(42,107,94,0.06);
+      border-bottom: 1.5px solid var(--border);
+    }
+    .detalle-card__header .material-symbols-outlined {
+      color: var(--teal); font-size: 20px;
+    }
+    .detalle-card__header strong {
+      font-size: 13.5px; color: var(--deep); flex: 1;
+    }
+    .detalle-card__badge {
+      font-size: 11px; font-weight: 600; color: var(--teal);
+      background: rgba(42,107,94,0.12); padding: 3px 10px;
+      border-radius: 20px;
+    }
+    .detalle-card__badge--vacia {
+      color: var(--text-soft); background: rgba(0,0,0,0.05);
+    }
+    .detalle-card__body { padding: 14px 16px; }
+    .detalle-card__body .detalle-grid { margin-bottom: 12px; }
+    .detalle-card__body .detalle-grid:last-child { margin-bottom: 0; }
+    .detalle-card__nota {
+      background: var(--cream); border-radius: 10px;
+      padding: 10px 12px; font-size: 12.5px; color: var(--text);
+      line-height: 1.55; white-space: pre-wrap;
+    }
+    .detalle-card__nota-label {
+      display: block; font-size: 10px; font-weight: 700;
+      color: var(--text-soft); margin-bottom: 4px;
+      letter-spacing: 0.05em;
+    }
+    .detalle-card__vacia-msg {
+      padding: 14px 16px; font-size: 12.5px;
+      color: var(--text-soft); text-align: center;
+    }
+    .detalle-dx {
+      border-left: 3px solid var(--teal);
+      padding: 8px 12px; border-radius: 0 10px 10px 0;
+      background: rgba(42,107,94,0.04); margin-bottom: 8px;
+    }
+    .detalle-dx:last-child { margin-bottom: 0; }
+    .detalle-dx__head {
+      display: flex; justify-content: space-between;
+      font-size: 10.5px; font-weight: 700; color: var(--teal);
+      margin-bottom: 4px;
+    }
+    .detalle-dx p {
+      font-size: 13px; color: var(--deep); margin: 0;
+    }
+    .detalle-rec-table {
+      width: 100%; border-collapse: collapse; font-size: 12.5px;
+    }
+    .detalle-rec-table th {
+      text-align: left; padding: 6px 8px; font-size: 10.5px;
+      font-weight: 700; color: var(--text-soft);
+      border-bottom: 1.5px solid var(--border);
+      text-transform: uppercase; letter-spacing: 0.04em;
+    }
+    .detalle-rec-table td {
+      padding: 8px; color: var(--text);
+      border-bottom: 1px solid rgba(42,107,94,0.06);
+    }
+    .detalle-rec-table tr:last-child td { border-bottom: none; }
+    .detalle-rec-table td:first-child {
+      font-weight: 600; color: var(--deep);
+    }
+
     /* ── Recetas tabla con botón PDF ─────────────────────────── */
     .btn-pdf {
       display: inline-flex; align-items: center; gap: 5px;
@@ -172,6 +245,39 @@
 
     /* ── Estadísticas dinámicas ──────────────────────────────── */
     .stat-num { transition: all 0.4s ease; }
+
+    /* ── Alerta: paciente sin expediente médico ──────────────── */
+    .alerta-expediente {
+      display: none;
+      align-items: flex-start; gap: 14px;
+      background: rgba(201,168,76,0.12);
+      border: 1.5px solid rgba(201,168,76,0.45);
+      border-left: 5px solid #b07800;
+      border-radius: 14px;
+      padding: 16px 20px;
+      margin-bottom: 22px;
+      box-shadow: 0 4px 14px rgba(176,120,0,0.10);
+      animation: fadeDown 0.3s ease;
+    }
+    .alerta-expediente.activa { display: flex; }
+    .alerta-expediente .material-symbols-outlined {
+      color: #b07800; font-size: 28px; flex-shrink: 0; margin-top: 2px;
+    }
+    .alerta-expediente__texto { flex: 1; line-height: 1.55; }
+    .alerta-expediente__texto strong {
+      display: block; font-size: 14px; color: var(--deep);
+      margin-bottom: 4px; font-weight: 700;
+    }
+    .alerta-expediente__texto span {
+      font-size: 12.5px; color: var(--text-soft);
+    }
+    .alerta-expediente__texto a {
+      color: var(--teal); font-weight: 600; text-decoration: none;
+    }
+    .alerta-expediente__texto a:hover { text-decoration: underline; }
+    .accion-btn:disabled, .header-btn:disabled {
+      opacity: 0.45; cursor: not-allowed;
+    }
   </style>
 </head>
 <body>
@@ -209,6 +315,21 @@
         </div>
       </div>
     </header>
+
+    <!-- ══ ALERTA: expediente médico no registrado ══ -->
+    <div id="alerta-sin-expediente" class="alerta-expediente" role="alert">
+      <span class="material-symbols-outlined">warning</span>
+      <div class="alerta-expediente__texto">
+        <strong>Tu expediente médico aún no ha sido registrado</strong>
+        <span>
+          Para poder solicitar citas, descargar documentos médicos y gestionar tu historial clínico
+          necesitas tener un expediente activo. Acércate a <strong>Recepción</strong> con tu documento
+          de identidad para completar tu registro, o
+          <a href="#" onclick="nav('perfil', document.querySelector('.nav-item[onclick*=perfil]'));return false;">completa
+          tu perfil aquí</a> para crearlo automáticamente.
+        </span>
+      </div>
+    </div>
 
     <!-- ══ INICIO ══ -->
     <div id="sec-inicio">
@@ -436,7 +557,10 @@
 <div class="modal-overlay" id="modal-detalle">
   <div class="modal">
     <h3>Detalle de la Cita</h3>
-    <div class="detalle-grid" id="detalle-contenido">
+    <!-- El contenedor ya no aplica la grilla porque debajo de la info básica
+         se inyectan tarjetas (consulta, diagnóstico, receta) que necesitan
+         ocupar el ancho completo. La grilla se genera dentro del JS. -->
+    <div id="detalle-contenido">
       <!-- Inyectado por JS -->
     </div>
     <div class="modal-actions">
