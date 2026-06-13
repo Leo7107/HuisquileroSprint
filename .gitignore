@@ -1,2 +1,7 @@
 node_modules/
 Backend clinica/
+
+# Variables de entorno y secretos
+.env
+.env.*
+!.env.example
