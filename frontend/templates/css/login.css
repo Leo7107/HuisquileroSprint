@@ -321,9 +321,11 @@ input:focus-visible, select:focus-visible {
 
 .boton:hover::before { opacity: 1; }
 
-.boton:hover span {
-  color: var(--deep);
+.boton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 32px rgba(42, 107, 94, 0.35);
 }
+
 .boton:active {
   transform: translateY(0);
 }
@@ -331,6 +333,10 @@ input:focus-visible, select:focus-visible {
 .boton span {
   position: relative;
   z-index: 1;
+}
+
+.boton:hover span {
+  color: var(--deep);
 }
 
 .divisor {
@@ -348,6 +354,36 @@ input:focus-visible, select:focus-visible {
   color: var(--text-soft);
   font-size: 13.5px;
   margin-top: 4px;
+}
+
+/* ============================================================
+   INPUT CON OJO (VER CONTRASEÑA)
+   ============================================================ */
+.input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input-wrapper input {
+  padding-right: 44px;
+}
+
+.ojo {
+  position: absolute;
+  right: 12px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 18px;
+  color: var(--text-soft);
+  padding: 0;
+  line-height: 1;
+  transition: color var(--t-rapida);
+}
+
+.ojo:hover {
+  color: var(--teal);
 }
 
 /* ============================================================

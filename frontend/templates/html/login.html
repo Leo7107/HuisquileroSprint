@@ -17,6 +17,7 @@
         <div class="escena" aria-label="Tarjeta con formularios de autenticación">
             <div class="tarjeta" id="tarjeta">
                 
+                <!-- CARA FRONTAL: LOGIN -->
                 <section class="tarjeta__cara tarjeta__cara--frente" aria-labelledby="leyenda-inicio">
                     <div class="pestanas" role="tablist" aria-label="Selector de formulario">
                         <button id="pestana-inicio" class="pestana" role="tab" aria-selected="true" aria-controls="panel-inicio">Login</button>
@@ -33,14 +34,17 @@
 
                         <div class="fila">
                             <label for="clave-inicio">Contraseña</label>
-                            <input id="clave-inicio" name="clave" type="password" placeholder="••••••••" required />
+                            <div class="input-wrapper">
+                                <input id="clave-inicio" name="clave" type="password" placeholder="••••••••" required />
+                                <button type="button" class="ojo">👁</button>
+                            </div>
                         </div>
 
                         <div class="pie">
                             <a href="/html/forgot-password.html" class="enlace">¿Olvidaste tu contraseña?</a>
                         </div>
 
-                        <button class="boton" type="submit"><span>Iniciar sesión</span></button>
+                        <button class="boton" type="submit"><span>Login</span></button>
 
                         <div class="divisor"></div>
 
@@ -51,6 +55,7 @@
                     </form>
                 </section>
 
+                <!-- CARA TRASERA: REGISTRO -->
                 <section class="tarjeta__cara tarjeta__cara--atras" aria-labelledby="leyenda-registro">
                     <div class="pestanas" role="tablist" aria-label="Selector de formulario">
                         <button id="pestana-inicio-atras" class="pestana" role="tab" aria-selected="false">Login</button>
@@ -101,12 +106,18 @@
 
                         <div class="fila">
                             <label for="clave-registro">Contraseña</label>
-                            <input id="clave-registro" name="clave" type="password" placeholder="Mínimo 6 caracteres" minlength="6" required />
+                            <div class="input-wrapper">
+                                <input id="clave-registro" name="clave" type="password" placeholder="Mínimo 6 caracteres" minlength="6" required />
+                                <button type="button" class="ojo">👁</button>
+                            </div>
                         </div>
 
                         <div class="fila">
                             <label for="confirmar-registro">Confirmar contraseña</label>
-                            <input id="confirmar-registro" name="confirmar" type="password" placeholder="Repite tu contraseña" minlength="6" required />
+                            <div class="input-wrapper">
+                                <input id="confirmar-registro" name="confirmar" type="password" placeholder="Repite tu contraseña" minlength="6" required />
+                                <button type="button" class="ojo">👁</button>
+                            </div>
                         </div>
 
                         <button class="boton" type="submit"><span>Crear cuenta</span></button>
