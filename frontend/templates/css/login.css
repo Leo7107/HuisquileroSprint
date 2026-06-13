@@ -321,11 +321,9 @@ input:focus-visible, select:focus-visible {
 
 .boton:hover::before { opacity: 1; }
 
-.boton:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 12px 32px rgba(42, 107, 94, 0.35);
+.boton:hover span {
+  color: var(--deep);
 }
-
 .boton:active {
   transform: translateY(0);
 }
