@@ -96,8 +96,10 @@ body::after {
 }
 
 .brand-icon {
-  color: var(--gold-light);
-  font-size: 20px;
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  object-fit: contain;
   animation: spinOnce 0.8s ease 0.3s both;
 }
 

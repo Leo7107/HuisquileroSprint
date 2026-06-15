@@ -109,10 +109,21 @@ body::after {
   color: var(--white);
   letter-spacing: 0.5px;
   line-height: 1.2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.titulo-logo {
+  width: clamp(34px, 4vw + 20px, 52px);
+  height: auto;
+  flex-shrink: 0;
 }
 
 .encabezado h1 span {
-  color: var(--gold-light);
+  color: var(--white);
 }
 
 .encabezado p {
