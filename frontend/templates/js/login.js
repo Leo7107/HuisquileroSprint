@@ -76,16 +76,42 @@ document.querySelectorAll('.ojo').forEach(btn => {
 });
 
 // ============================================================
+//  SESIÓN - HELPERS COMPARTIDOS
+// ============================================================
+
+// Redirige al dashboard correspondiente según el rol del usuario.
+function redirigirPorRol(rol){
+    if (rol === 1){
+        window.location.href = '/html/dashboard-admin.html';
+    } else if (rol === 30002){
+        window.location.href = '/html/dashboard-medico.html';
+    } else if (rol === 30003){
+        window.location.href = '/html/dashboard-recepcionista.html';
+    } else {
+        window.location.href = '/html/dashboard-paciente.html';
+    }
+}
+
+// Guarda la sesión (token y usuario) y entra al dashboard.
+function iniciarSesion(data){
+    window._token   = data.token;
+    window._usuario = data.usuario;
+    sessionStorage.setItem('token', data.token);
+    sessionStorage.setItem('usuario', JSON.stringify(data.usuario));
+    redirigirPorRol(data.usuario.rol);
+}
+
+// ============================================================
 //  VALIDACIONES - FORMULARIO LOGIN
 // ============================================================
 
 formularioInicio.addEventListener('submit', (ev) => {
     ev.preventDefault();
-    
+
     if (!formularioInicio.reportValidity()) return;
 
     const datos = Object.fromEntries(new FormData(formularioInicio).entries());
-    
+
     fetch('/api/usuarios/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -94,20 +120,7 @@ formularioInicio.addEventListener('submit', (ev) => {
     .then(res => res.json())
     .then(data => {
         if (data.token) {
-            window._token = data.token;
-            window._usuario = data.usuario;
-            sessionStorage.setItem('token', data.token);
-            sessionStorage.setItem('usuario', JSON.stringify(data.usuario));
-            
-            if(data.usuario.rol === 1){
-                window.location.href = '/html/dashboard-admin.html';
-            } else if(data.usuario.rol === 30002){
-                window.location.href = '/html/dashboard-medico.html';
-            } else if(data.usuario.rol === 30003){
-                window.location.href = '/html/dashboard-recepcionista.html';
-            } else {
-                window.location.href = '/html/dashboard-paciente.html';
-            }
+            iniciarSesion(data);
         } else {
             alert(data.message || 'Error al iniciar sesión');
         }
@@ -190,8 +203,29 @@ formularioRegistro.addEventListener('submit', (ev) => {
     .then(res => res.json())
     .then(data => {
         if (data.id) {
-            alert('Cuenta creada exitosamente');
-            mostrar('inicio');
+            // Cuenta creada: iniciamos sesión automáticamente con las mismas
+            // credenciales para llevar al paciente directo a su dashboard,
+            // sin tener que volver a escribir correo y contraseña.
+            fetch('/api/usuarios/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ Email: datos.correo, Password_hash: datos.clave })
+            })
+            .then(res => res.json())
+            .then(login => {
+                if (login.token) {
+                    alert('Cuenta creada exitosamente');
+                    iniciarSesion(login);
+                } else {
+                    // Si el auto-inicio falla, enviamos al login con las mismas credenciales.
+                    alert('Cuenta creada. Inicia sesión para continuar.');
+                    mostrar('inicio');
+                }
+            })
+            .catch(() => {
+                alert('Cuenta creada. Inicia sesión para continuar.');
+                mostrar('inicio');
+            });
         } else {
             alert(data.message || 'Error al registrarse');
         }

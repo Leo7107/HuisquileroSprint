@@ -391,7 +391,7 @@ input:focus-visible, select:focus-visible {
    ============================================================ */
 @media (max-width: 560px) {
   .tarjeta {
-    min-height: 820px;
+    min-height: 1080px;
   }
 
   .pestanas {
